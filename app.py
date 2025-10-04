@@ -1,4 +1,4 @@
-# DLtrollex - УЛЬТРА КАСТОМИЗИРУЕМЫЙ ЧАТ С ЗВОНКАМИ (ИСПРАВЛЕННАЯ ВЕРСИЯ)
+# DLtrollex - УЛЬТРА КАСТОМИЗИРУЕМЫЙ ЧАТ С ЗВОНКАМИ (ПОЛНОСТЬЮ ИСПРАВЛЕННЫЙ)
 from flask import Flask, render_template_string, request, send_from_directory
 from flask_socketio import SocketIO, emit
 import datetime
@@ -14,12 +14,10 @@ app.config['SECRET_KEY'] = 'mydltrollex2024'
 app.config['UPLOAD_FOLDER'] = 'user_avatars'
 app.config['DATA_FOLDER'] = 'user_data'
 
-# Исправляем CORS для Render
+# Настройки для Render
 socketio = SocketIO(app, 
                    cors_allowed_origins="*",
-                   async_mode='threading',
-                   logger=True,
-                   engineio_logger=True)
+                   async_mode='threading')
 
 # Создаем папки
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -125,7 +123,11 @@ def load_user_data():
 # Загружаем данные при запуске
 load_user_data()
 
-# HTML шаблон (полная версия с оригинальным дизайном)
+# Создаем фавикон роут чтобы убрать 404 ошибку
+@app.route('/favicon.ico')
+def favicon():
+    return '', 204
+
 HTML_TEMPLATE = '''
 <!DOCTYPE html>
 <html>
@@ -133,6 +135,7 @@ HTML_TEMPLATE = '''
     <title>DLtrollex</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💜</text></svg>">
     <style>
         * {
             margin: 0;
@@ -663,6 +666,7 @@ HTML_TEMPLATE = '''
         let socket = null;
         let currentUser = null;
         let currentChat = "news";
+        let allUsers = [];
 
         document.addEventListener('DOMContentLoaded', function() {
             console.log("🚀 DLtrollex загружен!");
@@ -750,6 +754,7 @@ HTML_TEMPLATE = '''
             
             socket.on('all_users', function(users) {
                 console.log("👥 Получены пользователи:", users);
+                allUsers = users;
                 updateUsersList(users);
             });
             
@@ -993,9 +998,6 @@ HTML_TEMPLATE = '''
         function showProfileModal() {
             showNotification('Настройки профиля скоро будут доступны', 'info');
         }
-
-        // Глобальная переменная для пользователей
-        let allUsers = [];
     </script>
 </body>
 </html>
@@ -1206,5 +1208,4 @@ if __name__ == '__main__':
                 host='0.0.0.0', 
                 port=port, 
                 debug=False, 
-                allow_unsafe_werkzeug=True,
-                log_output=True)
+                allow_unsafe_werkzeug=True)
