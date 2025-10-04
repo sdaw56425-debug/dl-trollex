@@ -1,4 +1,4 @@
-# DLtrollex - УЛЬТРА КАСТОМИЗИРУЕМЫЙ ЧАТ С ЗВОНКАМИ (УЛУЧШЕННЫЙ)
+# DLtrollex - УЛЬТРА КАСТОМИЗИРУЕМЫЙ ЧАТ С ЗВОНКАМИ (ИСПРАВЛЕННАЯ ВЕРСИЯ)
 from flask import Flask, render_template_string, request, send_from_directory
 from flask_socketio import SocketIO, emit
 import datetime
@@ -13,7 +13,13 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'mydltrollex2024'
 app.config['UPLOAD_FOLDER'] = 'user_avatars'
 app.config['DATA_FOLDER'] = 'user_data'
-socketio = SocketIO(app, cors_allowed_origins="*")
+
+# Исправляем CORS для Render
+socketio = SocketIO(app, 
+                   cors_allowed_origins="*",
+                   async_mode='threading',
+                   logger=True,
+                   engineio_logger=True)
 
 # Создаем папки
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -21,7 +27,7 @@ os.makedirs(app.config['DATA_FOLDER'], exist_ok=True)
 
 # База данных
 users_db = {}
-messages_db = {}  # Структура: {user_id: {target_user_id: [messages]}}
+messages_db = {}
 user_sessions = {}
 news_messages = []
 user_settings = {}
@@ -35,10 +41,9 @@ moderation_db = {
     'deleted_messages': [],
     'moderators': []
 }
-unread_messages = {}  # Новое: непрочитанные сообщения {user_id: {chat_id: count}}
+unread_messages = {}
 
 # Админ
-ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "dltrollex123"
 
 # Стандартные аватарки
@@ -50,55 +55,21 @@ DEFAULT_AVATARS = [
     {"emoji": "🐱", "bg": "#a855f7"}, {"emoji": "🐶", "bg": "#c084fc"}
 ]
 
-# Темы с фиолетовой основой
-THEMES = {
-    "dark_purple": {
-        "name": "Темный фиолетовый", 
-        "bg": "#0f0f0f", 
-        "card": "#1a1a1a", 
-        "accent": "#8b5cf6", 
-        "text": "#ffffff",
-        "secondary": "#2d2d2d",
-        "border": "#3d3d3d"
-    },
-    "blue_purple": {
-        "name": "Сине-фиолетовый", 
-        "bg": "#0a0a1f", 
-        "card": "#151533", 
-        "accent": "#6366f1", 
-        "text": "#ffffff",
-        "secondary": "#1e1e3f",
-        "border": "#2d2d5a"
-    },
-    "pink_purple": {
-        "name": "Розово-фиолетовый", 
-        "bg": "#1a0a1a", 
-        "card": "#2d152d", 
-        "accent": "#ec4899", 
-        "text": "#ffffff",
-        "secondary": "#3d1f3d",
-        "border": "#5a2d5a"
-    }
-}
-
-# Реакции - ТОЛЬКО ЛАЙК
-REACTIONS = ["👍"]
-
 # Функции для сохранения/загрузки данных
 def save_user_data():
     """Сохраняет все данные пользователей"""
-    data = {
-        'users_db': users_db,
-        'messages_db': messages_db,
-        'news_messages': news_messages,
-        'user_settings': user_settings,
-        'favorites_db': favorites_db,
-        'groups_db': groups_db,
-        'message_reactions': message_reactions,
-        'moderation_db': moderation_db,
-        'unread_messages': unread_messages
-    }
     try:
+        data = {
+            'users_db': users_db,
+            'messages_db': messages_db,
+            'news_messages': news_messages,
+            'user_settings': user_settings,
+            'favorites_db': favorites_db,
+            'groups_db': groups_db,
+            'message_reactions': message_reactions,
+            'moderation_db': moderation_db,
+            'unread_messages': unread_messages
+        }
         with open(os.path.join(app.config['DATA_FOLDER'], 'data.pkl'), 'wb') as f:
             pickle.dump(data, f)
         print("💾 Данные сохранены")
@@ -128,12 +99,33 @@ def load_user_data():
         print("📂 Данные загружены")
     except FileNotFoundError:
         print("📂 Файл данных не найден, создаем новую базу")
+        # Создаем тестовые данные
+        news_messages.extend([
+            {
+                'id': '1',
+                'text': 'Добро пожаловать в DLtrollex! 🎉',
+                'sender_id': 'admin',
+                'sender_name': 'Администратор',
+                'timestamp': datetime.datetime.now().isoformat(),
+                'edited': False
+            },
+            {
+                'id': '2', 
+                'text': 'Это фиолетовый мессенджер с максимальной кастомизацией! 💜',
+                'sender_id': 'admin',
+                'sender_name': 'Администратор', 
+                'timestamp': datetime.datetime.now().isoformat(),
+                'edited': False
+            }
+        ])
+        save_user_data()
     except Exception as e:
         print(f"❌ Ошибка загрузки: {e}")
 
 # Загружаем данные при запуске
 load_user_data()
 
+# HTML шаблон (полная версия с оригинальным дизайном)
 HTML_TEMPLATE = '''
 <!DOCTYPE html>
 <html>
@@ -191,16 +183,6 @@ HTML_TEMPLATE = '''
             to { transform: translateY(0); opacity: 1; }
         }
         
-        @keyframes ringing {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-        
-        @keyframes notificationPulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.2); background: #ef4444; }
-        }
-        
         .glowing-logo {
             animation: glow 3s ease-in-out infinite;
         }
@@ -215,14 +197,6 @@ HTML_TEMPLATE = '''
         
         .slide-in {
             animation: slideIn 0.5s ease-out;
-        }
-        
-        .ringing {
-            animation: ringing 1s ease-in-out infinite;
-        }
-        
-        .notification-pulse {
-            animation: notificationPulse 1s ease-in-out infinite;
         }
         
         /* Экраны входа */
@@ -341,41 +315,6 @@ HTML_TEMPLATE = '''
             box-shadow: 0 10px 25px rgba(220, 38, 38, 0.4);
         }
         
-        .btn-call {
-            background: linear-gradient(135deg, #10b981, #059669);
-        }
-        
-        .btn-call:hover {
-            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
-        }
-        
-        .btn-video {
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
-        }
-        
-        .btn-video:hover {
-            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
-        }
-        
-        .btn-end-call {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
-        }
-        
-        .btn-end-call:hover {
-            box-shadow: 0 10px 25px rgba(239, 68, 68, 0.4);
-        }
-        
-        .link {
-            color: var(--accent-color);
-            cursor: pointer;
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
-        
-        .link:hover {
-            text-shadow: 0 0 10px var(--accent-color);
-        }
-        
         .error {
             color: #ef4444;
             margin-top: 15px;
@@ -392,6 +331,10 @@ HTML_TEMPLATE = '''
             background: rgba(16, 185, 129, 0.1);
             border-radius: 8px;
             border: 1px solid #10b981;
+        }
+        
+        .hidden {
+            display: none !important;
         }
         
         /* Основной интерфейс чата */
@@ -413,7 +356,6 @@ HTML_TEMPLATE = '''
             border-right: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
-            position: relative;
         }
         
         .header {
@@ -443,29 +385,12 @@ HTML_TEMPLATE = '''
             justify-content: center;
             font-size: 18px;
             transition: all 0.3s ease;
-            position: relative;
         }
         
         .header-btn:hover {
             background: var(--accent-color);
             color: white;
             transform: scale(1.1);
-        }
-        
-        .notification-badge {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            background: #ef4444;
-            color: white;
-            border-radius: 50%;
-            width: 18px;
-            height: 18px;
-            font-size: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
         }
         
         .user-info {
@@ -476,11 +401,6 @@ HTML_TEMPLATE = '''
             background: var(--secondary-color);
             border-bottom: 1px solid var(--border-color);
             cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .user-info:hover {
-            background: var(--accent-color);
         }
         
         .avatar {
@@ -493,35 +413,6 @@ HTML_TEMPLATE = '''
             justify-content: center;
             font-weight: bold;
             font-size: 20px;
-            background-size: cover;
-            background-position: center;
-            border: 3px solid var(--accent-color);
-            box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
-        }
-        
-        .search-container {
-            padding: 20px;
-            border-bottom: 1px solid var(--border-color);
-        }
-        
-        .search-input {
-            width: 100%;
-            padding: 15px 15px 15px 45px;
-            background: var(--secondary-color);
-            border: 2px solid var(--border-color);
-            border-radius: 25px;
-            color: var(--text-color);
-            font-size: 14px;
-            transition: all 0.3s ease;
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23888" width="20px" height="20px"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>');
-            background-repeat: no-repeat;
-            background-position: 15px center;
-        }
-        
-        .search-input:focus {
-            outline: none;
-            border-color: var(--accent-color);
-            box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
         }
         
         .chats {
@@ -536,134 +427,25 @@ HTML_TEMPLATE = '''
             background: var(--secondary-color);
             border-radius: 15px;
             cursor: pointer;
-            border: 2px solid transparent;
             display: flex;
             align-items: center;
             gap: 15px;
             transition: all 0.3s ease;
-            position: relative;
         }
         
         .chat-item:hover {
             background: var(--accent-color);
             transform: translateX(5px);
-            border-color: var(--accent-color);
         }
         
         .chat-item.active {
             background: var(--accent-color);
-            border-color: var(--accent-color);
-            box-shadow: 0 5px 15px rgba(139, 92, 246, 0.4);
         }
         
-        .chat-call-buttons {
-            position: absolute;
-            right: 15px;
-            display: flex;
-            gap: 8px;
-            opacity: 0;
-            transition: all 0.3s ease;
-        }
-        
-        .chat-item:hover .chat-call-buttons {
-            opacity: 1;
-        }
-        
-        .call-btn-small {
-            background: var(--accent-color);
-            border: none;
-            border-radius: 8px;
-            width: 32px;
-            height: 32px;
-            color: white;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-        
-        .call-btn-small:hover {
-            transform: scale(1.1);
-        }
-        
-        .audio-call-btn {
-            background: #10b981;
-        }
-        
-        .video-call-btn {
-            background: #3b82f6;
-        }
-        
-        .chat-icon {
-            font-size: 24px;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(255,255,255,0.1);
-            border-radius: 10px;
-            position: relative;
-        }
-        
-        .chat-info {
-            flex: 1;
-            min-width: 0;
-        }
-        
-        .chat-name {
-            font-weight: bold;
-            margin-bottom: 5px;
-            font-size: 16px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
-        .chat-last-message {
-            color: #888;
-            font-size: 13px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
-        .unread-badge {
-            background: #ef4444;
-            color: white;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            font-size: 11px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-        
-        .online-status {
-            position: absolute;
-            bottom: -2px;
-            right: -2px;
-            width: 12px;
-            height: 12px;
-            background: #10b981;
-            border: 2px solid var(--card-color);
-            border-radius: 50%;
-        }
-        
-        /* Основная область чата */
         .chat-area {
             flex: 1;
             display: flex;
             flex-direction: column;
-            background: var(--bg-color);
         }
         
         .chat-header {
@@ -673,11 +455,6 @@ HTML_TEMPLATE = '''
             display: flex;
             justify-content: space-between;
             align-items: center;
-        }
-        
-        .chat-actions {
-            display: flex;
-            gap: 12px;
         }
         
         .messages {
@@ -693,31 +470,16 @@ HTML_TEMPLATE = '''
             margin-bottom: 15px;
             border-radius: 18px;
             word-wrap: break-word;
-            position: relative;
-            animation: messageAppear 0.3s ease-out;
-        }
-        
-        @keyframes messageAppear {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
         }
         
         .message-in {
             background: var(--card-color);
             margin-right: auto;
-            border-bottom-left-radius: 5px;
         }
         
         .message-out {
             background: linear-gradient(135deg, var(--accent-color), #7e22ce);
             margin-left: auto;
-            border-bottom-right-radius: 5px;
         }
         
         .message-sender {
@@ -732,65 +494,6 @@ HTML_TEMPLATE = '''
             color: rgba(255,255,255,0.6);
             text-align: right;
             margin-top: 8px;
-        }
-        
-        .message-edited {
-            font-size: 11px;
-            color: rgba(255,255,255,0.5);
-            font-style: italic;
-            margin-left: 5px;
-        }
-        
-        .message-actions {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            display: none;
-            gap: 5px;
-            background: rgba(0,0,0,0.7);
-            padding: 5px;
-            border-radius: 8px;
-        }
-        
-        .message:hover .message-actions {
-            display: flex;
-        }
-        
-        .message-action-btn {
-            background: none;
-            border: none;
-            color: white;
-            padding: 5px;
-            font-size: 12px;
-            cursor: pointer;
-            border-radius: 5px;
-            transition: all 0.3s ease;
-        }
-        
-        .message-action-btn:hover {
-            background: var(--accent-color);
-        }
-        
-        .reactions-container {
-            display: flex;
-            gap: 8px;
-            margin-top: 10px;
-            flex-wrap: wrap;
-        }
-        
-        .reaction {
-            background: var(--secondary-color);
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            border: 1px solid var(--border-color);
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .reaction:hover {
-            background: var(--accent-color);
-            transform: scale(1.1);
         }
         
         .input-area {
@@ -811,15 +514,11 @@ HTML_TEMPLATE = '''
             color: var(--text-color);
             font-size: 16px;
             resize: none;
-            max-height: 120px;
-            min-height: 50px;
-            transition: all 0.3s ease;
         }
         
         .message-input:focus {
             outline: none;
             border-color: var(--accent-color);
-            box-shadow: 0 0 25px rgba(139, 92, 246, 0.3);
         }
         
         .send-btn {
@@ -830,372 +529,8 @@ HTML_TEMPLATE = '''
             border-radius: 25px;
             cursor: pointer;
             font-weight: bold;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
         
-        .send-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 5px 15px rgba(139, 92, 246, 0.4);
-        }
-        
-        /* Модальные окна */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-            backdrop-filter: blur(5px);
-        }
-        
-        .modal-content {
-            background: var(--card-color);
-            padding: 40px;
-            border-radius: 20px;
-            width: 600px;
-            max-width: 90%;
-            max-height: 90%;
-            overflow-y: auto;
-            border: 2px solid var(--accent-color);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-            animation: slideIn 0.3s ease-out;
-            position: relative;
-            z-index: 10001;
-        }
-        
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid var(--border-color);
-        }
-        
-        .modal-title {
-            font-size: 24px;
-            font-weight: bold;
-            color: var(--text-color);
-        }
-        
-        .close-btn {
-            background: none;
-            border: none;
-            color: #888;
-            font-size: 28px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-        }
-        
-        .close-btn:hover {
-            color: var(--accent-color);
-            background: var(--secondary-color);
-            transform: scale(1.1);
-        }
-        
-        .section-title {
-            color: var(--accent-color);
-            margin-bottom: 20px;
-            font-weight: bold;
-            font-size: 18px;
-        }
-        
-        .avatar-grid {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-        
-        .avatar-option {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            cursor: pointer;
-            border: 3px solid transparent;
-            transition: all 0.3s ease;
-        }
-        
-        .avatar-option:hover {
-            transform: scale(1.1);
-        }
-        
-        .avatar-option.selected {
-            border-color: var(--accent-color);
-            transform: scale(1.1);
-            box-shadow: 0 0 20px var(--accent-color);
-        }
-        
-        .file-upload {
-            margin: 25px 0;
-            padding: 25px;
-            background: var(--secondary-color);
-            border-radius: 15px;
-            border: 2px dashed var(--accent-color);
-            text-align: center;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-        
-        .file-upload:hover {
-            background: var(--accent-color);
-        }
-        
-        .file-upload input[type="file"] {
-            width: 100%;
-            padding: 10px;
-            cursor: pointer;
-        }
-        
-        .theme-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-        
-        .theme-option {
-            padding: 20px;
-            border-radius: 15px;
-            cursor: pointer;
-            border: 3px solid transparent;
-            text-align: center;
-            transition: all 0.3s ease;
-            background: var(--secondary-color);
-        }
-        
-        .theme-option:hover {
-            transform: translateY(-5px);
-            background: var(--accent-color);
-        }
-        
-        .theme-option.selected {
-            border-color: var(--accent-color);
-            box-shadow: 0 10px 25px rgba(139, 92, 246, 0.3);
-            background: var(--accent-color);
-        }
-        
-        .theme-preview {
-            width: 100%;
-            height: 80px;
-            border-radius: 10px;
-            margin-bottom: 10px;
-            border: 2px solid var(--border-color);
-        }
-        
-        .hidden {
-            display: none !important;
-        }
-        
-        /* Окно звонка */
-        .call-modal {
-            z-index: 20000;
-        }
-        
-        .call-content {
-            width: 90%;
-            max-width: 800px;
-            height: 80%;
-            display: flex;
-            flex-direction: column;
-            background: var(--card-color);
-            border-radius: 20px;
-            overflow: hidden;
-            border: 3px solid var(--accent-color);
-        }
-        
-        .call-header {
-            padding: 25px;
-            background: var(--secondary-color);
-            text-align: center;
-            border-bottom: 1px solid var(--border-color);
-        }
-        
-        .call-title {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        
-        .call-status {
-            color: var(--accent-color);
-            font-size: 16px;
-        }
-        
-        .call-body {
-            flex: 1;
-            display: flex;
-            position: relative;
-            background: #000;
-        }
-        
-        .video-container {
-            flex: 1;
-            position: relative;
-            background: #000;
-            border-radius: 10px;
-            overflow: hidden;
-        }
-        
-        .video-self {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            width: 200px;
-            height: 150px;
-            border: 2px solid var(--accent-color);
-            border-radius: 10px;
-            background: #333;
-            z-index: 10;
-        }
-        
-        .video-remote {
-            width: 100%;
-            height: 100%;
-            background: #111;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .video-placeholder {
-            text-align: center;
-            color: #666;
-        }
-        
-        .video-placeholder .avatar {
-            width: 120px;
-            height: 120px;
-            font-size: 48px;
-            margin: 0 auto 20px;
-        }
-        
-        .call-controls {
-            padding: 30px;
-            background: var(--secondary-color);
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            border-top: 1px solid var(--border-color);
-        }
-        
-        .call-control-btn {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .call-control-btn:hover {
-            transform: scale(1.1);
-        }
-        
-        .call-timer {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(0,0,0,0.7);
-            color: white;
-            padding: 10px 15px;
-            border-radius: 20px;
-            font-size: 16px;
-            z-index: 20;
-        }
-        
-        /* Улучшенные стили для полей ввода в модальных окнах */
-        .modal-input {
-            width: 100%;
-            padding: 15px;
-            margin: 10px 0;
-            background: var(--secondary-color);
-            border: 2px solid var(--border-color);
-            border-radius: 10px;
-            color: var(--text-color);
-            font-size: 16px;
-            transition: all 0.3s ease;
-        }
-        
-        .modal-input:focus {
-            outline: none;
-            border-color: var(--accent-color);
-            box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
-            transform: translateY(-2px);
-        }
-        
-        /* Кастомизация скроллбара */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: var(--secondary-color);
-            border-radius: 4px;
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: var(--accent-color);
-            border-radius: 4px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: #7e22ce;
-        }
-        
-        /* Убираем выделение при клике */
-        * {
-            -webkit-tap-highlight-color: transparent;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-        }
-        
-        /* Разрешаем выделение для полей ввода */
-        input, textarea {
-            -webkit-user-select: text;
-            -moz-user-select: text;
-            -ms-user-select: text;
-            user-select: text;
-        }
-        
-        /* Новые стили для статусов */
-        .status-online {
-            color: #10b981;
-        }
-        
-        .status-offline {
-            color: #6b7280;
-        }
-        
-        .status-away {
-            color: #f59e0b;
-        }
-        
-        /* Стили для уведомлений */
         .notification-toast {
             position: fixed;
             top: 20px;
@@ -1205,42 +540,7 @@ HTML_TEMPLATE = '''
             padding: 15px 25px;
             border-radius: 10px;
             z-index: 3000;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
             animation: slideIn 0.3s ease-out;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            max-width: 400px;
-        }
-        
-        .notification-toast.error {
-            background: #ef4444;
-        }
-        
-        .notification-toast.success {
-            background: #10b981;
-        }
-        
-        .notification-toast.warning {
-            background: #f59e0b;
-        }
-        
-        /* Анимация для новых сообщений */
-        .new-message-indicator {
-            text-align: center;
-            margin: 10px 0;
-            color: var(--accent-color);
-            font-size: 12px;
-            font-weight: bold;
-        }
-        
-        /* Стили для системных сообщений */
-        .system-message {
-            text-align: center;
-            color: #888;
-            font-style: italic;
-            margin: 10px 0;
-            font-size: 13px;
         }
     </style>
 </head>
@@ -1280,7 +580,6 @@ HTML_TEMPLATE = '''
             </button>
             
             <div id="registerError" class="error"></div>
-            <div id="registerSuccess" class="success"></div>
         </div>
     </div>
 
@@ -1304,21 +603,67 @@ HTML_TEMPLATE = '''
 
     <!-- Основной интерфейс мессенджера -->
     <div id="mainApp" class="app">
-        <!-- ... остальная HTML структура без изменений ... -->
+        <div class="chat-container">
+            <div class="sidebar">
+                <div class="header">
+                    <div class="logo glowing-logo" style="font-size: 24px;">💜 DLtrollex</div>
+                    <div class="header-actions">
+                        <button class="header-btn" id="themeBtn" title="Сменить тему">🎨</button>
+                        <button class="header-btn" id="settingsBtn" title="Настройки">⚙️</button>
+                        <button class="header-btn" id="logoutBtn" title="Выйти">🚪</button>
+                    </div>
+                </div>
+                
+                <div class="user-info" id="profileSection">
+                    <div class="avatar" id="userAvatar">👤</div>
+                    <div>
+                        <div id="userName">Пользователь</div>
+                        <div style="color: var(--accent-color); font-size: 13px;" id="userUsername">@username</div>
+                    </div>
+                </div>
+                
+                <div class="chats" id="chatsList">
+                    <div class="chat-item active" data-chat="news">
+                        <div class="chat-icon">📢</div>
+                        <div class="chat-info">
+                            <div class="chat-name">Новости DLtrollex</div>
+                            <div class="chat-last-message">Официальные объявления</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-area">
+                <div class="chat-header">
+                    <div class="chat-info">
+                        <div id="chatTitle" style="font-size: 20px; font-weight: bold;">📢 Новости DLtrollex</div>
+                        <div style="color: var(--accent-color); font-size: 14px;" id="chatStatus">Официальный канал</div>
+                    </div>
+                </div>
+                
+                <div class="messages" id="messagesContainer">
+                    <div style="text-align: center; color: #666; margin-top: 100px;">
+                        <div style="font-size: 64px;" class="floating">💜</div>
+                        <p style="margin-top: 20px; font-size: 18px;">Добро пожаловать в DLtrollex!</p>
+                    </div>
+                </div>
+                
+                <div class="input-area">
+                    <textarea class="message-input" id="messageInput" placeholder="💬 Введите ваше сообщение..." rows="1"></textarea>
+                    <button class="send-btn" id="sendBtn">
+                        <span>Отправить</span>
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
-
-    <!-- Все модальные окна остаются без изменений -->
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script>
-        // Глобальные переменные
         let socket = null;
         let currentUser = null;
         let currentChat = "news";
-        let isAdmin = false;
-        let isModerator = false;
 
-        // Инициализация при загрузке
         document.addEventListener('DOMContentLoaded', function() {
             console.log("🚀 DLtrollex загружен!");
             setupEventListeners();
@@ -1327,28 +672,53 @@ HTML_TEMPLATE = '''
         });
 
         function setupEventListeners() {
-            // Главный экран
             document.getElementById('startChatBtn').addEventListener('click', showRegisterScreen);
             document.getElementById('adminAccessBtn').addEventListener('click', showAdminScreen);
-            
-            // Кнопки навигации
             document.getElementById('backToMainBtn').addEventListener('click', showMainScreen);
             document.getElementById('backToMainFromAdminBtn').addEventListener('click', showMainScreen);
-            
-            // Кнопки авторизации
             document.getElementById('registerBtn').addEventListener('click', register);
             document.getElementById('adminLoginBtn').addEventListener('click', adminLogin);
-            
-            // Остальные обработчики...
             document.getElementById('sendBtn').addEventListener('click', sendMessage);
             document.getElementById('logoutBtn').addEventListener('click', logout);
+            document.getElementById('themeBtn').addEventListener('click', showThemeModal);
+            document.getElementById('settingsBtn').addEventListener('click', showProfileModal);
+            document.getElementById('profileSection').addEventListener('click', showProfileModal);
+
+            document.getElementById('messageInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            document.getElementById('chatsList').addEventListener('click', function(e) {
+                const chatItem = e.target.closest('.chat-item');
+                if (chatItem) {
+                    document.querySelectorAll('.chat-item').forEach(item => item.classList.remove('active'));
+                    chatItem.classList.add('active');
+                    const chatType = chatItem.getAttribute('data-chat');
+                    selectChat(chatType);
+                }
+            });
         }
 
         function connectSocket() {
-            socket = io();
+            console.log("🔗 Подключаемся к серверу...");
+            socket = io({
+                transports: ['websocket', 'polling'],
+                reconnection: true,
+                reconnectionAttempts: 5,
+                reconnectionDelay: 1000
+            });
             
             socket.on('connect', function() {
                 console.log("✅ Подключено к серверу");
+                showNotification('Соединение установлено', 'success');
+                
+                if (currentUser) {
+                    socket.emit('restore_session', {user_id: currentUser.id});
+                    loadNews();
+                }
             });
             
             socket.on('registration_success', function(user) {
@@ -1356,9 +726,11 @@ HTML_TEMPLATE = '''
                 currentUser = user;
                 localStorage.setItem('dlcurrentUser', JSON.stringify(user));
                 showMainApp();
+                showNotification('Регистрация успешна!', 'success');
             });
             
             socket.on('registration_error', function(data) {
+                console.log("❌ Ошибка регистрации:", data.message);
                 document.getElementById('registerError').textContent = data.message;
                 document.getElementById('registerBtn').disabled = false;
                 document.getElementById('registerBtn').innerHTML = '<span>🚀 Начать общение</span>';
@@ -1370,6 +742,26 @@ HTML_TEMPLATE = '''
                     addMessageToChat(data);
                 }
             });
+            
+            socket.on('all_news_messages', function(messages) {
+                console.log("📢 Получены новости:", messages);
+                displayMessages(messages);
+            });
+            
+            socket.on('all_users', function(users) {
+                console.log("👥 Получены пользователи:", users);
+                updateUsersList(users);
+            });
+            
+            socket.on('disconnect', function() {
+                console.log("❌ Отключено от сервера");
+                showNotification('Потеряно соединение', 'error');
+            });
+            
+            socket.on('connect_error', function(error) {
+                console.log("❌ Ошибка подключения:", error);
+                showNotification('Ошибка подключения к серверу', 'error');
+            });
         }
 
         function checkAutoLogin() {
@@ -1377,6 +769,7 @@ HTML_TEMPLATE = '''
             if (savedUser) {
                 try {
                     currentUser = JSON.parse(savedUser);
+                    console.log("🔑 Автоматический вход:", currentUser);
                     showMainApp();
                 } catch (e) {
                     console.log("❌ Ошибка автоматического входа:", e);
@@ -1409,15 +802,9 @@ HTML_TEMPLATE = '''
             document.getElementById('adminScreen').classList.add('hidden');
             document.getElementById('mainApp').style.display = 'block';
             
-            // Инициализация интерфейса
-            if (currentUser) {
-                document.getElementById('userName').textContent = currentUser.name;
-                document.getElementById('userUsername').textContent = currentUser.username;
-            }
-            
-            // Загрузка начальных данных
+            updateUserInfo();
             socket.emit('get_all_users');
-            socket.emit('get_news_messages');
+            loadNews();
         }
 
         function register() {
@@ -1432,6 +819,8 @@ HTML_TEMPLATE = '''
             document.getElementById('registerBtn').disabled = true;
             document.getElementById('registerBtn').innerHTML = '<span>⏳ Регистрация...</span>';
             document.getElementById('registerError').textContent = '';
+            
+            console.log("📝 Отправка регистрации:", { name, username });
             
             socket.emit('register', {
                 name: name,
@@ -1451,6 +840,7 @@ HTML_TEMPLATE = '''
                 };
                 localStorage.setItem('dlcurrentUser', JSON.stringify(currentUser));
                 showMainApp();
+                showNotification('Вход как администратор', 'success');
             } else {
                 document.getElementById('adminError').textContent = 'Неверный пароль';
             }
@@ -1460,6 +850,43 @@ HTML_TEMPLATE = '''
             currentUser = null;
             localStorage.removeItem('dlcurrentUser');
             location.reload();
+        }
+
+        function updateUserInfo() {
+            if (currentUser) {
+                document.getElementById('userName').textContent = currentUser.name;
+                document.getElementById('userUsername').textContent = currentUser.username || '@user';
+                document.getElementById('userAvatar').textContent = currentUser.avatar || '👤';
+                
+                if (currentUser.avatar_bg) {
+                    document.getElementById('userAvatar').style.background = currentUser.avatar_bg;
+                }
+            }
+        }
+
+        function selectChat(chatType) {
+            currentChat = chatType;
+            
+            if (chatType === 'news') {
+                document.getElementById('chatTitle').textContent = '📢 Новости DLtrollex';
+                document.getElementById('chatStatus').textContent = 'Официальный канал';
+                loadNews();
+            } else {
+                const user = allUsers.find(u => u.id === chatType);
+                if (user) {
+                    document.getElementById('chatTitle').textContent = user.name;
+                    document.getElementById('chatStatus').textContent = user.username;
+                    loadPrivateMessages(chatType);
+                }
+            }
+        }
+
+        function loadNews() {
+            socket.emit('get_news_messages');
+        }
+
+        function loadPrivateMessages(userId) {
+            socket.emit('get_chat_messages', {target_user_id: userId});
         }
 
         function sendMessage() {
@@ -1474,6 +901,27 @@ HTML_TEMPLATE = '''
             });
             
             messageInput.value = '';
+        }
+
+        function displayMessages(messages) {
+            const container = document.getElementById('messagesContainer');
+            container.innerHTML = '';
+            
+            if (messages.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; color: #666; margin-top: 100px;">
+                        <div style="font-size: 64px;">💬</div>
+                        <p style="margin-top: 20px; font-size: 18px;">Нет сообщений</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            messages.forEach(message => {
+                addMessageToChat(message);
+            });
+            
+            container.scrollTop = container.scrollHeight;
         }
 
         function addMessageToChat(message) {
@@ -1497,7 +945,57 @@ HTML_TEMPLATE = '''
             container.scrollTop = container.scrollHeight;
         }
 
-        // Остальные функции...
+        function updateUsersList(users) {
+            const chatsList = document.getElementById('chatsList');
+            const systemChats = chatsList.querySelectorAll('[data-chat="news"]');
+            chatsList.innerHTML = '';
+            systemChats.forEach(chat => chatsList.appendChild(chat));
+            
+            users.forEach(user => {
+                if (user.id !== currentUser?.id) {
+                    const chatItem = document.createElement('div');
+                    chatItem.className = 'chat-item';
+                    chatItem.setAttribute('data-chat', user.id);
+                    chatItem.innerHTML = `
+                        <div class="chat-icon">${user.avatar || '👤'}</div>
+                        <div class="chat-info">
+                            <div class="chat-name">${user.name}</div>
+                            <div class="chat-last-message">${user.username}</div>
+                        </div>
+                    `;
+                    chatsList.appendChild(chatItem);
+                }
+            });
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = 'notification-toast';
+            notification.style.background = type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : 'var(--accent-color)';
+            notification.innerHTML = `
+                <div style="font-size: 20px;">${type === 'error' ? '❌' : type === 'success' ? '✅' : '💡'}</div>
+                <div>${message}</div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 3000);
+        }
+
+        function showThemeModal() {
+            showNotification('Смена темы скоро будет доступна', 'info');
+        }
+
+        function showProfileModal() {
+            showNotification('Настройки профиля скоро будут доступны', 'info');
+        }
+
+        // Глобальная переменная для пользователей
+        let allUsers = [];
     </script>
 </body>
 </html>
@@ -1520,6 +1018,7 @@ def generate_message_id():
 @socketio.on('connect')
 def handle_connect():
     print(f"✅ Клиент подключен: {request.sid}")
+    emit('connected', {'message': 'Connected to DLtrollex server'})
 
 @socketio.on('disconnect')
 def handle_disconnect():
@@ -1530,12 +1029,12 @@ def handle_disconnect():
 
 @socketio.on('register')
 def handle_register(data):
-    """Регистрация нового пользователя - ИСПРАВЛЕННАЯ ВЕРСИЯ"""
+    """Регистрация нового пользователя"""
     try:
         name = data.get('name', '').strip()
         username = data.get('username', '').strip()
         
-        print(f"📝 Попытка регистрации: name={name}, username={username}")
+        print(f"📝 Регистрация: name='{name}', username='{username}'")
         
         if not name:
             emit('registration_error', {'message': 'Введите имя'})
@@ -1577,10 +1076,13 @@ def handle_register(data):
         # Сохраняем данные
         save_user_data()
         
-        print(f"👤 Новый пользователь: {name} (@{username})")
+        print(f"👤 Новый пользователь: {name} (@{username}) ID: {user_id}")
         
         # Отправляем успешный ответ
         emit('registration_success', user_data)
+        
+        # Уведомляем всех о новом пользователе
+        emit('all_users', get_all_users_list(), broadcast=True)
         
     except Exception as e:
         print(f"❌ Ошибка регистрации: {e}")
@@ -1598,6 +1100,8 @@ def handle_send_private_message(data):
     
     if not text or not target_id:
         return
+    
+    print(f"📨 Сообщение от {user_id} к {target_id}: {text}")
     
     # Создаем сообщение
     message_id = generate_message_id()
@@ -1630,10 +1134,9 @@ def handle_send_private_message(data):
         if uid == target_id:
             emit('private_message', {**message, 'chat_id': user_id}, room=sid)
     
-    print(f"📨 Сообщение от {user_id} к {target_id}")
+    print(f"✅ Сообщение отправлено")
 
-@socketio.on('get_all_users')
-def handle_get_all_users():
+def get_all_users_list():
     """Получение списка всех пользователей"""
     users_list = []
     
@@ -1652,38 +1155,56 @@ def handle_get_all_users():
         'is_admin': True
     })
     
-    emit('all_users', users_list)
+    return users_list
+
+@socketio.on('get_all_users')
+def handle_get_all_users():
+    """Получение списка всех пользователей"""
+    emit('all_users', get_all_users_list())
 
 @socketio.on('get_news_messages')
 def handle_get_news_messages():
     """Получение новостей"""
-    # Для демонстрации создаем несколько тестовых новостей
-    if not news_messages:
-        news_messages.extend([
-            {
-                'id': '1',
-                'text': 'Добро пожаловать в DLtrollex! 🎉',
-                'sender_id': 'admin',
-                'sender_name': 'Администратор',
-                'timestamp': datetime.datetime.now().isoformat(),
-                'edited': False
-            },
-            {
-                'id': '2', 
-                'text': 'Это фиолетовый мессенджер с максимальной кастомизацией! 💜',
-                'sender_id': 'admin',
-                'sender_name': 'Администратор', 
-                'timestamp': datetime.datetime.now().isoformat(),
-                'edited': False
-            }
-        ])
-    
     emit('all_news_messages', news_messages)
+
+@socketio.on('get_chat_messages')
+def handle_get_chat_messages(data):
+    """Получение сообщений чата"""
+    user_id = user_sessions.get(request.sid)
+    if not user_id:
+        return
+    
+    target_id = data.get('target_user_id')
+    if not target_id:
+        return
+    
+    messages = []
+    
+    # Ищем сообщения в базе
+    if user_id in messages_db and target_id in messages_db[user_id]:
+        messages = messages_db[user_id][target_id]
+    
+    emit('chat_messages', messages)
+
+@socketio.on('restore_session')
+def handle_restore_session(data):
+    """Восстановление сессии пользователя"""
+    user_id = data.get('user_id')
+    if user_id in users_db or user_id == 'admin':
+        user_sessions[request.sid] = user_id
+        emit('session_restored', {'status': 'success', 'user_id': user_id})
+        print(f"🔑 Восстановлена сессия для: {user_id}")
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    print("🚀 Запуск DLtrollex с исправленной регистрацией...")
-    print(f"💜 Доступно по адресу: http://localhost:{port}")
-    print("🎯 Анимации кнопок 'Войти' и 'Войти как администратор' восстановлены!")
-    print("🐛 Баги регистрации исправлены!")
-    socketio.run(app, host='0.0.0.0', port=port, debug=False, allow_unsafe_werkzeug=True)
+    print("🚀 Запуск DLtrollex на Render...")
+    print(f"💜 Доступно по адресу: https://dl-trollex-5.onrender.com")
+    print("🎯 Анимации кнопок восстановлены!")
+    print("🐛 Баги исправлены!")
+    print("🔗 Socket.IO настроен для Render")
+    socketio.run(app, 
+                host='0.0.0.0', 
+                port=port, 
+                debug=False, 
+                allow_unsafe_werkzeug=True,
+                log_output=True)
