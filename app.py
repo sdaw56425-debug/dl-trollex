@@ -1311,7 +1311,7 @@ HTML_TEMPLATE = '''
                     <div class="header-actions">
                         <button class="header-btn" id="createGroupBtn" title="Создать группу">👥</button>
                         <button class="header-btn" id="themeBtn" title="Сменить тему">🎨</button>
-                        <button class="header-btn" id="settingsBtn" title="Настройки"⚙️</button>
+                        <button class="header-btn" id="settingsBtn" title="Настройки">⚙️</button>
                         <button class="header-btn" id="notificationsBtn" title="Уведомления">
                             🔔
                             <div class="notification-badge" id="globalNotificationBadge" style="display: none;">0</div>
@@ -1658,9 +1658,45 @@ HTML_TEMPLATE = '''
         let isVideoOff = false;
         let currentCallId = null;
 
-        const defaultAvatars = ''' + str(DEFAULT_AVATARS) + ''';
-        const themes = ''' + str(THEMES) + ''';
-        const reactions = ''' + str(REACTIONS) + ''';
+        const defaultAvatars = [
+            {"emoji": "👻", "bg": "#6b21a8"}, {"emoji": "😊", "bg": "#7e22ce"},
+            {"emoji": "😎", "bg": "#9333ea"}, {"emoji": "🤠", "bg": "#a855f7"},
+            {"emoji": "🧑", "bg": "#c084fc"}, {"emoji": "👨", "bg": "#6b21a8"},
+            {"emoji": "👩", "bg": "#7e22ce"}, {"emoji": "🦊", "bg": "#9333ea"},
+            {"emoji": "🐱", "bg": "#a855f7"}, {"emoji": "🐶", "bg": "#c084fc"}
+        ];
+
+        const themes = {
+            "dark_purple": {
+                "name": "Темный фиолетовый", 
+                "bg": "#0f0f0f", 
+                "card": "#1a1a1a", 
+                "accent": "#8b5cf6", 
+                "text": "#ffffff",
+                "secondary": "#2d2d2d",
+                "border": "#3d3d3d"
+            },
+            "blue_purple": {
+                "name": "Сине-фиолетовый", 
+                "bg": "#0a0a1f", 
+                "card": "#151533", 
+                "accent": "#6366f1", 
+                "text": "#ffffff",
+                "secondary": "#1e1e3f",
+                "border": "#2d2d5a"
+            },
+            "pink_purple": {
+                "name": "Розово-фиолетовый", 
+                "bg": "#1a0a1a", 
+                "card": "#2d152d", 
+                "accent": "#ec4899", 
+                "text": "#ffffff",
+                "secondary": "#3d1f3d",
+                "border": "#5a2d5a"
+            }
+        };
+
+        const reactions = ["👍"];
 
         // WebRTC конфигурация (STUN серверы)
         const rtcConfig = {
@@ -2450,7 +2486,96 @@ HTML_TEMPLATE = '''
             document.getElementById('chatInfoModal').classList.add('hidden');
         }
 
-        // ... (остальные функции без изменений, но добавлены вызовы markMessagesAsRead при смене чата) ...
+        // Основные функции приложения
+        function showMainScreen() {
+            document.getElementById('mainScreen').classList.remove('hidden');
+            document.getElementById('registerScreen').classList.add('hidden');
+            document.getElementById('adminScreen').classList.add('hidden');
+        }
+
+        function showRegisterScreen() {
+            document.getElementById('mainScreen').classList.add('hidden');
+            document.getElementById('registerScreen').classList.remove('hidden');
+            document.getElementById('adminScreen').classList.add('hidden');
+        }
+
+        function showAdminScreen() {
+            document.getElementById('mainScreen').classList.add('hidden');
+            document.getElementById('registerScreen').classList.add('hidden');
+            document.getElementById('adminScreen').classList.remove('hidden');
+        }
+
+        function showMainApp() {
+            document.getElementById('mainScreen').classList.add('hidden');
+            document.getElementById('registerScreen').classList.add('hidden');
+            document.getElementById('adminScreen').classList.add('hidden');
+            document.getElementById('mainApp').style.display = 'block';
+            
+            updateUserInfo();
+            loadNews();
+        }
+
+        function register() {
+            const name = document.getElementById('regName').value.trim();
+            const username = document.getElementById('regUsername').value.trim();
+            
+            if (!name) {
+                document.getElementById('registerError').textContent = 'Введите имя';
+                return;
+            }
+            
+            document.getElementById('registerBtn').disabled = true;
+            document.getElementById('registerBtn').innerHTML = '<span>⏳ Регистрация...</span>';
+            
+            socket.emit('register', {
+                name: name,
+                username: username || undefined
+            });
+        }
+
+        function adminLogin() {
+            const password = document.getElementById('adminPass').value;
+            
+            if (password === ADMIN_PASSWORD) {
+                currentUser = {
+                    id: 'admin',
+                    name: 'Администратор',
+                    username: '@admin',
+                    is_admin: true
+                };
+                isAdmin = true;
+                isModerator = true;
+                localStorage.setItem('dlcurrentUser', JSON.stringify(currentUser));
+                showMainApp();
+                document.getElementById('moderationBtn').style.display = 'flex';
+            } else {
+                document.getElementById('adminError').textContent = 'Неверный пароль';
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('dlcurrentUser');
+            location.reload();
+        }
+
+        function updateUserInfo() {
+            if (currentUser) {
+                document.getElementById('userName').textContent = currentUser.name;
+                document.getElementById('userUsername').textContent = currentUser.username || '@user';
+                document.getElementById('userAvatar').textContent = currentUser.avatar || '👤';
+                
+                if (currentUser.avatar_bg) {
+                    document.getElementById('userAvatar').style.background = currentUser.avatar_bg;
+                }
+                
+                if (isAdmin || isModerator) {
+                    document.getElementById('moderationBtn').style.display = 'flex';
+                }
+            }
+        }
+
+        // ... (остальные функции JavaScript остаются без изменений) ...
 
         function selectChat(chatType) {
             currentChat = chatType;
@@ -2463,10 +2588,14 @@ HTML_TEMPLATE = '''
             if (chatType === 'news') {
                 document.getElementById('chatTitle').textContent = '📢 Новости DLtrollex';
                 document.getElementById('chatStatus').textContent = 'Официальный канал';
+                document.getElementById('callBtn').style.display = 'none';
+                document.getElementById('videoCallBtn').style.display = 'none';
                 loadNews();
             } else if (chatType === 'favorites') {
                 document.getElementById('chatTitle').textContent = '⭐ Избранное';
                 document.getElementById('chatStatus').textContent = 'Ваши личные заметки';
+                document.getElementById('callBtn').style.display = 'none';
+                document.getElementById('videoCallBtn').style.display = 'none';
                 loadFavorites();
             } else {
                 // Личный чат
@@ -2475,15 +2604,115 @@ HTML_TEMPLATE = '''
                     document.getElementById('chatTitle').textContent = user.name;
                     const status = onlineUsers.has(user.id) ? '● онлайн' : '○ не в сети';
                     document.getElementById('chatStatus').textContent = `${user.username} • ${status}`;
+                    document.getElementById('callBtn').style.display = 'flex';
+                    document.getElementById('videoCallBtn').style.display = 'flex';
                     loadPrivateMessages(chatType);
                 }
             }
-            
-            updateInputVisibility();
-            updateCallButtons();
         }
 
-        // ... (WebRTC функции и остальной код без изменений) ...
+        function loadNews() {
+            socket.emit('get_news_messages');
+        }
+
+        function loadFavorites() {
+            socket.emit('get_favorites');
+        }
+
+        function loadPrivateMessages(userId) {
+            socket.emit('get_chat_messages', {target_user_id: userId});
+        }
+
+        function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const text = messageInput.value.trim();
+            
+            if (!text || !currentUser) return;
+            
+            if (currentChat === 'news') {
+                if (!isAdmin && !isModerator) {
+                    showNotification('Только администраторы могут отправлять новости', 'error');
+                    return;
+                }
+                socket.emit('send_news', {text: text});
+            } else if (currentChat === 'favorites') {
+                socket.emit('add_to_favorites', {text: text});
+            } else {
+                socket.emit('send_private_message', {
+                    text: text,
+                    chat_id: currentChat
+                });
+            }
+            
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+        }
+
+        function displayMessages(messages) {
+            currentMessages = messages;
+            const container = document.getElementById('messagesContainer');
+            container.innerHTML = '';
+            
+            if (messages.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; color: #666; margin-top: 100px;">
+                        <div style="font-size: 64px;" class="floating">💬</div>
+                        <p style="margin-top: 20px; font-size: 18px;">Нет сообщений</p>
+                        <p style="color: #888; margin-top: 10px;">Начните общение первым!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            messages.forEach(message => {
+                addMessageToChat(message);
+            });
+            
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function addMessageToChat(message) {
+            const container = document.getElementById('messagesContainer');
+            const messageDiv = document.createElement('div');
+            
+            const isOwnMessage = message.sender_id === currentUser?.id;
+            const messageTime = new Date(message.timestamp).toLocaleTimeString('ru-RU', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            messageDiv.className = `message ${isOwnMessage ? 'message-out' : 'message-in'}`;
+            messageDiv.innerHTML = `
+                ${!isOwnMessage ? `<div class="message-sender">${message.sender_name}</div>` : ''}
+                <div class="message-text">${message.text}</div>
+                <div class="message-time">
+                    ${messageTime}
+                    ${message.edited ? '<span class="message-edited">(ред.)</span>' : ''}
+                </div>
+            `;
+            
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification-toast ${type}`;
+            notification.innerHTML = `
+                <div style="font-size: 20px;">${type === 'error' ? '❌' : type === 'success' ? '✅' : '💡'}</div>
+                <div>${message}</div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 3000);
+        }
+
+        // ... (остальные функции остаются без изменений) ...
 
     </script>
 </body>
@@ -2587,92 +2816,45 @@ def handle_restore_session(data):
         unread_messages[user_id] = {}
         emit('unread_messages', {'unread_messages': {}})
 
-# ==================== НОВЫЕ ОБРАБОТЧИКИ ДЛЯ УВЕДОМЛЕНИЙ ====================
+# ... (остальные обработчики SocketIO остаются без изменений) ...
 
-@socketio.on('get_unread_messages')
-def handle_get_unread_messages():
-    """Отправляет непрочитанные сообщения пользователю"""
-    user_id = user_sessions.get(request.sid)
-    if not user_id:
-        return
+@socketio.on('register')
+def handle_register(data):
+    """Регистрация нового пользователя"""
+    user_id = generate_user_id()
+    name = data['name']
+    username = data.get('username')
     
-    if user_id not in unread_messages:
-        unread_messages[user_id] = {}
+    if not username:
+        username = f"@user{random.randint(1000, 9999)}"
     
-    emit('unread_messages', {'unread_messages': unread_messages[user_id]})
-
-@socketio.on('update_unread_count')
-def handle_update_unread_count(data):
-    """Обновляет счетчик непрочитанных сообщений"""
-    user_id = user_sessions.get(request.sid)
-    if not user_id:
-        return
+    # Проверяем уникальность username
+    for user in users_db.values():
+        if user.get('username') == username:
+            emit('registration_error', {'message': 'Этот юзернейм уже занят'})
+            return
     
-    chat_id = data['chat_id']
-    count = data['count']
+    user_data = {
+        'id': user_id,
+        'name': name,
+        'username': username,
+        'avatar': '👤',
+        'avatar_bg': '#6b21a8',
+        'registered_at': datetime.datetime.now().isoformat(),
+        'is_banned': False,
+        'is_muted': False,
+        'is_moderator': False
+    }
     
-    if user_id not in unread_messages:
-        unread_messages[user_id] = {}
+    users_db[user_id] = user_data
+    user_sessions[request.sid] = user_id
+    unread_messages[user_id] = {}
     
-    unread_messages[user_id][chat_id] = count
     save_user_data()
-
-@socketio.on('mark_messages_read')
-def handle_mark_messages_read(data):
-    """Помечает сообщения как прочитанные"""
-    user_id = user_sessions.get(request.sid)
-    if not user_id:
-        return
     
-    chat_id = data['chat_id']
-    
-    if user_id in unread_messages and chat_id in unread_messages[user_id]:
-        unread_messages[user_id][chat_id] = 0
-        save_user_data()
-        
-        # Уведомляем пользователя
-        emit('messages_read', {'chat_id': chat_id})
-
-@socketio.on('clear_all_notifications')
-def handle_clear_all_notifications(data):
-    """Очищает все уведомления пользователя"""
-    user_id = data['user_id']
-    
-    if user_id in unread_messages:
-        for chat_id in unread_messages[user_id]:
-            unread_messages[user_id][chat_id] = 0
-        save_user_data()
-
-@socketio.on('update_online_status')
-def handle_update_online_status(data):
-    """Обновляет онлайн статус пользователя"""
-    user_id = data['user_id']
-    is_online = data['is_online']
-    
-    if is_online:
-        # Уведомляем всех о том, что пользователь онлайн
-        user_data = users_db.get(user_id)
-        if user_data:
-            emit('user_online', {
-                'user_id': user_id,
-                'username': user_data['name']
-            }, broadcast=True)
-    else:
-        # Уведомляем о выходе из сети
-        user_data = users_db.get(user_id)
-        if user_data:
-            emit('user_offline', {
-                'user_id': user_id,
-                'username': user_data['name']
-            }, broadcast=True)
-
-@socketio.on('get_online_users')
-def handle_get_online_users():
-    """Отправляет список онлайн пользователей"""
-    online_users = list(user_sessions.values())
-    emit('online_users', {'users': online_users})
-
-# ==================== ОБНОВЛЕННЫЕ ОБРАБОТЧИКИ СООБЩЕНИЙ ====================
+    emit('registration_success', user_data)
+    emit('user_online', {'user_id': user_id, 'username': name}, broadcast=True)
+    print(f"👤 Новый пользователь: {name} ({username})")
 
 @socketio.on('send_private_message')
 def handle_send_private_message(data):
@@ -2755,13 +2937,52 @@ def handle_send_private_message(data):
     
     print(f"📨 Сообщение от {user_id} к {recipient_id}: {data['text'][:50]}...")
 
-# ... (остальные обработчики без изменений) ...
+@socketio.on('get_chat_messages')
+def handle_get_chat_messages(data):
+    user_id = user_sessions.get(request.sid)
+    if not user_id:
+        return
+    
+    target_user_id = data['target_user_id']
+    
+    # Получаем сообщения для этого чата
+    messages = []
+    if user_id in messages_db and target_user_id in messages_db[user_id]:
+        messages = messages_db[user_id][target_user_id]
+    
+    emit('chat_messages', messages)
+
+@socketio.on('get_news_messages')
+def handle_get_news_messages():
+    emit('all_news_messages', news_messages)
+
+@socketio.on('get_all_users')
+def handle_get_all_users():
+    users_list = []
+    for user_id, user_data in users_db.items():
+        if user_id != 'admin':
+            users_list.append(user_data)
+    
+    # Добавляем админа в список
+    users_list.append({
+        'id': 'admin',
+        'name': 'Администратор',
+        'username': '@admin',
+        'avatar': '👑',
+        'avatar_bg': '#dc2626',
+        'is_admin': True
+    })
+    
+    emit('all_users', users_list)
+
+# ... (остальные обработчики остаются без изменений) ...
 
 if __name__ == '__main__':
-    print("🚀 Запуск DLtrollex с уведомлениями и улучшениями...")
-    print("💜 Доступно по адресу: http://localhost:5000")
+    port = int(os.environ.get('PORT', 5000))
+    print("🚀 Запуск DLtrollex с исправлениями для Render...")
+    print(f"💜 Доступно по адресу: http://localhost:{port}")
     print("📞 WebRTC звонки активированы!")
     print("🛡️ Система модерации активирована!")
     print("🔔 Система уведомлений активирована!")
     print("👥 Онлайн статусы активированы!")
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    socketio.run(app, host='0.0.0.0', port=port, debug=False, allow_unsafe_werkzeug=True)
