@@ -1,4 +1,4 @@
-# DLtrollex - УЛЬТРА КАСТОМИЗИРУЕМЫЙ ЧАТ С ЗВОНКАМИ (ПОЛНОСТЬЮ ИСПРАВЛЕННЫЙ)
+# DLtrollex - УЛЬТРА КАСТОМИЗИРУЕМЫЙ ЧАТ С ЗВОНКАМИ (ДЛЯ RENDER)
 from flask import Flask, render_template_string, request, send_from_directory
 from flask_socketio import SocketIO, emit
 import datetime
@@ -14,10 +14,12 @@ app.config['SECRET_KEY'] = 'mydltrollex2024'
 app.config['UPLOAD_FOLDER'] = 'user_avatars'
 app.config['DATA_FOLDER'] = 'user_data'
 
-# Настройки для Render
+# Правильные настройки для Render
 socketio = SocketIO(app, 
                    cors_allowed_origins="*",
-                   async_mode='threading')
+                   async_mode='eventlet',
+                   logger=False,
+                   engineio_logger=False)
 
 # Создаем папки
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -28,30 +30,9 @@ users_db = {}
 messages_db = {}
 user_sessions = {}
 news_messages = []
-user_settings = {}
-favorites_db = {}
-groups_db = {}
-message_reactions = {}
-active_calls = {}
-moderation_db = {
-    'banned_users': [],
-    'muted_users': [],
-    'deleted_messages': [],
-    'moderators': []
-}
-unread_messages = {}
 
 # Админ
 ADMIN_PASSWORD = "dltrollex123"
-
-# Стандартные аватарки
-DEFAULT_AVATARS = [
-    {"emoji": "👻", "bg": "#6b21a8"}, {"emoji": "😊", "bg": "#7e22ce"},
-    {"emoji": "😎", "bg": "#9333ea"}, {"emoji": "🤠", "bg": "#a855f7"},
-    {"emoji": "🧑", "bg": "#c084fc"}, {"emoji": "👨", "bg": "#6b21a8"},
-    {"emoji": "👩", "bg": "#7e22ce"}, {"emoji": "🦊", "bg": "#9333ea"},
-    {"emoji": "🐱", "bg": "#a855f7"}, {"emoji": "🐶", "bg": "#c084fc"}
-]
 
 # Функции для сохранения/загрузки данных
 def save_user_data():
@@ -61,12 +42,6 @@ def save_user_data():
             'users_db': users_db,
             'messages_db': messages_db,
             'news_messages': news_messages,
-            'user_settings': user_settings,
-            'favorites_db': favorites_db,
-            'groups_db': groups_db,
-            'message_reactions': message_reactions,
-            'moderation_db': moderation_db,
-            'unread_messages': unread_messages
         }
         with open(os.path.join(app.config['DATA_FOLDER'], 'data.pkl'), 'wb') as f:
             pickle.dump(data, f)
@@ -76,24 +51,13 @@ def save_user_data():
 
 def load_user_data():
     """Загружает данные пользователей"""
-    global users_db, messages_db, news_messages, user_settings, favorites_db, groups_db, message_reactions, moderation_db, unread_messages
+    global users_db, messages_db, news_messages
     try:
         with open(os.path.join(app.config['DATA_FOLDER'], 'data.pkl'), 'rb') as f:
             data = pickle.load(f)
             users_db = data.get('users_db', {})
             messages_db = data.get('messages_db', {})
             news_messages = data.get('news_messages', [])
-            user_settings = data.get('user_settings', {})
-            favorites_db = data.get('favorites_db', {})
-            groups_db = data.get('groups_db', {})
-            message_reactions = data.get('message_reactions', {})
-            moderation_db = data.get('moderation_db', {
-                'banned_users': [],
-                'muted_users': [],
-                'deleted_messages': [],
-                'moderators': []
-            })
-            unread_messages = data.get('unread_messages', {})
         print("📂 Данные загружены")
     except FileNotFoundError:
         print("📂 Файл данных не найден, создаем новую базу")
@@ -128,6 +92,10 @@ load_user_data()
 def favicon():
     return '', 204
 
+@app.route('/health')
+def health_check():
+    return {'status': 'healthy', 'message': 'DLtrollex is running'}
+
 HTML_TEMPLATE = '''
 <!DOCTYPE html>
 <html>
@@ -161,7 +129,6 @@ HTML_TEMPLATE = '''
             transition: all 0.3s ease;
         }
         
-        /* Анимация свечения */
         @keyframes glow {
             0%, 100% {
                 text-shadow: 0 0 10px var(--accent-color), 0 0 20px var(--accent-color);
@@ -181,11 +148,6 @@ HTML_TEMPLATE = '''
             50% { transform: scale(1.05); }
         }
         
-        @keyframes slideIn {
-            from { transform: translateY(-20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        
         .glowing-logo {
             animation: glow 3s ease-in-out infinite;
         }
@@ -198,11 +160,6 @@ HTML_TEMPLATE = '''
             animation: pulse 2s ease-in-out infinite;
         }
         
-        .slide-in {
-            animation: slideIn 0.5s ease-out;
-        }
-        
-        /* Экраны входа */
         .screen {
             position: fixed;
             top: 0;
@@ -297,17 +254,11 @@ HTML_TEMPLATE = '''
             cursor: pointer;
             margin-bottom: 20px;
             transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
         }
         
         .btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 25px rgba(139, 92, 246, 0.4);
-        }
-        
-        .btn:active {
-            transform: translateY(0);
         }
         
         .btn-admin {
@@ -327,211 +278,14 @@ HTML_TEMPLATE = '''
             border: 1px solid #ef4444;
         }
         
-        .success {
-            color: #10b981;
-            margin-top: 15px;
-            padding: 10px;
-            background: rgba(16, 185, 129, 0.1);
-            border-radius: 8px;
-            border: 1px solid #10b981;
-        }
-        
         .hidden {
             display: none !important;
         }
         
-        /* Основной интерфейс чата */
         .app {
             display: none;
             height: 100vh;
             background: var(--bg-color);
-        }
-        
-        .chat-container {
-            display: flex;
-            height: 100vh;
-            background: var(--bg-color);
-        }
-        
-        .sidebar {
-            width: 350px;
-            background: var(--card-color);
-            border-right: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .header {
-            padding: 25px;
-            background: var(--card-color);
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .header-actions {
-            display: flex;
-            gap: 12px;
-        }
-        
-        .header-btn {
-            background: var(--secondary-color);
-            border: none;
-            border-radius: 10px;
-            width: 45px;
-            height: 45px;
-            color: var(--accent-color);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            transition: all 0.3s ease;
-        }
-        
-        .header-btn:hover {
-            background: var(--accent-color);
-            color: white;
-            transform: scale(1.1);
-        }
-        
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 20px;
-            background: var(--secondary-color);
-            border-bottom: 1px solid var(--border-color);
-            cursor: pointer;
-        }
-        
-        .avatar {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: var(--accent-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 20px;
-        }
-        
-        .chats {
-            flex: 1;
-            overflow-y: auto;
-            padding: 15px;
-        }
-        
-        .chat-item {
-            padding: 20px;
-            margin-bottom: 8px;
-            background: var(--secondary-color);
-            border-radius: 15px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            transition: all 0.3s ease;
-        }
-        
-        .chat-item:hover {
-            background: var(--accent-color);
-            transform: translateX(5px);
-        }
-        
-        .chat-item.active {
-            background: var(--accent-color);
-        }
-        
-        .chat-area {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .chat-header {
-            padding: 25px;
-            background: var(--card-color);
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .messages {
-            flex: 1;
-            padding: 30px;
-            overflow-y: auto;
-            background: var(--bg-color);
-        }
-        
-        .message {
-            max-width: 65%;
-            padding: 15px 20px;
-            margin-bottom: 15px;
-            border-radius: 18px;
-            word-wrap: break-word;
-        }
-        
-        .message-in {
-            background: var(--card-color);
-            margin-right: auto;
-        }
-        
-        .message-out {
-            background: linear-gradient(135deg, var(--accent-color), #7e22ce);
-            margin-left: auto;
-        }
-        
-        .message-sender {
-            font-size: 13px;
-            color: var(--accent-color);
-            margin-bottom: 8px;
-            font-weight: bold;
-        }
-        
-        .message-time {
-            font-size: 11px;
-            color: rgba(255,255,255,0.6);
-            text-align: right;
-            margin-top: 8px;
-        }
-        
-        .input-area {
-            padding: 25px;
-            background: var(--card-color);
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            gap: 15px;
-            align-items: flex-end;
-        }
-        
-        .message-input {
-            flex: 1;
-            padding: 18px;
-            background: var(--secondary-color);
-            border: 2px solid var(--border-color);
-            border-radius: 25px;
-            color: var(--text-color);
-            font-size: 16px;
-            resize: none;
-        }
-        
-        .message-input:focus {
-            outline: none;
-            border-color: var(--accent-color);
-        }
-        
-        .send-btn {
-            padding: 18px 25px;
-            background: linear-gradient(135deg, var(--accent-color), #7e22ce);
-            color: white;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            font-weight: bold;
         }
         
         .notification-toast {
@@ -543,7 +297,12 @@ HTML_TEMPLATE = '''
             padding: 15px 25px;
             border-radius: 10px;
             z-index: 3000;
-            animation: slideIn 0.3s ease-out;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: var(--accent-color);
         }
     </style>
 </head>
@@ -561,6 +320,10 @@ HTML_TEMPLATE = '''
             <button class="btn btn-admin pulse" id="adminAccessBtn">
                 <span>👑 Войти как администратор</span>
             </button>
+            
+            <div id="loading" class="loading hidden">
+                <p>Подключение к серверу...</p>
+            </div>
         </div>
     </div>
 
@@ -606,58 +369,11 @@ HTML_TEMPLATE = '''
 
     <!-- Основной интерфейс мессенджера -->
     <div id="mainApp" class="app">
-        <div class="chat-container">
-            <div class="sidebar">
-                <div class="header">
-                    <div class="logo glowing-logo" style="font-size: 24px;">💜 DLtrollex</div>
-                    <div class="header-actions">
-                        <button class="header-btn" id="themeBtn" title="Сменить тему">🎨</button>
-                        <button class="header-btn" id="settingsBtn" title="Настройки">⚙️</button>
-                        <button class="header-btn" id="logoutBtn" title="Выйти">🚪</button>
-                    </div>
-                </div>
-                
-                <div class="user-info" id="profileSection">
-                    <div class="avatar" id="userAvatar">👤</div>
-                    <div>
-                        <div id="userName">Пользователь</div>
-                        <div style="color: var(--accent-color); font-size: 13px;" id="userUsername">@username</div>
-                    </div>
-                </div>
-                
-                <div class="chats" id="chatsList">
-                    <div class="chat-item active" data-chat="news">
-                        <div class="chat-icon">📢</div>
-                        <div class="chat-info">
-                            <div class="chat-name">Новости DLtrollex</div>
-                            <div class="chat-last-message">Официальные объявления</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="chat-area">
-                <div class="chat-header">
-                    <div class="chat-info">
-                        <div id="chatTitle" style="font-size: 20px; font-weight: bold;">📢 Новости DLtrollex</div>
-                        <div style="color: var(--accent-color); font-size: 14px;" id="chatStatus">Официальный канал</div>
-                    </div>
-                </div>
-                
-                <div class="messages" id="messagesContainer">
-                    <div style="text-align: center; color: #666; margin-top: 100px;">
-                        <div style="font-size: 64px;" class="floating">💜</div>
-                        <p style="margin-top: 20px; font-size: 18px;">Добро пожаловать в DLtrollex!</p>
-                    </div>
-                </div>
-                
-                <div class="input-area">
-                    <textarea class="message-input" id="messageInput" placeholder="💬 Введите ваше сообщение..." rows="1"></textarea>
-                    <button class="send-btn" id="sendBtn">
-                        <span>Отправить</span>
-                    </button>
-                </div>
-            </div>
+        <div style="text-align: center; padding: 100px;">
+            <div class="logo glowing-logo" style="font-size: 64px;">💜</div>
+            <h1>DLtrollex</h1>
+            <p>Мессенджер загружается...</p>
+            <p style="color: #888; margin-top: 20px;">Если загрузка занимает много времени, проверьте подключение к интернету</p>
         </div>
     </div>
 
@@ -665,8 +381,6 @@ HTML_TEMPLATE = '''
     <script>
         let socket = null;
         let currentUser = null;
-        let currentChat = "news";
-        let allUsers = [];
 
         document.addEventListener('DOMContentLoaded', function() {
             console.log("🚀 DLtrollex загружен!");
@@ -682,47 +396,24 @@ HTML_TEMPLATE = '''
             document.getElementById('backToMainFromAdminBtn').addEventListener('click', showMainScreen);
             document.getElementById('registerBtn').addEventListener('click', register);
             document.getElementById('adminLoginBtn').addEventListener('click', adminLogin);
-            document.getElementById('sendBtn').addEventListener('click', sendMessage);
-            document.getElementById('logoutBtn').addEventListener('click', logout);
-            document.getElementById('themeBtn').addEventListener('click', showThemeModal);
-            document.getElementById('settingsBtn').addEventListener('click', showProfileModal);
-            document.getElementById('profileSection').addEventListener('click', showProfileModal);
-
-            document.getElementById('messageInput').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendMessage();
-                }
-            });
-
-            document.getElementById('chatsList').addEventListener('click', function(e) {
-                const chatItem = e.target.closest('.chat-item');
-                if (chatItem) {
-                    document.querySelectorAll('.chat-item').forEach(item => item.classList.remove('active'));
-                    chatItem.classList.add('active');
-                    const chatType = chatItem.getAttribute('data-chat');
-                    selectChat(chatType);
-                }
-            });
         }
 
         function connectSocket() {
             console.log("🔗 Подключаемся к серверу...");
+            document.getElementById('loading').classList.remove('hidden');
+            
             socket = io({
                 transports: ['websocket', 'polling'],
                 reconnection: true,
-                reconnectionAttempts: 5,
-                reconnectionDelay: 1000
+                reconnectionAttempts: 10,
+                reconnectionDelay: 1000,
+                timeout: 10000
             });
             
             socket.on('connect', function() {
                 console.log("✅ Подключено к серверу");
+                document.getElementById('loading').classList.add('hidden');
                 showNotification('Соединение установлено', 'success');
-                
-                if (currentUser) {
-                    socket.emit('restore_session', {user_id: currentUser.id});
-                    loadNews();
-                }
             });
             
             socket.on('registration_success', function(user) {
@@ -740,24 +431,6 @@ HTML_TEMPLATE = '''
                 document.getElementById('registerBtn').innerHTML = '<span>🚀 Начать общение</span>';
             });
             
-            socket.on('private_message', function(data) {
-                console.log("📨 Получено сообщение:", data);
-                if (currentChat === data.chat_id) {
-                    addMessageToChat(data);
-                }
-            });
-            
-            socket.on('all_news_messages', function(messages) {
-                console.log("📢 Получены новости:", messages);
-                displayMessages(messages);
-            });
-            
-            socket.on('all_users', function(users) {
-                console.log("👥 Получены пользователи:", users);
-                allUsers = users;
-                updateUsersList(users);
-            });
-            
             socket.on('disconnect', function() {
                 console.log("❌ Отключено от сервера");
                 showNotification('Потеряно соединение', 'error');
@@ -765,8 +438,17 @@ HTML_TEMPLATE = '''
             
             socket.on('connect_error', function(error) {
                 console.log("❌ Ошибка подключения:", error);
-                showNotification('Ошибка подключения к серверу', 'error');
+                document.getElementById('loading').classList.add('hidden');
+                showNotification('Ошибка подключения к серверу. Попробуйте обновить страницу.', 'error');
             });
+            
+            // Таймаут подключения
+            setTimeout(function() {
+                if (!socket.connected) {
+                    document.getElementById('loading').classList.add('hidden');
+                    showNotification('Не удалось подключиться к серверу. Проверьте интернет соединение.', 'error');
+                }
+            }, 10000);
         }
 
         function checkAutoLogin() {
@@ -807,9 +489,18 @@ HTML_TEMPLATE = '''
             document.getElementById('adminScreen').classList.add('hidden');
             document.getElementById('mainApp').style.display = 'block';
             
-            updateUserInfo();
-            socket.emit('get_all_users');
-            loadNews();
+            // Простая версия интерфейса
+            document.getElementById('mainApp').innerHTML = `
+                <div style="padding: 50px; text-align: center;">
+                    <div class="logo glowing-logo" style="font-size: 80px;">💜</div>
+                    <h1>Добро пожаловать в DLtrollex!</h1>
+                    <p style="margin: 20px 0; font-size: 18px;">Вы успешно вошли как <strong>${currentUser.name}</strong></p>
+                    <p style="color: #888;">Полная версия мессенджера скоро будет доступна</p>
+                    <button class="btn" onclick="logout()" style="margin-top: 30px;">
+                        <span>🚪 Выйти</span>
+                    </button>
+                </div>
+            `;
         }
 
         function register() {
@@ -857,122 +548,6 @@ HTML_TEMPLATE = '''
             location.reload();
         }
 
-        function updateUserInfo() {
-            if (currentUser) {
-                document.getElementById('userName').textContent = currentUser.name;
-                document.getElementById('userUsername').textContent = currentUser.username || '@user';
-                document.getElementById('userAvatar').textContent = currentUser.avatar || '👤';
-                
-                if (currentUser.avatar_bg) {
-                    document.getElementById('userAvatar').style.background = currentUser.avatar_bg;
-                }
-            }
-        }
-
-        function selectChat(chatType) {
-            currentChat = chatType;
-            
-            if (chatType === 'news') {
-                document.getElementById('chatTitle').textContent = '📢 Новости DLtrollex';
-                document.getElementById('chatStatus').textContent = 'Официальный канал';
-                loadNews();
-            } else {
-                const user = allUsers.find(u => u.id === chatType);
-                if (user) {
-                    document.getElementById('chatTitle').textContent = user.name;
-                    document.getElementById('chatStatus').textContent = user.username;
-                    loadPrivateMessages(chatType);
-                }
-            }
-        }
-
-        function loadNews() {
-            socket.emit('get_news_messages');
-        }
-
-        function loadPrivateMessages(userId) {
-            socket.emit('get_chat_messages', {target_user_id: userId});
-        }
-
-        function sendMessage() {
-            const messageInput = document.getElementById('messageInput');
-            const text = messageInput.value.trim();
-            
-            if (!text || !currentUser) return;
-            
-            socket.emit('send_private_message', {
-                text: text,
-                chat_id: currentChat
-            });
-            
-            messageInput.value = '';
-        }
-
-        function displayMessages(messages) {
-            const container = document.getElementById('messagesContainer');
-            container.innerHTML = '';
-            
-            if (messages.length === 0) {
-                container.innerHTML = `
-                    <div style="text-align: center; color: #666; margin-top: 100px;">
-                        <div style="font-size: 64px;">💬</div>
-                        <p style="margin-top: 20px; font-size: 18px;">Нет сообщений</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            messages.forEach(message => {
-                addMessageToChat(message);
-            });
-            
-            container.scrollTop = container.scrollHeight;
-        }
-
-        function addMessageToChat(message) {
-            const container = document.getElementById('messagesContainer');
-            const messageDiv = document.createElement('div');
-            
-            const isOwnMessage = message.sender_id === currentUser?.id;
-            const messageTime = new Date(message.timestamp).toLocaleTimeString('ru-RU', {
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-            
-            messageDiv.className = `message ${isOwnMessage ? 'message-out' : 'message-in'}`;
-            messageDiv.innerHTML = `
-                ${!isOwnMessage ? `<div class="message-sender">${message.sender_name}</div>` : ''}
-                <div class="message-text">${message.text}</div>
-                <div class="message-time">${messageTime}</div>
-            `;
-            
-            container.appendChild(messageDiv);
-            container.scrollTop = container.scrollHeight;
-        }
-
-        function updateUsersList(users) {
-            const chatsList = document.getElementById('chatsList');
-            const systemChats = chatsList.querySelectorAll('[data-chat="news"]');
-            chatsList.innerHTML = '';
-            systemChats.forEach(chat => chatsList.appendChild(chat));
-            
-            users.forEach(user => {
-                if (user.id !== currentUser?.id) {
-                    const chatItem = document.createElement('div');
-                    chatItem.className = 'chat-item';
-                    chatItem.setAttribute('data-chat', user.id);
-                    chatItem.innerHTML = `
-                        <div class="chat-icon">${user.avatar || '👤'}</div>
-                        <div class="chat-info">
-                            <div class="chat-name">${user.name}</div>
-                            <div class="chat-last-message">${user.username}</div>
-                        </div>
-                    `;
-                    chatsList.appendChild(chatItem);
-                }
-            });
-        }
-
         function showNotification(message, type = 'info') {
             const notification = document.createElement('div');
             notification.className = 'notification-toast';
@@ -988,15 +563,7 @@ HTML_TEMPLATE = '''
                 if (notification.parentNode) {
                     notification.remove();
                 }
-            }, 3000);
-        }
-
-        function showThemeModal() {
-            showNotification('Смена темы скоро будет доступна', 'info');
-        }
-
-        function showProfileModal() {
-            showNotification('Настройки профиля скоро будут доступны', 'info');
+            }, 5000);
         }
     </script>
 </body>
@@ -1007,14 +574,7 @@ HTML_TEMPLATE = '''
 def index():
     return render_template_string(HTML_TEMPLATE)
 
-@app.route('/user_avatars/<filename>')
-def serve_avatar(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
-
 def generate_user_id():
-    return str(int(time.time() * 1000)) + str(random.randint(1000, 9999))
-
-def generate_message_id():
     return str(int(time.time() * 1000)) + str(random.randint(1000, 9999))
 
 @socketio.on('connect')
@@ -1048,12 +608,6 @@ def handle_register(data):
         # Если username не указан, генерируем автоматически
         if not username:
             username = f"user{random.randint(10000, 99999)}"
-        else:
-            # Проверяем уникальность username
-            for user in users_db.values():
-                if user.get('username') == username:
-                    emit('registration_error', {'message': 'Этот юзернейм уже занят'})
-                    return
         
         # Создаем пользователя
         user_data = {
@@ -1063,17 +617,11 @@ def handle_register(data):
             'avatar': '👤',
             'avatar_bg': '#6b21a8',
             'registered_at': datetime.datetime.now().isoformat(),
-            'is_banned': False,
-            'is_muted': False,
-            'is_moderator': False
         }
         
         # Сохраняем в базу
         users_db[user_id] = user_data
         user_sessions[request.sid] = user_id
-        
-        # Инициализируем непрочитанные сообщения
-        unread_messages[user_id] = {}
         
         # Сохраняем данные
         save_user_data()
@@ -1083,129 +631,23 @@ def handle_register(data):
         # Отправляем успешный ответ
         emit('registration_success', user_data)
         
-        # Уведомляем всех о новом пользователе
-        emit('all_users', get_all_users_list(), broadcast=True)
-        
     except Exception as e:
         print(f"❌ Ошибка регистрации: {e}")
         emit('registration_error', {'message': 'Ошибка сервера при регистрации'})
 
-@socketio.on('send_private_message')
-def handle_send_private_message(data):
-    """Отправка приватного сообщения"""
-    user_id = user_sessions.get(request.sid)
-    if not user_id:
-        return
-    
-    text = data.get('text', '').strip()
-    target_id = data.get('chat_id')
-    
-    if not text or not target_id:
-        return
-    
-    print(f"📨 Сообщение от {user_id} к {target_id}: {text}")
-    
-    # Создаем сообщение
-    message_id = generate_message_id()
-    sender_name = users_db[user_id]['name'] if user_id in users_db else 'Неизвестный'
-    
-    message = {
-        'id': message_id,
-        'text': text,
-        'sender_id': user_id,
-        'sender_name': sender_name,
-        'timestamp': datetime.datetime.now().isoformat(),
-        'edited': False,
-        'reactions': {}
-    }
-    
-    # Сохраняем сообщение
-    if user_id not in messages_db:
-        messages_db[user_id] = {}
-    if target_id not in messages_db[user_id]:
-        messages_db[user_id][target_id] = []
-    messages_db[user_id][target_id].append(message)
-    
-    save_user_data()
-    
-    # Отправляем сообщение отправителю
-    emit('private_message', {**message, 'chat_id': target_id})
-    
-    # Отправляем получателю, если он онлайн
-    for sid, uid in user_sessions.items():
-        if uid == target_id:
-            emit('private_message', {**message, 'chat_id': user_id}, room=sid)
-    
-    print(f"✅ Сообщение отправлено")
-
-def get_all_users_list():
-    """Получение списка всех пользователей"""
-    users_list = []
-    
-    # Добавляем обычных пользователей
-    for user_id, user_data in users_db.items():
-        if user_id != 'admin':
-            users_list.append(user_data)
-    
-    # Добавляем админа
-    users_list.append({
-        'id': 'admin',
-        'name': 'Администратор',
-        'username': '@admin',
-        'avatar': '👑',
-        'avatar_bg': '#dc2626',
-        'is_admin': True
-    })
-    
-    return users_list
-
-@socketio.on('get_all_users')
-def handle_get_all_users():
-    """Получение списка всех пользователей"""
-    emit('all_users', get_all_users_list())
-
-@socketio.on('get_news_messages')
-def handle_get_news_messages():
-    """Получение новостей"""
-    emit('all_news_messages', news_messages)
-
-@socketio.on('get_chat_messages')
-def handle_get_chat_messages(data):
-    """Получение сообщений чата"""
-    user_id = user_sessions.get(request.sid)
-    if not user_id:
-        return
-    
-    target_id = data.get('target_user_id')
-    if not target_id:
-        return
-    
-    messages = []
-    
-    # Ищем сообщения в базе
-    if user_id in messages_db and target_id in messages_db[user_id]:
-        messages = messages_db[user_id][target_id]
-    
-    emit('chat_messages', messages)
-
-@socketio.on('restore_session')
-def handle_restore_session(data):
-    """Восстановление сессии пользователя"""
-    user_id = data.get('user_id')
-    if user_id in users_db or user_id == 'admin':
-        user_sessions[request.sid] = user_id
-        emit('session_restored', {'status': 'success', 'user_id': user_id})
-        print(f"🔑 Восстановлена сессия для: {user_id}")
-
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 10000))
     print("🚀 Запуск DLtrollex на Render...")
-    print(f"💜 Доступно по адресу: https://dl-trollex-5.onrender.com")
-    print("🎯 Анимации кнопок восстановлены!")
-    print("🐛 Баги исправлены!")
-    print("🔗 Socket.IO настроен для Render")
+    print("💜 Сервер запускается...")
+    print("🔗 Ожидание подключений...")
+    
+    # Для Render используем eventlet
+    import eventlet
+    eventlet.monkey_patch()
+    
     socketio.run(app, 
                 host='0.0.0.0', 
                 port=port, 
                 debug=False, 
-                allow_unsafe_werkzeug=True)
+                log_output=True,
+                use_reloader=False)
