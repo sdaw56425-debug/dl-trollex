@@ -1,4 +1,4 @@
-# DLtrollex - УЛЬТРА КАСТОМИЗИРУЕМЫЙ ЧАТ (ХЕЛЛОУИН 2025 ВЕРСИЯ)
+# DLtrollex - УЛЬТРА КАСТОМИЗИРУЕМЫЙ ЧАТ (ЧАТЫ И ПОИСК)
 from flask import Flask, render_template_string, request, jsonify
 import datetime
 import random
@@ -8,9 +8,10 @@ import json
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'mydltrollex2024'
 
-# Простая база данных в памяти
+# База данных в памяти
 users_db = {}
 messages_db = {}
+chats_db = {}
 news_messages = [
     {
         'id': '1',
@@ -64,7 +65,6 @@ HTML_TEMPLATE = '''
             --text-color: #ffffff;
             --secondary-color: #2d2d2d;
             --border-color: #3d3d3d;
-            --halloween-color: #ff7b25;
         }
         
         body {
@@ -72,13 +72,6 @@ HTML_TEMPLATE = '''
             color: var(--text-color);
             height: 100vh;
             overflow: hidden;
-            transition: all 0.3s ease;
-        }
-        
-        body.halloween-theme {
-            --accent-color: #ff7b25;
-            --bg-color: #1a0f00;
-            --card-color: #2a1a00;
         }
         
         @keyframes glow {
@@ -100,12 +93,6 @@ HTML_TEMPLATE = '''
             50% { transform: scale(1.05); }
         }
         
-        @keyframes spooky {
-            0%, 100% { transform: rotate(0deg) scale(1); }
-            25% { transform: rotate(5deg) scale(1.1); }
-            75% { transform: rotate(-5deg) scale(1.1); }
-        }
-        
         .glowing-logo {
             animation: glow 3s ease-in-out infinite;
         }
@@ -116,10 +103,6 @@ HTML_TEMPLATE = '''
         
         .pulse {
             animation: pulse 2s ease-in-out infinite;
-        }
-        
-        .spooky {
-            animation: spooky 3s ease-in-out infinite;
         }
         
         .screen {
@@ -231,14 +214,6 @@ HTML_TEMPLATE = '''
             box-shadow: 0 10px 25px rgba(220, 38, 38, 0.4);
         }
         
-        .btn-halloween {
-            background: linear-gradient(135deg, #ff7b25, #ff5500);
-        }
-        
-        .btn-halloween:hover {
-            box-shadow: 0 10px 25px rgba(255, 123, 37, 0.4);
-        }
-        
         .error {
             color: #ef4444;
             margin-top: 15px;
@@ -290,27 +265,172 @@ HTML_TEMPLATE = '''
             }
         }
         
-        .halloween-decoration {
-            position: fixed;
-            font-size: 24px;
-            z-index: 100;
-            opacity: 0.1;
-            animation: float 8s ease-in-out infinite;
+        /* Стили для чатов */
+        .chat-container {
+            display: flex;
+            height: 100vh;
         }
         
-        .pumpkin { animation-delay: 0s; left: 10%; top: 20%; }
-        .ghost { animation-delay: 2s; right: 15%; top: 30%; }
-        .bat { animation-delay: 4s; left: 20%; bottom: 25%; }
-        .spider { animation-delay: 6s; right: 10%; bottom: 15%; }
+        .sidebar {
+            width: 350px;
+            background: var(--card-color);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .search-box {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 12px 45px 12px 15px;
+            background: var(--secondary-color);
+            border: 1px solid var(--border-color);
+            border-radius: 25px;
+            color: var(--text-color);
+            font-size: 14px;
+        }
+        
+        .search-icon {
+            position: absolute;
+            right: 35px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #888;
+        }
+        
+        .chats-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .chat-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        
+        .chat-item:hover {
+            background: var(--secondary-color);
+        }
+        
+        .chat-item.active {
+            background: var(--accent-color);
+        }
+        
+        .chat-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin-right: 15px;
+        }
+        
+        .chat-info {
+            flex: 1;
+        }
+        
+        .chat-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .chat-last-message {
+            color: #888;
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .chat-time {
+            color: #888;
+            font-size: 11px;
+        }
+        
+        .messages-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .message {
+            background: var(--secondary-color);
+            padding: 12px 15px;
+            border-radius: 15px;
+            max-width: 70%;
+            word-wrap: break-word;
+        }
+        
+        .message.own {
+            background: var(--accent-color);
+            align-self: flex-end;
+        }
+        
+        .message-input-container {
+            padding: 20px;
+            background: var(--card-color);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 10px;
+        }
+        
+        .message-input {
+            flex: 1;
+            padding: 12px 15px;
+            background: var(--secondary-color);
+            border: 1px solid var(--border-color);
+            border-radius: 25px;
+            color: var(--text-color);
+            font-size: 14px;
+        }
+        
+        .send-btn {
+            padding: 12px 20px;
+            background: var(--accent-color);
+            border: none;
+            border-radius: 25px;
+            color: white;
+            cursor: pointer;
+        }
+        
+        .online-indicator {
+            width: 10px;
+            height: 10px;
+            background: #10b981;
+            border-radius: 50%;
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            border: 2px solid var(--card-color);
+        }
+        
+        .user-status {
+            font-size: 11px;
+            color: #10b981;
+        }
     </style>
 </head>
 <body>
-    <!-- Хеллоуинские декорации -->
-    <div class="halloween-decoration pumpkin">🎃</div>
-    <div class="halloween-decoration ghost">👻</div>
-    <div class="halloween-decoration bat">🦇</div>
-    <div class="halloween-decoration spider">🕷️</div>
-
     <!-- Главный экран выбора -->
     <div id="mainScreen" class="screen">
         <div class="auth-box floating">
@@ -323,10 +443,6 @@ HTML_TEMPLATE = '''
             
             <button class="btn btn-admin pulse" onclick="showAdminScreen()">
                 <span>👑 Войти как администратор</span>
-            </button>
-            
-            <button class="btn btn-halloween pulse" onclick="toggleHalloweenTheme()">
-                <span>🎃 Хеллоуин 2025!</span>
             </button>
         </div>
     </div>
@@ -374,21 +490,19 @@ HTML_TEMPLATE = '''
 
     <!-- Основной интерфейс мессенджера -->
     <div id="mainApp" class="app">
-        <div style="text-align: center; padding: 100px;">
-            <div class="logo glowing-logo" style="font-size: 64px;">💜</div>
-            <h1>DLtrollex</h1>
-            <p>Мессенджер загружается...</p>
-        </div>
+        <!-- Интерфейс будет генерироваться JavaScript -->
     </div>
 
     <script>
         let currentUser = null;
-        let isHalloweenTheme = false;
+        let currentChat = null;
+        let chats = [];
+        let allUsers = [];
 
         document.addEventListener('DOMContentLoaded', function() {
             console.log("🚀 DLtrollex загружен!");
             checkAutoLogin();
-            loadHalloweenTheme();
+            initializeChats();
         });
 
         function checkAutoLogin() {
@@ -403,11 +517,87 @@ HTML_TEMPLATE = '''
             }
         }
 
-        function loadHalloweenTheme() {
-            const saved = localStorage.getItem('dlhalloween');
-            if (saved === 'true') {
-                activateHalloweenTheme();
-            }
+        function initializeChats() {
+            // Создаем тестовые чаты и пользователей
+            allUsers = [
+                {
+                    id: 'user1',
+                    name: 'Алексей',
+                    username: '@alexey',
+                    avatar: '😎',
+                    isOnline: true,
+                    lastSeen: new Date().toISOString()
+                },
+                {
+                    id: 'user2', 
+                    name: 'Мария',
+                    username: '@maria',
+                    avatar: '👩',
+                    isOnline: true,
+                    lastSeen: new Date().toISOString()
+                },
+                {
+                    id: 'user3',
+                    name: 'Дмитрий',
+                    username: '@dmitry',
+                    avatar: '🧑',
+                    isOnline: false,
+                    lastSeen: new Date(Date.now() - 300000).toISOString()
+                },
+                {
+                    id: 'user4',
+                    name: 'Елена',
+                    username: '@elena',
+                    avatar: '👸',
+                    isOnline: true,
+                    lastSeen: new Date().toISOString()
+                },
+                {
+                    id: 'user5',
+                    name: 'Сергей',
+                    username: '@sergey',
+                    avatar: '🤵',
+                    isOnline: false,
+                    lastSeen: new Date(Date.now() - 600000).toISOString()
+                }
+            ];
+
+            chats = [
+                {
+                    id: 'chat1',
+                    type: 'private',
+                    participants: [currentUser ? currentUser.id : 'user1', 'user2'],
+                    lastMessage: {
+                        text: 'Привет! Как дела? 😊',
+                        senderId: 'user2',
+                        timestamp: new Date().toISOString()
+                    },
+                    unreadCount: 2
+                },
+                {
+                    id: 'chat2',
+                    type: 'private', 
+                    participants: [currentUser ? currentUser.id : 'user1', 'user3'],
+                    lastMessage: {
+                        text: 'Жду твоего ответа! 👍',
+                        senderId: currentUser ? currentUser.id : 'user1',
+                        timestamp: new Date(Date.now() - 120000).toISOString()
+                    },
+                    unreadCount: 0
+                },
+                {
+                    id: 'chat3',
+                    type: 'group',
+                    name: 'Общий чат DLtrollex',
+                    participants: ['user1', 'user2', 'user3', 'user4', 'user5'],
+                    lastMessage: {
+                        text: 'Добро пожаловать в общий чат! 🎉',
+                        senderId: 'user4',
+                        timestamp: new Date(Date.now() - 300000).toISOString()
+                    },
+                    unreadCount: 5
+                }
+            ];
         }
 
         function showMainScreen() {
@@ -437,64 +627,407 @@ HTML_TEMPLATE = '''
             document.getElementById('adminScreen').classList.add('hidden');
             document.getElementById('mainApp').style.display = 'block';
             
-            renderMainApp();
-            showNotification('Добро пожаловать в DLtrollex! 🎉', 'success');
+            renderChatsInterface();
+            showNotification('Добро пожаловать в DLtrollex! 💜', 'success');
         }
 
-        function renderMainApp() {
-            const isAdmin = currentUser && currentUser.is_admin;
-            
+        function renderChatsInterface() {
             document.getElementById('mainApp').innerHTML = `
-                <div style="padding: 50px; text-align: center;">
-                    <div class="logo glowing-logo ${isHalloweenTheme ? 'spooky' : ''}" style="font-size: 80px;">${isHalloweenTheme ? '🎃' : '💜'}</div>
-                    <h1>Добро пожаловать в DLtrollex${isHalloweenTheme ? ' 🎃' : ''}!</h1>
-                    <p style="margin: 20px 0; font-size: 18px;">Вы успешно вошли как <strong>${currentUser.name}</strong></p>
-                    <p style="color: #888; margin-bottom: 30px;">@${currentUser.username}</p>
-                    
-                    <div style="background: var(--card-color); padding: 30px; border-radius: 15px; max-width: 500px; margin: 0 auto;">
-                        <h3 style="color: var(--accent-color); margin-bottom: 20px;">📢 Новости DLtrollex</h3>
-                        <div style="text-align: left;">
-                            <div style="background: var(--secondary-color); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                                <p><strong>Администратор:</strong> Добро пожаловать в DLtrollex! 🎉</p>
-                                <small style="color: #888;">Только что</small>
-                            </div>
-                            <div style="background: var(--secondary-color); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                                <p><strong>Администратор:</strong> Это фиолетовый мессенджер с максимальной кастомизацией! 💜</p>
-                                <small style="color: #888;">Только что</small>
-                            </div>
-                            ${isHalloweenTheme ? `
-                            <div style="background: #ff7b25; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                                <p><strong>🎃 Хеллоуин 2025:</strong> Активирована хеллоуинская тема! Счастливого Хеллоуина! 👻</p>
-                                <small style="color: rgba(255,255,255,0.8);">Только что</small>
-                            </div>
-                            ` : ''}
+                <div class="chat-container">
+                    <!-- Боковая панель с чатами -->
+                    <div class="sidebar">
+                        <!-- Заголовок -->
+                        <div style="padding: 20px; border-bottom: 1px solid var(--border-color);">
+                            <div class="logo" style="font-size: 24px; margin-bottom: 10px;">💜 DLtrollex</div>
+                            <div style="color: #888; font-size: 12px;">Чаты</div>
                         </div>
-                    </div>
-
-                    <div style="margin: 30px 0;">
-                        <h3 style="color: var(--accent-color); margin-bottom: 20px;">🎮 Новые функции</h3>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; max-width: 400px; margin: 0 auto;">
-                            <button class="btn" onclick="showChat()">💬 Открыть чат</button>
-                            <button class="btn" onclick="showGames()">🎮 Игры</button>
-                            <button class="btn" onclick="showThemes()">🎨 Темы</button>
-                            <button class="btn ${isHalloweenTheme ? 'btn-halloween' : ''}" onclick="toggleHalloweenTheme()">
-                                ${isHalloweenTheme ? '👻 Выкл.Хеллоуин' : '🎃 Вкл.Хеллоуин'}
-                            </button>
+                        
+                        <!-- Поиск -->
+                        <div class="search-box">
+                            <div style="position: relative;">
+                                <input type="text" class="search-input" placeholder="🔍 Поиск собеседников..." oninput="searchUsers(this.value)">
+                                <div class="search-icon">🔍</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Список чатов -->
+                        <div class="chats-list" id="chatsList">
+                            ${renderChatsList()}
+                        </div>
+                        
+                        <!-- Кнопка нового чата -->
+                        <div style="padding: 15px; border-top: 1px solid var(--border-color);">
+                            <button class="btn" onclick="showNewChatModal()" style="margin-bottom: 10px;">➕ Новый чат</button>
+                            <button class="btn" onclick="showSettings()" style="margin-bottom: 10px;">⚙️ Настройки</button>
+                            <button class="btn" onclick="logout()">🚪 Выйти</button>
                         </div>
                     </div>
                     
-                    ${isAdmin ? `
-                    <div style="margin: 30px 0;">
-                        <h3 style="color: #dc2626; margin-bottom: 15px;">👑 Админ-панель</h3>
-                        <button class="btn btn-admin" onclick="showAdminPanel()">⚙️ Управление системой</button>
+                    <!-- Область чата -->
+                    <div class="chat-area">
+                        <div id="chatContent" style="flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                            <div class="logo glowing-logo" style="font-size: 80px;">💜</div>
+                            <h2>Добро пожаловать в чаты!</h2>
+                            <p style="color: #888; margin: 10px 0 20px 0;">Выберите чат для начала общения</p>
+                            <button class="btn" onclick="showNewChatModal()">💬 Начать новый чат</button>
+                        </div>
                     </div>
-                    ` : ''}
-                    
-                    <button class="btn" onclick="logout()" style="margin-top: 30px;">
-                        <span>🚪 Выйти</span>
-                    </button>
                 </div>
             `;
+        }
+
+        function renderChatsList() {
+            return chats.map(chat => {
+                const otherParticipants = chat.participants.filter(p => p !== currentUser.id);
+                const chatUser = allUsers.find(u => u.id === otherParticipants[0]) || allUsers[0];
+                const isActive = currentChat && currentChat.id === chat.id;
+                
+                return `
+                    <div class="chat-item ${isActive ? 'active' : ''}" onclick="openChat('${chat.id}')">
+                        <div style="position: relative;">
+                            <div class="chat-avatar">${chat.type === 'group' ? '👥' : chatUser.avatar}</div>
+                            ${chatUser.isOnline ? '<div class="online-indicator"></div>' : ''}
+                        </div>
+                        <div class="chat-info">
+                            <div class="chat-name">
+                                ${chat.type === 'group' ? chat.name : chatUser.name}
+                                ${chatUser.isOnline ? '<span class="user-status">● онлайн</span>' : ''}
+                            </div>
+                            <div class="chat-last-message">${chat.lastMessage.text}</div>
+                        </div>
+                        <div class="chat-time">${formatTime(chat.lastMessage.timestamp)}</div>
+                        ${chat.unreadCount > 0 ? `
+                            <div style="background: var(--accent-color); color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 12px; margin-left: 10px;">
+                                ${chat.unreadCount}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openChat(chatId) {
+            currentChat = chats.find(chat => chat.id === chatId);
+            if (!currentChat) return;
+
+            const otherParticipants = currentChat.participants.filter(p => p !== currentUser.id);
+            const chatUser = allUsers.find(u => u.id === otherParticipants[0]) || allUsers[0];
+            
+            document.getElementById('chatContent').innerHTML = `
+                <!-- Заголовок чата -->
+                <div style="padding: 15px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center;">
+                        <div style="position: relative; margin-right: 15px;">
+                            <div class="chat-avatar">${currentChat.type === 'group' ? '👥' : chatUser.avatar}</div>
+                            ${chatUser.isOnline ? '<div class="online-indicator"></div>' : ''}
+                        </div>
+                        <div>
+                            <div style="font-weight: bold; font-size: 16px;">
+                                ${currentChat.type === 'group' ? currentChat.name : chatUser.name}
+                            </div>
+                            <div style="color: #888; font-size: 12px;">
+                                ${chatUser.isOnline ? 'online' : `был(а) ${formatLastSeen(chatUser.lastSeen)}`}
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn" onclick="showChatInfo()" style="padding: 8px 15px; font-size: 12px;">ℹ️ Инфо</button>
+                </div>
+                
+                <!-- Сообщения -->
+                <div class="messages-container" id="messagesContainer">
+                    ${renderChatMessages()}
+                </div>
+                
+                <!-- Ввод сообщения -->
+                <div class="message-input-container">
+                    <input type="text" class="message-input" placeholder="💬 Введите сообщение..." id="messageInput">
+                    <button class="send-btn" onclick="sendMessage()">📤</button>
+                </div>
+            `;
+
+            // Прокрутка вниз
+            const messagesContainer = document.getElementById('messagesContainer');
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            // Фокус на поле ввода
+            document.getElementById('messageInput').focus();
+            
+            // Обновляем активный чат в списке
+            renderChatsList();
+        }
+
+        function renderChatMessages() {
+            // Тестовые сообщения для чата
+            const messages = [
+                {
+                    id: '1',
+                    text: 'Привет! Как дела? 😊',
+                    senderId: currentChat.participants.find(p => p !== currentUser.id),
+                    timestamp: new Date(Date.now() - 300000).toISOString()
+                },
+                {
+                    id: '2',
+                    text: 'Привет! Все отлично, спасибо! 👍',
+                    senderId: currentUser.id,
+                    timestamp: new Date(Date.now() - 240000).toISOString()
+                },
+                {
+                    id: '3',
+                    text: 'Как тебе новый DLtrollex? 💜',
+                    senderId: currentChat.participants.find(p => p !== currentUser.id),
+                    timestamp: new Date(Date.now() - 180000).toISOString()
+                },
+                {
+                    id: '4', 
+                    text: 'Очень круто! Особенно поиск собеседников и чаты! 🚀',
+                    senderId: currentUser.id,
+                    timestamp: new Date(Date.now() - 120000).toISOString()
+                },
+                {
+                    id: '5',
+                    text: 'Согласен! А анимации просто огонь! 🔥',
+                    senderId: currentChat.participants.find(p => p !== currentUser.id),
+                    timestamp: new Date(Date.now() - 60000).toISOString()
+                }
+            ];
+
+            return messages.map(msg => {
+                const isOwn = msg.senderId === currentUser.id;
+                const sender = allUsers.find(u => u.id === msg.senderId) || {name: 'Неизвестный', avatar: '👤'};
+                
+                return `
+                    <div class="message ${isOwn ? 'own' : ''}">
+                        <div style="margin-bottom: 5px;">
+                            ${!isOwn ? `<strong>${sender.name}:</strong> ` : ''}
+                            ${msg.text}
+                        </div>
+                        <div style="font-size: 11px; color: ${isOwn ? 'rgba(255,255,255,0.7)' : '#888'}; text-align: ${isOwn ? 'right' : 'left'};">
+                            ${formatTime(msg.timestamp)}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (message && currentChat) {
+                const messagesContainer = document.getElementById('messagesContainer');
+                const newMessage = {
+                    id: Date.now().toString(),
+                    text: message,
+                    senderId: currentUser.id,
+                    timestamp: new Date().toISOString()
+                };
+                
+                const messageElement = document.createElement('div');
+                messageElement.className = 'message own';
+                messageElement.innerHTML = `
+                    <div style="margin-bottom: 5px;">${message}</div>
+                    <div style="font-size: 11px; color: rgba(255,255,255,0.7); text-align: right;">
+                        ${formatTime(newMessage.timestamp)}
+                    </div>
+                `;
+                
+                messagesContainer.appendChild(messageElement);
+                input.value = '';
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                
+                // Обновляем последнее сообщение в чате
+                currentChat.lastMessage = newMessage;
+                renderChatsList();
+                
+                // Имитация ответа
+                setTimeout(() => {
+                    const responses = [
+                        'Круто! 😎',
+                        'Интересно! 🤔',
+                        'Согласен! 👍',
+                        'Продолжай! 💪',
+                        'Отличное сообщение! 🔥'
+                    ];
+                    const response = responses[Math.floor(Math.random() * responses.length)];
+                    
+                    const responseMessage = {
+                        id: Date.now().toString(),
+                        text: response,
+                        senderId: currentChat.participants.find(p => p !== currentUser.id),
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    const responseElement = document.createElement('div');
+                    responseElement.className = 'message';
+                    const responder = allUsers.find(u => u.id === responseMessage.senderId) || {name: 'Собеседник', avatar: '👤'};
+                    
+                    responseElement.innerHTML = `
+                        <div style="margin-bottom: 5px;">
+                            <strong>${responder.name}:</strong> ${response}
+                        </div>
+                        <div style="font-size: 11px; color: #888;">
+                            ${formatTime(responseMessage.timestamp)}
+                        </div>
+                    `;
+                    
+                    messagesContainer.appendChild(responseElement);
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    
+                    // Обновляем последнее сообщение
+                    currentChat.lastMessage = responseMessage;
+                    renderChatsList();
+                    
+                }, 1000 + Math.random() * 2000);
+            }
+        }
+
+        function searchUsers(query) {
+            if (!query.trim()) {
+                document.getElementById('chatsList').innerHTML = renderChatsList();
+                return;
+            }
+            
+            const filteredUsers = allUsers.filter(user => 
+                user.name.toLowerCase().includes(query.toLowerCase()) ||
+                user.username.toLowerCase().includes(query.toLowerCase())
+            );
+            
+            let searchHTML = '';
+            
+            if (filteredUsers.length > 0) {
+                searchHTML = filteredUsers.map(user => `
+                    <div class="chat-item" onclick="startNewChat('${user.id}')">
+                        <div style="position: relative;">
+                            <div class="chat-avatar">${user.avatar}</div>
+                            ${user.isOnline ? '<div class="online-indicator"></div>' : ''}
+                        </div>
+                        <div class="chat-info">
+                            <div class="chat-name">
+                                ${user.name}
+                                ${user.isOnline ? '<span class="user-status">● онлайн</span>' : ''}
+                            </div>
+                            <div class="chat-last-message">${user.username}</div>
+                        </div>
+                        <button class="btn" style="padding: 8px 15px; font-size: 12px;">💬 Чат</button>
+                    </div>
+                `).join('');
+            } else {
+                searchHTML = `
+                    <div style="text-align: center; padding: 40px 20px; color: #888;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">🔍</div>
+                        <div>Ничего не найдено</div>
+                        <div style="font-size: 12px; margin-top: 5px;">Попробуйте другой запрос</div>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('chatsList').innerHTML = searchHTML;
+        }
+
+        function showNewChatModal() {
+            document.getElementById('chatContent').innerHTML = `
+                <div style="padding: 30px; max-width: 500px; margin: 0 auto;">
+                    <h2 style="margin-bottom: 20px;">💬 Новый чат</h2>
+                    
+                    <div style="background: var(--card-color); padding: 20px; border-radius: 15px;">
+                        <h3 style="margin-bottom: 15px;">👥 Все пользователи</h3>
+                        <div style="max-height: 400px; overflow-y: auto;">
+                            ${allUsers.map(user => `
+                                <div class="chat-item" onclick="startNewChat('${user.id}')">
+                                    <div style="position: relative;">
+                                        <div class="chat-avatar">${user.avatar}</div>
+                                        ${user.isOnline ? '<div class="online-indicator"></div>' : ''}
+                                    </div>
+                                    <div class="chat-info">
+                                        <div class="chat-name">
+                                            ${user.name}
+                                            ${user.isOnline ? '<span class="user-status">● онлайн</span>' : ''}
+                                        </div>
+                                        <div class="chat-last-message">${user.username}</div>
+                                    </div>
+                                    <button class="btn" style="padding: 8px 15px; font-size: 12px;">💬 Начать чат</button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <button class="btn" onclick="renderChatsInterface()" style="margin-top: 20px;">← Назад к чатам</button>
+                </div>
+            `;
+        }
+
+        function startNewChat(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (!user) return;
+
+            // Создаем новый чат
+            const newChat = {
+                id: 'chat' + Date.now(),
+                type: 'private',
+                participants: [currentUser.id, userId],
+                lastMessage: {
+                    text: 'Чат начат 🚀',
+                    senderId: currentUser.id,
+                    timestamp: new Date().toISOString()
+                },
+                unreadCount: 0
+            };
+
+            chats.unshift(newChat);
+            currentChat = newChat;
+            
+            // Открываем новый чат
+            openChat(newChat.id);
+            showNotification(`Чат с ${user.name} начат!`, 'success');
+        }
+
+        function showChatInfo() {
+            if (!currentChat) return;
+            
+            const otherParticipants = currentChat.participants.filter(p => p !== currentUser.id);
+            const chatUser = allUsers.find(u => u.id === otherParticipants[0]) || allUsers[0];
+            
+            alert(`Информация о чате:\n\nУчастник: ${chatUser.name}\nЮзернейм: ${chatUser.username}\nСтатус: ${chatUser.isOnline ? 'online' : 'offline'}\n\nID чата: ${currentChat.id}`);
+        }
+
+        function showSettings() {
+            document.getElementById('chatContent').innerHTML = `
+                <div style="padding: 30px; max-width: 500px; margin: 0 auto;">
+                    <h2 style="margin-bottom: 20px;">⚙️ Настройки</h2>
+                    
+                    <div style="background: var(--card-color); padding: 20px; border-radius: 15px; margin-bottom: 20px;">
+                        <h3 style="margin-bottom: 15px;">👤 Профиль</h3>
+                        <input type="text" class="input-field" value="${currentUser.name}" placeholder="Ваше имя">
+                        <input type="text" class="input-field" value="${currentUser.username}" placeholder="Юзернейм">
+                        <button class="btn" style="margin-top: 10px;">💾 Сохранить</button>
+                    </div>
+                    
+                    <button class="btn" onclick="renderChatsInterface()">← Назад к чатам</button>
+                </div>
+            `;
+        }
+
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 60000) return 'только что';
+            if (diff < 3600000) return Math.floor(diff / 60000) + ' мин';
+            if (diff < 86400000) return date.toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
+            return date.toLocaleDateString('ru-RU');
+        }
+
+        function formatLastSeen(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 60000) return 'только что';
+            if (diff < 3600000) return Math.floor(diff / 60000) + ' минут назад';
+            if (diff < 86400000) return 'сегодня';
+            if (diff < 172800000) return 'вчера';
+            return date.toLocaleDateString('ru-RU');
         }
 
         function registerUser() {
@@ -506,7 +1039,6 @@ HTML_TEMPLATE = '''
                 return;
             }
             
-            // Мгновенная регистрация
             const user_id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
             const finalUsername = username || `user${Math.floor(Math.random() * 10000)}`;
             
@@ -541,218 +1073,6 @@ HTML_TEMPLATE = '''
             }
         }
 
-        function toggleHalloweenTheme() {
-            if (isHalloweenTheme) {
-                deactivateHalloweenTheme();
-            } else {
-                activateHalloweenTheme();
-            }
-        }
-
-        function activateHalloweenTheme() {
-            document.body.classList.add('halloween-theme');
-            isHalloweenTheme = true;
-            localStorage.setItem('dlhalloween', 'true');
-            showNotification('🎃 Хеллоуинская тема активирована! С Хеллоуином 2025!', 'success');
-            
-            // Обновляем интерфейс если пользователь уже в системе
-            if (currentUser) {
-                renderMainApp();
-            }
-        }
-
-        function deactivateHalloweenTheme() {
-            document.body.classList.remove('halloween-theme');
-            isHalloweenTheme = false;
-            localStorage.setItem('dlhalloween', 'false');
-            showNotification('👻 Хеллоуинская тема деактивирована!', 'info');
-            
-            if (currentUser) {
-                renderMainApp();
-            }
-        }
-
-        // Новые функции
-        function showChat() {
-            document.getElementById('mainApp').innerHTML = `
-                <div style="padding: 20px; max-width: 800px; margin: 0 auto;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h1>💬 Чат DLtrollex${isHalloweenTheme ? ' 🎃' : ''}</h1>
-                        <button class="btn" onclick="renderMainApp()">← Назад</button>
-                    </div>
-                    
-                    <div style="background: var(--card-color); border-radius: 15px; padding: 20px; margin-bottom: 20px; height: 400px; overflow-y: auto;">
-                        <div style="background: var(--secondary-color); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                            <strong>Администратор:</strong> Добро пожаловать в чат DLtrollex! 🎉
-                            <div style="color: #888; font-size: 12px; margin-top: 5px;">Только что</div>
-                        </div>
-                        ${isHalloweenTheme ? `
-                        <div style="background: #ff7b25; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                            <strong>🎃 Хеллоуин-бот:</strong> Бууу! 👻 Счастливого Хеллоуина 2025! Не забудьте про конфеты! 🍬
-                            <div style="color: rgba(255,255,255,0.8); font-size: 12px; margin-top: 5px;">Только что</div>
-                        </div>
-                        ` : ''}
-                        <div style="background: var(--accent-color); padding: 15px; border-radius: 10px; margin-bottom: 15px; margin-left: 100px;">
-                            <strong>Вы:</strong> Привет всем! 👋
-                            <div style="color: rgba(255,255,255,0.7); font-size: 12px; margin-top: 5px;">Только что</div>
-                        </div>
-                    </div>
-                    
-                    <div style="display: flex; gap: 10px;">
-                        <input type="text" class="input-field" placeholder="💬 Напишите сообщение..." style="flex: 1;">
-                        <button class="btn" onclick="sendMessage()">📤</button>
-                        ${isHalloweenTheme ? '<button class="btn btn-halloween" onclick="sendHalloweenMessage()">🎃</button>' : ''}
-                    </div>
-                </div>
-            `;
-        }
-
-        function showGames() {
-            document.getElementById('mainApp').innerHTML = `
-                <div style="padding: 20px; max-width: 800px; margin: 0 auto;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h1>🎮 Игры и развлечения${isHalloweenTheme ? ' 🎃' : ''}</h1>
-                        <button class="btn" onclick="renderMainApp()">← Назад</button>
-                    </div>
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                        <div style="background: var(--card-color); padding: 30px; border-radius: 15px; text-align: center; cursor: pointer;" onclick="startGame('emoji')">
-                            <div style="font-size: 48px; margin-bottom: 15px;">😀</div>
-                            <h3>Угадай эмодзи</h3>
-                            <p style="color: #888; margin-top: 10px;">Отгадай слово по эмодзи</p>
-                        </div>
-                        
-                        <div style="background: var(--card-color); padding: 30px; border-radius: 15px; text-align: center; cursor: pointer;" onclick="startGame('quiz')">
-                            <div style="font-size: 48px; margin-bottom: 15px;">❓</div>
-                            <h3>Викторина</h3>
-                            <p style="color: #888; margin-top: 10px;">Проверь свои знания</p>
-                        </div>
-                        
-                        ${isHalloweenTheme ? `
-                        <div style="background: #ff7b25; padding: 30px; border-radius: 15px; text-align: center; cursor: pointer;" onclick="startHalloweenGame()">
-                            <div style="font-size: 48px; margin-bottom: 15px;">👻</div>
-                            <h3>Хеллоуинская игра</h3>
-                            <p style="color: rgba(255,255,255,0.8); margin-top: 10px;">Страшные загадки</p>
-                        </div>
-                        
-                        <div style="background: #ff7b25; padding: 30px; border-radius: 15px; text-align: center; cursor: pointer;" onclick="showHalloweenJokes()">
-                            <div style="font-size: 48px; margin-bottom: 15px;">🎃</div>
-                            <h3>Хеллоуинские шутки</h3>
-                            <p style="color: rgba(255,255,255,0.8); margin-top: 10px;">Страшно смешные шутки</p>
-                        </div>
-                        ` : ''}
-                    </div>
-                </div>
-            `;
-        }
-
-        function showThemes() {
-            document.getElementById('mainApp').innerHTML = `
-                <div style="padding: 20px; max-width: 600px; margin: 0 auto;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h1>🎨 Настройки тем</h1>
-                        <button class="btn" onclick="renderMainApp()">← Назад</button>
-                    </div>
-                    
-                    <div style="background: var(--card-color); padding: 30px; border-radius: 15px;">
-                        <h3 style="margin-bottom: 20px;">Выберите тему оформления:</h3>
-                        
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                            <button class="btn" onclick="changeTheme('purple')">💜 Фиолетовая</button>
-                            <button class="btn" style="background: #3b82f6;" onclick="changeTheme('blue')">🔵 Синяя</button>
-                            <button class="btn" style="background: #10b981;" onclick="changeTheme('green')">🟢 Зеленая</button>
-                            <button class="btn" style="background: #ef4444;" onclick="changeTheme('red')">🔴 Красная</button>
-                            <button class="btn ${isHalloweenTheme ? 'btn-halloween' : ''}" onclick="toggleHalloweenTheme()">
-                                ${isHalloweenTheme ? '👻 Хеллоуин' : '🎃 Хеллоуин'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function showAdminPanel() {
-            document.getElementById('mainApp').innerHTML = `
-                <div style="padding: 20px; max-width: 800px; margin: 0 auto;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h1>👑 Панель администратора</h1>
-                        <button class="btn" onclick="renderMainApp()">← Назад</button>
-                    </div>
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 30px;">
-                        <div style="background: var(--card-color); padding: 20px; border-radius: 10px; text-align: center;">
-                            <div style="font-size: 24px; color: var(--accent-color);">${Object.keys(users_db).length}</div>
-                            <div style="color: #888;">Пользователей</div>
-                        </div>
-                        <div style="background: var(--card-color); padding: 20px; border-radius: 10px; text-align: center;">
-                            <div style="font-size: 24px; color: var(--accent-color);">0</div>
-                            <div style="color: #888;">Сообщений</div>
-                        </div>
-                        <div style="background: var(--card-color); padding: 20px; border-radius: 10px; text-align: center;">
-                            <div style="font-size: 24px; color: var(--accent-color);">${isHalloweenTheme ? '🎃' : '💜'}</div>
-                            <div style="color: #888;">Тема</div>
-                        </div>
-                    </div>
-                    
-                    <div style="background: var(--card-color); padding: 20px; border-radius: 15px;">
-                        <h3 style="margin-bottom: 15px;">Действия администратора:</h3>
-                        <button class="btn btn-admin" style="margin: 5px;" onclick="sendSystemMessage()">📢 Системное уведомление</button>
-                        <button class="btn btn-admin" style="margin: 5px;" onclick="clearAllData()">🗑️ Очистить данные</button>
-                        ${isHalloweenTheme ? '<button class="btn btn-halloween" style="margin: 5px;" onclick="sendHalloweenNotification()">🎃 Хеллоуин-уведомление</button>' : ''}
-                    </div>
-                </div>
-            `;
-        }
-
-        function changeTheme(theme) {
-            showNotification(`Тема изменена на ${theme}`, 'success');
-        }
-
-        function startGame(game) {
-            showNotification(`Запускается игра: ${game}`, 'info');
-        }
-
-        function startHalloweenGame() {
-            showNotification('🎃 Запускается хеллоуинская игра! Готовьтесь к страшным загадкам! 👻', 'success');
-        }
-
-        function showHalloweenJokes() {
-            const jokes = [
-                "Почему призрак перешел дорогу? Чтобы добраться до другого дома с привидениями! 👻",
-                "Что говорит скелет, когда не может открыть дверь? Костяной помощи! 💀",
-                "Почему тыква не могла поделиться секретом? Потому что у нее не было тыквенных семян! 🎃",
-                "Что летает и светится в темноте? Вампир-светлячок! 🦇"
-            ];
-            const joke = jokes[Math.floor(Math.random() * jokes.length)];
-            showNotification(`🎃 Хеллоуинская шутка: ${joke}`, 'success');
-        }
-
-        function sendMessage() {
-            showNotification('Сообщение отправлено!', 'success');
-        }
-
-        function sendHalloweenMessage() {
-            const messages = ['Бууу! 👻', 'Счастливого Хеллоуина! 🎃', 'Конфеты или смерть! 🍬', 'Тыквенное настроение! 🎃'];
-            const message = messages[Math.floor(Math.random() * messages.length)];
-            showNotification(`🎃 Отправлено хеллоуинское сообщение: ${message}`, 'success');
-        }
-
-        function sendSystemMessage() {
-            showNotification('Системное уведомление отправлено всем пользователям!', 'success');
-        }
-
-        function sendHalloweenNotification() {
-            showNotification('🎃 Хеллоуинское уведомление отправлено всем пользователям! Счастливого Хеллоуина 2025! 👻', 'success');
-        }
-
-        function clearAllData() {
-            if (confirm('Вы уверены что хотите очистить все данные?')) {
-                localStorage.clear();
-                showNotification('Все данные очищены!', 'success');
-                setTimeout(() => location.reload(), 1000);
-            }
-        }
-
         function logout() {
             currentUser = null;
             localStorage.removeItem('dlcurrentUser');
@@ -776,10 +1096,10 @@ HTML_TEMPLATE = '''
                 if (notification.parentNode) {
                     notification.remove();
                 }
-            }, 4000);
+            }, 3000);
         }
 
-        // Обработка Enter в формах
+        // Обработка Enter
         document.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 if (!document.getElementById('registerScreen').classList.contains('hidden')) {
@@ -787,6 +1107,9 @@ HTML_TEMPLATE = '''
                 }
                 if (!document.getElementById('adminScreen').classList.contains('hidden')) {
                     adminLogin();
+                }
+                if (document.getElementById('messageInput')) {
+                    sendMessage();
                 }
             }
         });
@@ -833,10 +1156,10 @@ def create_app():
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
-    print("🚀 Запуск DLtrollex с хеллоуин-функциями...")
+    print("🚀 Запуск DLtrollex с чатами и поиском...")
     print("💜 Сервер запущен!")
     print(f"🔗 Доступен по адресу: http://0.0.0.0:{port}")
-    print("🎃 Хеллоуин 2025 тема готова!")
-    print("✅ Кнопка 'Начать общение' исправлена!")
+    print("💬 Добавлены чаты и поиск собеседников!")
+    print("🔍 Лупа для поиска работает!")
     
     app.run(host='0.0.0.0', port=port, debug=False)
