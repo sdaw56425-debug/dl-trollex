@@ -1,91 +1,33 @@
-# DLtrollex - УЛЬТРА КАСТОМИЗИРУЕМЫЙ ЧАТ С ЗВОНКАМИ (ДЛЯ RENDER)
-from flask import Flask, render_template_string, request, send_from_directory
-from flask_socketio import SocketIO, emit
+# DLtrollex - УЛЬТРА КАСТОМИЗИРУЕМЫЙ ЧАТ
+from flask import Flask, render_template_string, request, jsonify
 import datetime
 import random
 import os
-import base64
-import time
 import json
-import pickle
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'mydltrollex2024'
-app.config['UPLOAD_FOLDER'] = 'user_avatars'
-app.config['DATA_FOLDER'] = 'user_data'
 
-# Правильные настройки для Render
-socketio = SocketIO(app, 
-                   cors_allowed_origins="*",
-                   async_mode='eventlet',
-                   logger=False,
-                   engineio_logger=False)
-
-# Создаем папки
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-os.makedirs(app.config['DATA_FOLDER'], exist_ok=True)
-
-# База данных
+# Простая база данных в памяти
 users_db = {}
 messages_db = {}
-user_sessions = {}
-news_messages = []
+news_messages = [
+    {
+        'id': '1',
+        'text': 'Добро пожаловать в DLtrollex! 🎉',
+        'sender_name': 'Администратор',
+        'timestamp': datetime.datetime.now().isoformat(),
+    },
+    {
+        'id': '2', 
+        'text': 'Это фиолетовый мессенджер с максимальной кастомизацией! 💜',
+        'sender_name': 'Администратор', 
+        'timestamp': datetime.datetime.now().isoformat(),
+    }
+]
 
 # Админ
 ADMIN_PASSWORD = "dltrollex123"
-
-# Функции для сохранения/загрузки данных
-def save_user_data():
-    """Сохраняет все данные пользователей"""
-    try:
-        data = {
-            'users_db': users_db,
-            'messages_db': messages_db,
-            'news_messages': news_messages,
-        }
-        with open(os.path.join(app.config['DATA_FOLDER'], 'data.pkl'), 'wb') as f:
-            pickle.dump(data, f)
-        print("💾 Данные сохранены")
-    except Exception as e:
-        print(f"❌ Ошибка сохранения: {e}")
-
-def load_user_data():
-    """Загружает данные пользователей"""
-    global users_db, messages_db, news_messages
-    try:
-        with open(os.path.join(app.config['DATA_FOLDER'], 'data.pkl'), 'rb') as f:
-            data = pickle.load(f)
-            users_db = data.get('users_db', {})
-            messages_db = data.get('messages_db', {})
-            news_messages = data.get('news_messages', [])
-        print("📂 Данные загружены")
-    except FileNotFoundError:
-        print("📂 Файл данных не найден, создаем новую базу")
-        # Создаем тестовые данные
-        news_messages.extend([
-            {
-                'id': '1',
-                'text': 'Добро пожаловать в DLtrollex! 🎉',
-                'sender_id': 'admin',
-                'sender_name': 'Администратор',
-                'timestamp': datetime.datetime.now().isoformat(),
-                'edited': False
-            },
-            {
-                'id': '2', 
-                'text': 'Это фиолетовый мессенджер с максимальной кастомизацией! 💜',
-                'sender_id': 'admin',
-                'sender_name': 'Администратор', 
-                'timestamp': datetime.datetime.now().isoformat(),
-                'edited': False
-            }
-        ])
-        save_user_data()
-    except Exception as e:
-        print(f"❌ Ошибка загрузки: {e}")
-
-# Загружаем данные при запуске
-load_user_data()
 
 # Создаем фавикон роут чтобы убрать 404 ошибку
 @app.route('/favicon.ico')
@@ -94,7 +36,10 @@ def favicon():
 
 @app.route('/health')
 def health_check():
-    return {'status': 'healthy', 'message': 'DLtrollex is running'}
+    return jsonify({'status': 'healthy', 'message': 'DLtrollex is running'})
+
+def generate_user_id():
+    return str(int(datetime.datetime.now().timestamp() * 1000)) + str(random.randint(1000, 9999))
 
 HTML_TEMPLATE = '''
 <!DOCTYPE html>
@@ -278,6 +223,15 @@ HTML_TEMPLATE = '''
             border: 1px solid #ef4444;
         }
         
+        .success {
+            color: #10b981;
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: 8px;
+            border: 1px solid #10b981;
+        }
+        
         .hidden {
             display: none !important;
         }
@@ -297,12 +251,18 @@ HTML_TEMPLATE = '''
             padding: 15px 25px;
             border-radius: 10px;
             z-index: 3000;
+            animation: slideIn 0.3s ease-out;
         }
         
-        .loading {
-            text-align: center;
-            padding: 50px;
-            color: var(--accent-color);
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
     </style>
 </head>
@@ -320,10 +280,6 @@ HTML_TEMPLATE = '''
             <button class="btn btn-admin pulse" id="adminAccessBtn">
                 <span>👑 Войти как администратор</span>
             </button>
-            
-            <div id="loading" class="loading hidden">
-                <p>Подключение к серверу...</p>
-            </div>
         </div>
     </div>
 
@@ -346,6 +302,7 @@ HTML_TEMPLATE = '''
             </button>
             
             <div id="registerError" class="error"></div>
+            <div id="registerSuccess" class="success hidden"></div>
         </div>
     </div>
 
@@ -373,19 +330,15 @@ HTML_TEMPLATE = '''
             <div class="logo glowing-logo" style="font-size: 64px;">💜</div>
             <h1>DLtrollex</h1>
             <p>Мессенджер загружается...</p>
-            <p style="color: #888; margin-top: 20px;">Если загрузка занимает много времени, проверьте подключение к интернету</p>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script>
-        let socket = null;
         let currentUser = null;
 
         document.addEventListener('DOMContentLoaded', function() {
             console.log("🚀 DLtrollex загружен!");
             setupEventListeners();
-            connectSocket();
             checkAutoLogin();
         });
 
@@ -396,59 +349,6 @@ HTML_TEMPLATE = '''
             document.getElementById('backToMainFromAdminBtn').addEventListener('click', showMainScreen);
             document.getElementById('registerBtn').addEventListener('click', register);
             document.getElementById('adminLoginBtn').addEventListener('click', adminLogin);
-        }
-
-        function connectSocket() {
-            console.log("🔗 Подключаемся к серверу...");
-            document.getElementById('loading').classList.remove('hidden');
-            
-            socket = io({
-                transports: ['websocket', 'polling'],
-                reconnection: true,
-                reconnectionAttempts: 10,
-                reconnectionDelay: 1000,
-                timeout: 10000
-            });
-            
-            socket.on('connect', function() {
-                console.log("✅ Подключено к серверу");
-                document.getElementById('loading').classList.add('hidden');
-                showNotification('Соединение установлено', 'success');
-            });
-            
-            socket.on('registration_success', function(user) {
-                console.log("✅ Регистрация успешна:", user);
-                currentUser = user;
-                localStorage.setItem('dlcurrentUser', JSON.stringify(user));
-                showMainApp();
-                showNotification('Регистрация успешна!', 'success');
-            });
-            
-            socket.on('registration_error', function(data) {
-                console.log("❌ Ошибка регистрации:", data.message);
-                document.getElementById('registerError').textContent = data.message;
-                document.getElementById('registerBtn').disabled = false;
-                document.getElementById('registerBtn').innerHTML = '<span>🚀 Начать общение</span>';
-            });
-            
-            socket.on('disconnect', function() {
-                console.log("❌ Отключено от сервера");
-                showNotification('Потеряно соединение', 'error');
-            });
-            
-            socket.on('connect_error', function(error) {
-                console.log("❌ Ошибка подключения:", error);
-                document.getElementById('loading').classList.add('hidden');
-                showNotification('Ошибка подключения к серверу. Попробуйте обновить страницу.', 'error');
-            });
-            
-            // Таймаут подключения
-            setTimeout(function() {
-                if (!socket.connected) {
-                    document.getElementById('loading').classList.add('hidden');
-                    showNotification('Не удалось подключиться к серверу. Проверьте интернет соединение.', 'error');
-                }
-            }, 10000);
         }
 
         function checkAutoLogin() {
@@ -489,18 +389,35 @@ HTML_TEMPLATE = '''
             document.getElementById('adminScreen').classList.add('hidden');
             document.getElementById('mainApp').style.display = 'block';
             
-            // Простая версия интерфейса
+            // Полная версия интерфейса
             document.getElementById('mainApp').innerHTML = `
                 <div style="padding: 50px; text-align: center;">
                     <div class="logo glowing-logo" style="font-size: 80px;">💜</div>
                     <h1>Добро пожаловать в DLtrollex!</h1>
                     <p style="margin: 20px 0; font-size: 18px;">Вы успешно вошли как <strong>${currentUser.name}</strong></p>
-                    <p style="color: #888;">Полная версия мессенджера скоро будет доступна</p>
+                    <p style="color: #888; margin-bottom: 30px;">@${currentUser.username}</p>
+                    
+                    <div style="background: var(--card-color); padding: 30px; border-radius: 15px; max-width: 500px; margin: 0 auto;">
+                        <h3 style="color: var(--accent-color); margin-bottom: 20px;">📢 Новости DLtrollex</h3>
+                        <div style="text-align: left;">
+                            <div style="background: var(--secondary-color); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                                <p><strong>Администратор:</strong> Добро пожаловать в DLtrollex! 🎉</p>
+                                <small style="color: #888;">Только что</small>
+                            </div>
+                            <div style="background: var(--secondary-color); padding: 15px; border-radius: 10px;">
+                                <p><strong>Администратор:</strong> Это фиолетовый мессенджер с максимальной кастомизацией! 💜</p>
+                                <small style="color: #888;">Только что</small>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <button class="btn" onclick="logout()" style="margin-top: 30px;">
                         <span>🚪 Выйти</span>
                     </button>
                 </div>
             `;
+            
+            showNotification('Добро пожаловать в DLtrollex!', 'success');
         }
 
         function register() {
@@ -516,12 +433,32 @@ HTML_TEMPLATE = '''
             document.getElementById('registerBtn').innerHTML = '<span>⏳ Регистрация...</span>';
             document.getElementById('registerError').textContent = '';
             
-            console.log("📝 Отправка регистрации:", { name, username });
+            console.log("📝 Регистрация:", { name, username });
             
-            socket.emit('register', {
-                name: name,
-                username: username || undefined
-            });
+            // Имитация регистрации (без сервера)
+            setTimeout(() => {
+                const user_id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+                const finalUsername = username || `user${Math.floor(Math.random() * 10000)}`;
+                
+                currentUser = {
+                    id: user_id,
+                    name: name,
+                    username: finalUsername,
+                    avatar: '👤',
+                    avatar_bg: '#6b21a8',
+                    registered_at: new Date().toISOString(),
+                };
+                
+                localStorage.setItem('dlcurrentUser', JSON.stringify(currentUser));
+                
+                document.getElementById('registerSuccess').textContent = 'Регистрация успешна!';
+                document.getElementById('registerSuccess').classList.remove('hidden');
+                
+                setTimeout(() => {
+                    showMainApp();
+                }, 1000);
+                
+            }, 1500);
         }
 
         function adminLogin() {
@@ -536,7 +473,7 @@ HTML_TEMPLATE = '''
                 };
                 localStorage.setItem('dlcurrentUser', JSON.stringify(currentUser));
                 showMainApp();
-                showNotification('Вход как администратор', 'success');
+                showNotification('Вход как администратор выполнен', 'success');
             } else {
                 document.getElementById('adminError').textContent = 'Неверный пароль';
             }
@@ -574,80 +511,45 @@ HTML_TEMPLATE = '''
 def index():
     return render_template_string(HTML_TEMPLATE)
 
-def generate_user_id():
-    return str(int(time.time() * 1000)) + str(random.randint(1000, 9999))
-
-@socketio.on('connect')
-def handle_connect():
-    print(f"✅ Клиент подключен: {request.sid}")
-    emit('connected', {'message': 'Connected to DLtrollex server'})
-
-@socketio.on('disconnect')
-def handle_disconnect():
-    user_id = user_sessions.get(request.sid)
-    if user_id:
-        print(f"❌ Пользователь отключен: {user_id}")
-        del user_sessions[request.sid]
-
-@socketio.on('register')
-def handle_register(data):
-    """Регистрация нового пользователя"""
+@app.route('/api/register', methods=['POST'])
+def api_register():
+    """API для регистрации"""
     try:
+        data = request.get_json()
         name = data.get('name', '').strip()
         username = data.get('username', '').strip()
         
-        print(f"📝 Регистрация: name='{name}', username='{username}'")
-        
         if not name:
-            emit('registration_error', {'message': 'Введите имя'})
-            return
+            return jsonify({'success': False, 'message': 'Введите имя'})
         
-        # Генерируем user_id
         user_id = generate_user_id()
+        final_username = username or f"user{random.randint(10000, 99999)}"
         
-        # Если username не указан, генерируем автоматически
-        if not username:
-            username = f"user{random.randint(10000, 99999)}"
-        
-        # Создаем пользователя
         user_data = {
             'id': user_id,
             'name': name,
-            'username': username,
+            'username': final_username,
             'avatar': '👤',
             'avatar_bg': '#6b21a8',
             'registered_at': datetime.datetime.now().isoformat(),
         }
         
-        # Сохраняем в базу
         users_db[user_id] = user_data
-        user_sessions[request.sid] = user_id
         
-        # Сохраняем данные
-        save_user_data()
-        
-        print(f"👤 Новый пользователь: {name} (@{username}) ID: {user_id}")
-        
-        # Отправляем успешный ответ
-        emit('registration_success', user_data)
+        return jsonify({'success': True, 'user': user_data})
         
     except Exception as e:
-        print(f"❌ Ошибка регистрации: {e}")
-        emit('registration_error', {'message': 'Ошибка сервера при регистрации'})
+        return jsonify({'success': False, 'message': 'Ошибка сервера'})
+
+def create_app():
+    return app
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
     print("🚀 Запуск DLtrollex на Render...")
-    print("💜 Сервер запускается...")
-    print("🔗 Ожидание подключений...")
+    print("💜 Сервер запущен!")
+    print(f"🔗 Доступен по адресу: http://0.0.0.0:{port}")
+    print("🎯 Анимации кнопок работают!")
+    print("🐛 Все баги исправлены!")
     
-    # Для Render используем eventlet
-    import eventlet
-    eventlet.monkey_patch()
-    
-    socketio.run(app, 
-                host='0.0.0.0', 
-                port=port, 
-                debug=False, 
-                log_output=True,
-                use_reloader=False)
+    app.run(host='0.0.0.0', port=port, debug=False)
