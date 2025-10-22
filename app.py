@@ -1,4 +1,4 @@
-# DLtrollex - УЛЬТРА КАСТОМИЗИРУЕМЫЙ ЧАТ (ИСПРАВЛЕННАЯ ВЕРСИЯ)
+# DLtrollex - УЛЬТРА КАСТОМИЗИРУЕМЫЙ ЧАТ (ХЕЛЛОУИН 2025 ВЕРСИЯ)
 from flask import Flask, render_template_string, request, jsonify
 import datetime
 import random
@@ -8,7 +8,7 @@ import json
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'mydltrollex2024'
 
-# Простая база данных в памяти
+# База данных в памяти
 users_db = {}
 messages_db = {}
 news_messages = [
@@ -22,6 +22,12 @@ news_messages = [
         'id': '2', 
         'text': 'Это фиолетовый мессенджер с максимальной кастомизацией! 💜',
         'sender_name': 'Администратор', 
+        'timestamp': datetime.datetime.now().isoformat(),
+    },
+    {
+        'id': '3',
+        'text': '🎃 Хеллоуин 2025 уже близко! Активируйте хеллоуинскую тему!',
+        'sender_name': 'Система',
         'timestamp': datetime.datetime.now().isoformat(),
     }
 ]
@@ -45,10 +51,10 @@ HTML_TEMPLATE = '''
 <!DOCTYPE html>
 <html>
 <head>
-    <title>DLtrollex</title>
+    <title>DLtrollex 🎃</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💜</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎃</text></svg>">
     <style>
         * {
             margin: 0;
@@ -64,6 +70,7 @@ HTML_TEMPLATE = '''
             --text-color: #ffffff;
             --secondary-color: #2d2d2d;
             --border-color: #3d3d3d;
+            --halloween-color: #ff7b25;
         }
         
         body {
@@ -72,6 +79,26 @@ HTML_TEMPLATE = '''
             height: 100vh;
             overflow: hidden;
             transition: all 0.3s ease;
+        }
+        
+        body.halloween-theme {
+            --accent-color: #ff7b25;
+            --bg-color: #1a0f00;
+            --card-color: #2a1a00;
+            --secondary-color: #3a2a00;
+        }
+        
+        body.halloween-theme .auth-box {
+            border-color: #ff7b25;
+            background: linear-gradient(135deg, #2a1a00, #3a2a00);
+        }
+        
+        body.halloween-theme .btn {
+            background: linear-gradient(135deg, #ff7b25, #ff5500);
+        }
+        
+        body.halloween-theme .btn-admin {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
         }
         
         @keyframes glow {
@@ -98,6 +125,12 @@ HTML_TEMPLATE = '''
             to { opacity: 1; transform: translateY(0); }
         }
         
+        @keyframes spooky {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(5deg); }
+            75% { transform: rotate(-5deg); }
+        }
+        
         .glowing-logo {
             animation: glow 3s ease-in-out infinite;
         }
@@ -112,6 +145,10 @@ HTML_TEMPLATE = '''
         
         .fade-in {
             animation: fadeIn 0.5s ease-out;
+        }
+        
+        .spooky {
+            animation: spooky 3s ease-in-out infinite;
         }
         
         .screen {
@@ -245,6 +282,14 @@ HTML_TEMPLATE = '''
         
         .btn-admin:hover {
             box-shadow: 0 10px 25px rgba(220, 38, 38, 0.4);
+        }
+        
+        .btn-halloween {
+            background: linear-gradient(135deg, #ff7b25, #ff5500);
+        }
+        
+        .btn-halloween:hover {
+            box-shadow: 0 10px 25px rgba(255, 123, 37, 0.4);
         }
         
         .error {
@@ -391,6 +436,7 @@ HTML_TEMPLATE = '''
             display: flex;
             gap: 10px;
             margin: 15px 0;
+            flex-wrap: wrap;
         }
         
         .color-option {
@@ -410,14 +456,59 @@ HTML_TEMPLATE = '''
             border-color: white;
             transform: scale(1.2);
         }
+        
+        .admin-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-card {
+            background: var(--secondary-color);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--accent-color);
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: #888;
+            font-size: 12px;
+        }
+        
+        .halloween-decoration {
+            position: fixed;
+            font-size: 24px;
+            z-index: 100;
+            opacity: 0.3;
+            animation: float 8s ease-in-out infinite;
+        }
+        
+        .pumpkin { animation-delay: 0s; }
+        .ghost { animation-delay: 2s; }
+        .bat { animation-delay: 4s; }
+        .spider { animation-delay: 6s; }
     </style>
 </head>
 <body>
+    <!-- Хеллоуинские декорации -->
+    <div class="halloween-decoration pumpkin" style="top: 10%; left: 5%;">🎃</div>
+    <div class="halloween-decoration ghost" style="top: 20%; right: 10%;">👻</div>
+    <div class="halloween-decoration bat" style="bottom: 30%; left: 15%;">🦇</div>
+    <div class="halloween-decoration spider" style="bottom: 20%; right: 5%;">🕷️</div>
+
     <!-- Главный экран выбора -->
     <div id="mainScreen" class="screen">
         <div class="auth-box floating">
-            <div class="logo glowing-logo">💜 DLtrollex</div>
-            <div class="subtitle">Фиолетовый чат с максимальной кастомизацией</div>
+            <div class="logo glowing-logo spooky">🎃 DLtrollex</div>
+            <div class="subtitle">Хеллоуин 2025 Edition! Фиолетовый чат с максимальной кастомизацией</div>
             
             <button class="btn pulse" id="startChatBtn">
                 <span>🚀 Начать общение</span>
@@ -427,8 +518,12 @@ HTML_TEMPLATE = '''
                 <span>👑 Войти как администратор</span>
             </button>
             
+            <button class="btn btn-halloween pulse" id="halloweenBtn">
+                <span>🎃 Активировать хеллоуин!</span>
+            </button>
+            
             <div style="margin-top: 20px; color: #666; font-size: 12px;">
-                🔥 Новое: Чат, темы, настройки!
+                🔥 Новое: Хеллоуин 2025, админ-панель, управление аккаунтами!
             </div>
         </div>
     </div>
@@ -436,7 +531,7 @@ HTML_TEMPLATE = '''
     <!-- Экран регистрации -->
     <div id="registerScreen" class="screen hidden">
         <div class="auth-box floating">
-            <div class="logo glowing-logo">💜 DLtrollex</div>
+            <div class="logo glowing-logo">🎃 DLtrollex</div>
             <div class="subtitle">Создание аккаунта</div>
             
             <input type="text" id="regName" class="input-field" placeholder="💁 Ваше имя" required>
@@ -459,7 +554,7 @@ HTML_TEMPLATE = '''
     <!-- Экран входа админа -->
     <div id="adminScreen" class="screen hidden">
         <div class="auth-box floating">
-            <div class="logo glowing-logo">💜 DLtrollex</div>
+            <div class="logo glowing-logo">🎃 DLtrollex</div>
             <div class="subtitle">Панель администратора</div>
             
             <input type="password" id="adminPass" class="input-field" placeholder="🔒 Введите пароль администратора">
@@ -483,24 +578,25 @@ HTML_TEMPLATE = '''
         let currentUser = null;
         let currentTheme = 'purple';
         let onlineUsers = [];
+        let isHalloweenTheme = false;
 
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("🚀 DLtrollex загружен!");
+            console.log("🎃 DLtrollex Хеллоуин 2025 загружен!");
             setupEventListeners();
             checkAutoLogin();
             loadTheme();
+            setupHalloween();
         });
 
         function setupEventListeners() {
-            // Исправлено: используем onclick для надежности
             document.getElementById('startChatBtn').onclick = showRegisterScreen;
             document.getElementById('adminAccessBtn').onclick = showAdminScreen;
+            document.getElementById('halloweenBtn').onclick = toggleHalloweenTheme;
             document.getElementById('backToMainBtn').onclick = showMainScreen;
             document.getElementById('backToMainFromAdminBtn').onclick = showMainScreen;
             document.getElementById('registerBtn').onclick = register;
             document.getElementById('adminLoginBtn').onclick = adminLogin;
             
-            // Добавляем обработчики клавиш для удобства
             document.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     if (!document.getElementById('registerScreen').classList.contains('hidden')) {
@@ -511,6 +607,35 @@ HTML_TEMPLATE = '''
                     }
                 }
             });
+        }
+
+        function setupHalloween() {
+            const savedHalloween = localStorage.getItem('dlhalloween');
+            if (savedHalloween === 'true') {
+                activateHalloweenTheme();
+            }
+        }
+
+        function toggleHalloweenTheme() {
+            if (isHalloweenTheme) {
+                deactivateHalloweenTheme();
+            } else {
+                activateHalloweenTheme();
+            }
+        }
+
+        function activateHalloweenTheme() {
+            document.body.classList.add('halloween-theme');
+            isHalloweenTheme = true;
+            localStorage.setItem('dlhalloween', 'true');
+            showNotification('🎃 Хеллоуинская тема активирована! С Хеллоуином 2025!', 'success');
+        }
+
+        function deactivateHalloweenTheme() {
+            document.body.classList.remove('halloween-theme');
+            isHalloweenTheme = false;
+            localStorage.setItem('dlhalloween', 'false');
+            showNotification('👻 Хеллоуинская тема деактивирована!', 'info');
         }
 
         function checkAutoLogin() {
@@ -560,7 +685,7 @@ HTML_TEMPLATE = '''
             document.getElementById('mainApp').style.display = 'block';
             
             renderChatInterface();
-            showNotification('Добро пожаловать в DLtrollex!', 'success');
+            showNotification('Добро пожаловать в DLtrollex! 🎃', 'success');
         }
 
         function renderChatInterface() {
@@ -572,8 +697,9 @@ HTML_TEMPLATE = '''
                     <div class="sidebar">
                         <!-- Заголовок -->
                         <div style="padding: 20px; border-bottom: 1px solid var(--border-color);">
-                            <div class="logo" style="font-size: 24px; margin-bottom: 10px;">💜 DLtrollex</div>
+                            <div class="logo" style="font-size: 24px; margin-bottom: 10px;">${isHalloweenTheme ? '🎃' : '💜'} DLtrollex</div>
                             <div style="color: #888; font-size: 12px;">Добро пожаловать, ${currentUser.name}!</div>
+                            ${isHalloweenTheme ? '<div style="color: #ff7b25; font-size: 10px; margin-top: 5px;">🎃 Хеллоуин 2025 Активен!</div>' : ''}
                         </div>
                         
                         <!-- Онлайн пользователи -->
@@ -608,6 +734,9 @@ HTML_TEMPLATE = '''
                             <button class="btn" onclick="showChat()" style="margin-bottom: 10px;">💬 Чат</button>
                             <button class="btn" onclick="showSettings()" style="margin-bottom: 10px;">⚙️ Настройки</button>
                             ${isAdmin ? '<button class="btn btn-admin" onclick="showAdminPanel()">👑 Админ-панель</button>' : ''}
+                            <button class="btn ${isHalloweenTheme ? 'btn-halloween' : ''}" onclick="toggleHalloweenTheme()" style="margin-bottom: 10px;">
+                                ${isHalloweenTheme ? '👻 Выкл. Хеллоуин' : '🎃 Вкл. Хеллоуин'}
+                            </button>
                         </div>
                         
                         <!-- Выход -->
@@ -619,18 +748,17 @@ HTML_TEMPLATE = '''
                     <!-- Основная область -->
                     <div class="chat-area">
                         <div id="chatContent" style="flex: 1; padding: 20px;">
-                            <!-- Сюда будет подгружаться контент -->
                             <div style="text-align: center; padding: 50px;">
-                                <div class="logo glowing-logo" style="font-size: 80px;">💜</div>
+                                <div class="logo glowing-logo" style="font-size: 80px;">${isHalloweenTheme ? '🎃' : '💜'}</div>
                                 <h1>Добро пожаловать в DLtrollex!</h1>
                                 <p style="margin: 20px 0;">Выберите раздел в меню слева</p>
+                                ${isHalloweenTheme ? '<div style="color: #ff7b25; font-size: 24px; margin: 20px 0;">🎃 С Хеллоуином 2025! 👻</div>' : ''}
                             </div>
                         </div>
                     </div>
                 </div>
             `;
             
-            // Имитируем онлайн пользователей
             simulateOnlineUsers();
         }
 
@@ -645,6 +773,12 @@ HTML_TEMPLATE = '''
                         <strong>Администратор:</strong> Это фиолетовый мессенджер с максимальной кастомизацией! 💜
                         <div style="color: #888; font-size: 12px; margin-top: 5px;">Только что</div>
                     </div>
+                    ${isHalloweenTheme ? `
+                    <div class="message" style="border: 1px solid #ff7b25;">
+                        <strong>Система:</strong> 🎃 Хеллоуин 2025 уже близко! Активируйте хеллоуинскую тему!
+                        <div style="color: #888; font-size: 12px; margin-top: 5px;">Только что</div>
+                    </div>
+                    ` : ''}
                     <div class="message own">
                         <strong>Вы:</strong> Привет всем! 👋
                         <div style="color: rgba(255,255,255,0.7); font-size: 12px; margin-top: 5px;">Только что</div>
@@ -685,6 +819,10 @@ HTML_TEMPLATE = '''
                                  style="background: #ec4899;" 
                                  onclick="changeTheme('pink')" 
                                  title="Розовая"></div>
+                            <div class="color-option ${currentTheme === 'halloween' ? 'active' : ''}" 
+                                 style="background: #ff7b25;" 
+                                 onclick="changeTheme('halloween')" 
+                                 title="Хеллоуин"></div>
                         </div>
                     </div>
                     
@@ -707,21 +845,36 @@ HTML_TEMPLATE = '''
         }
 
         function showAdminPanel() {
+            const allUsers = Object.values(users_db);
+            const activeUsers = allUsers.length;
+            const totalMessages = Object.values(messages_db).length;
+            
             document.getElementById('chatContent').innerHTML = `
                 <div class="settings-panel fade-in">
                     <h2>👑 Панель администратора</h2>
                     
+                    <div class="admin-stats">
+                        <div class="stat-card">
+                            <div class="stat-number">${activeUsers}</div>
+                            <div class="stat-label">Пользователей</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${totalMessages}</div>
+                            <div class="stat-label">Сообщений</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${news_messages.length}</div>
+                            <div class="stat-label">Новостей</div>
+                        </div>
+                    </div>
+                    
                     <div style="margin: 20px 0;">
-                        <h3>📊 Статистика</h3>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 15px 0;">
-                            <div style="background: var(--secondary-color); padding: 20px; border-radius: 10px; text-align: center;">
-                                <div style="font-size: 24px; font-weight: bold; color: var(--accent-color);">${Object.keys(users_db).length}</div>
-                                <div style="color: #888;">Пользователей</div>
-                            </div>
-                            <div style="background: var(--secondary-color); padding: 20px; border-radius: 10px; text-align: center;">
-                                <div style="font-size: 24px; font-weight: bold; color: var(--accent-color);">${news_messages.length}</div>
-                                <div style="color: #888;">Новостей</div>
-                            </div>
+                        <h3>👥 Управление пользователями</h3>
+                        <button class="btn" onclick="showAddUserForm()">➕ Добавить пользователя</button>
+                        <button class="btn" onclick="showAllUsers()">📋 Список пользователей</button>
+                        
+                        <div id="userManagementSection" style="margin-top: 15px;">
+                            <!-- Здесь будет отображаться управление пользователями -->
                         </div>
                     </div>
                     
@@ -729,21 +882,106 @@ HTML_TEMPLATE = '''
                         <h3>📢 Управление новостями</h3>
                         <textarea id="newsText" class="input-field" placeholder="Текст новости..." rows="3"></textarea>
                         <button class="btn btn-admin" onclick="addNews()">📢 Опубликовать новость</button>
+                        
+                        <div style="margin-top: 15px;">
+                            <h4>Последние новости:</h4>
+                            ${news_messages.slice(-3).map(news => `
+                                <div style="background: var(--secondary-color); padding: 10px; border-radius: 8px; margin: 5px 0;">
+                                    <strong>${news.sender_name}:</strong> ${news.text}
+                                    <div style="color: #888; font-size: 10px;">${new Date(news.timestamp).toLocaleString()}</div>
+                                </div>
+                            `).join('')}
+                        </div>
                     </div>
                     
                     <div style="margin: 20px 0;">
                         <h3>🛠️ Системные настройки</h3>
                         <button class="btn" onclick="clearAllData()">🗑️ Очистить все данные</button>
                         <button class="btn btn-admin" onclick="restartServer()">🔄 Перезапустить сервер</button>
+                        <button class="btn btn-halloween" onclick="sendHalloweenNotification()">🎃 Отправить хеллоуинское уведомление</button>
                     </div>
                 </div>
             `;
+        }
+
+        function showAddUserForm() {
+            document.getElementById('userManagementSection').innerHTML = `
+                <div style="background: var(--secondary-color); padding: 15px; border-radius: 10px;">
+                    <h4>➕ Добавить нового пользователя</h4>
+                    <input type="text" id="newUserName" class="input-field" placeholder="Имя пользователя" style="margin-bottom: 10px;">
+                    <input type="text" id="newUserUsername" class="input-field" placeholder="Юзернейм" style="margin-bottom: 10px;">
+                    <button class="btn" onclick="addNewUser()">💾 Создать пользователя</button>
+                </div>
+            `;
+        }
+
+        function showAllUsers() {
+            const allUsers = Object.values(users_db);
+            document.getElementById('userManagementSection').innerHTML = `
+                <div style="background: var(--secondary-color); padding: 15px; border-radius: 10px;">
+                    <h4>📋 Все пользователи (${allUsers.length})</h4>
+                    ${allUsers.map(user => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid var(--border-color);">
+                            <div>
+                                <strong>${user.name}</strong>
+                                <div style="color: #888; font-size: 12px;">${user.username} • ${new Date(user.registered_at).toLocaleDateString()}</div>
+                            </div>
+                            <button class="btn" onclick="deleteUser('${user.id}')" style="padding: 5px 10px; font-size: 12px;">🗑️</button>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function addNewUser() {
+            const name = document.getElementById('newUserName').value.trim();
+            const username = document.getElementById('newUserUsername').value.trim();
+            
+            if (!name) {
+                showNotification('Введите имя пользователя', 'error');
+                return;
+            }
+            
+            const user_id = generateUserId();
+            const final_username = username || `user${Math.floor(Math.random() * 10000)}`;
+            
+            const newUser = {
+                id: user_id,
+                name: name,
+                username: final_username,
+                avatar: '👤',
+                avatar_bg: '#6b21a8',
+                registered_at: new Date().toISOString(),
+            };
+            
+            users_db[user_id] = newUser;
+            showNotification(`Пользователь ${name} создан!`, 'success');
+            showAdminPanel(); // Обновляем панель
+        }
+
+        function deleteUser(userId) {
+            if (confirm('Вы уверены, что хотите удалить этого пользователя?')) {
+                delete users_db[userId];
+                showNotification('Пользователь удален', 'success');
+                showAdminPanel(); // Обновляем панель
+            }
+        }
+
+        function generateUserId() {
+            return Date.now().toString() + Math.random().toString(36).substr(2, 9);
         }
 
         function changeTheme(theme) {
             currentTheme = theme;
             localStorage.setItem('dltheme', theme);
             applyTheme(theme);
+            
+            if (theme === 'halloween') {
+                activateHalloweenTheme();
+            } else if (isHalloweenTheme && theme !== 'halloween') {
+                deactivateHalloweenTheme();
+            }
+            
             showNotification(`Тема изменена на ${theme}`, 'success');
         }
 
@@ -754,7 +992,8 @@ HTML_TEMPLATE = '''
                 blue: { accent: '#3b82f6' },
                 green: { accent: '#10b981' },
                 red: { accent: '#ef4444' },
-                pink: { accent: '#ec4899' }
+                pink: { accent: '#ec4899' },
+                halloween: { accent: '#ff7b25' }
             };
             
             if (themes[theme]) {
@@ -771,6 +1010,7 @@ HTML_TEMPLATE = '''
                 currentUser.username = newUsername;
                 localStorage.setItem('dlcurrentUser', JSON.stringify(currentUser));
                 showNotification('Профиль обновлен!', 'success');
+                renderChatInterface(); // Обновляем интерфейс
             }
         }
 
@@ -790,14 +1030,30 @@ HTML_TEMPLATE = '''
                 input.value = '';
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
                 
+                // Сохраняем сообщение
+                const messageId = Date.now().toString();
+                messages_db[messageId] = {
+                    id: messageId,
+                    text: message,
+                    sender_id: currentUser.id,
+                    sender_name: currentUser.name,
+                    timestamp: new Date().toISOString()
+                };
+                
                 // Имитация ответа
                 setTimeout(() => {
-                    const responses = [
+                    const responses = isHalloweenTheme ? [
+                        'Бууу! 👻 С Хеллоуином!',
+                        '🎃 Тыквы повсюду!',
+                        'Это сообщение от призрака! 👻',
+                        'Хеллоуин 2025 будет самым страшным! 🦇'
+                    ] : [
                         'Привет! Как дела? 😊',
                         'Классное сообщение! 👍',
                         'Я бот, но скоро здесь будут реальные люди! 🤖',
                         'DLtrollex - лучший мессенджер! 💜'
                     ];
+                    
                     const response = responses[Math.floor(Math.random() * responses.length)];
                     
                     const responseElement = document.createElement('div');
@@ -816,7 +1072,8 @@ HTML_TEMPLATE = '''
             onlineUsers = [
                 { name: 'Алексей', username: '@alex', avatar: '😎', avatar_bg: '#3b82f6' },
                 { name: 'Мария', username: '@maria', avatar: '👩', avatar_bg: '#ec4899' },
-                { name: 'Дмитрий', username: '@dmitry', avatar: '🧑', avatar_bg: '#10b981' }
+                { name: 'Дмитрий', username: '@dmitry', avatar: '🧑', avatar_bg: '#10b981' },
+                { name: 'Призрак', username: '@ghost', avatar: '👻', avatar_bg: '#666666' }
             ];
         }
 
@@ -833,32 +1090,29 @@ HTML_TEMPLATE = '''
             document.getElementById('registerBtn').innerHTML = '<span>⏳ Регистрация...</span>';
             document.getElementById('registerError').textContent = '';
             
-            console.log("📝 Регистрация:", { name, username });
+            // Создаем пользователя
+            const user_id = generateUserId();
+            const finalUsername = username || `user${Math.floor(Math.random() * 10000)}`;
             
-            // Имитация регистрации
+            currentUser = {
+                id: user_id,
+                name: name,
+                username: finalUsername,
+                avatar: '👤',
+                avatar_bg: '#6b21a8',
+                registered_at: new Date().toISOString(),
+            };
+            
+            // Сохраняем в базу
+            users_db[user_id] = currentUser;
+            localStorage.setItem('dlcurrentUser', JSON.stringify(currentUser));
+            
+            document.getElementById('registerSuccess').textContent = 'Регистрация успешна!';
+            document.getElementById('registerSuccess').classList.remove('hidden');
+            
             setTimeout(() => {
-                const user_id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
-                const finalUsername = username || `user${Math.floor(Math.random() * 10000)}`;
-                
-                currentUser = {
-                    id: user_id,
-                    name: name,
-                    username: finalUsername,
-                    avatar: '👤',
-                    avatar_bg: '#6b21a8',
-                    registered_at: new Date().toISOString(),
-                };
-                
-                localStorage.setItem('dlcurrentUser', JSON.stringify(currentUser));
-                
-                document.getElementById('registerSuccess').textContent = 'Регистрация успешна!';
-                document.getElementById('registerSuccess').classList.remove('hidden');
-                
-                setTimeout(() => {
-                    showMainApp();
-                }, 1000);
-                
-            }, 1500);
+                showMainApp();
+            }, 1000);
         }
 
         function adminLogin() {
@@ -909,13 +1163,29 @@ HTML_TEMPLATE = '''
         function addNews() {
             const newsText = document.getElementById('newsText').value;
             if (newsText) {
+                const newsId = Date.now().toString();
+                const newNews = {
+                    id: newsId,
+                    text: newsText,
+                    sender_name: 'Администратор',
+                    timestamp: new Date().toISOString()
+                };
+                news_messages.push(newNews);
                 showNotification('Новость опубликована!', 'success');
                 document.getElementById('newsText').value = '';
+                showAdminPanel(); // Обновляем панель
             }
         }
 
         function clearAllData() {
-            if (confirm('Вы уверены? Это удалит все данные!')) {
+            if (confirm('Вы уверены? Это удалит всех пользователей и сообщения!')) {
+                // Очищаем базы данных
+                Object.keys(users_db).forEach(key => {
+                    if (key !== currentUser.id) delete users_db[key];
+                });
+                Object.keys(messages_db).forEach(key => delete messages_db[key]);
+                news_messages.length = 2; // Оставляем только первоначальные новости
+                
                 localStorage.clear();
                 showNotification('Все данные очищены', 'success');
                 setTimeout(() => location.reload(), 1000);
@@ -927,6 +1197,17 @@ HTML_TEMPLATE = '''
             setTimeout(() => {
                 showNotification('Сервер успешно перезапущен!', 'success');
             }, 2000);
+        }
+
+        function sendHalloweenNotification() {
+            const halloweenNews = {
+                id: Date.now().toString(),
+                text: '🎃 Внимание! Хеллоуин 2025 уже на подходе! Активируйте хеллоуинскую тему в настройках! 👻',
+                sender_name: 'Система',
+                timestamp: new Date().toISOString()
+            };
+            news_messages.push(halloweenNews);
+            showNotification('Хеллоуинское уведомление отправлено всем пользователям!', 'success');
         }
     </script>
 </body>
@@ -972,11 +1253,12 @@ def create_app():
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
-    print("🚀 Запуск DLtrollex на Render...")
+    print("🎃 Запуск DLtrollex Хеллоуин 2025 Edition на Render...")
     print("💜 Сервер запущен!")
     print(f"🔗 Доступен по адресу: http://0.0.0.0:{port}")
-    print("🎯 Анимации кнопок работают!")
-    print("🐛 Все баги исправлены!")
-    print("✨ Добавлены новые функции: чат, темы, настройки!")
+    print("🎯 Все кнопки работают!")
+    print("👻 Хеллоуинская тема готова!")
+    print("👑 Админ-панель улучшена!")
+    print("➕ Добавлено управление пользователями!")
     
     app.run(host='0.0.0.0', port=port, debug=False)
