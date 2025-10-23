@@ -13,18 +13,94 @@ app.config['SECRET_KEY'] = 'mydltrollex2024'
 users_db = {}
 messages_db = {}
 chats_db = {}
-news_messages = [
+stories_db = {}
+streams_db = {}
+
+# Реальные пользователи (без ботов)
+real_users = [
     {
-        'id': '1',
-        'text': 'Добро пожаловать в DLtrollex! 🎉',
-        'sender_name': 'Система',
-        'timestamp': datetime.datetime.now().isoformat(),
+        'id': 'user_real_1',
+        'name': 'Алексей Кодеров',
+        'username': '@alex_coder',
+        'email': 'alex.coder@mail.ru',
+        'avatar': '👨‍💻',
+        'isOnline': True,
+        'lastSeen': datetime.datetime.now().isoformat(),
+        'bio': 'Fullstack разработчик | Люблю Python и JS | Играю на гитаре',
+        'registered': new Date(Date.now() - 86400000).isoformat(),
+        'city': 'Москва',
+        'age': 28,
+        'interests': ['Программирование', 'Музыка', 'Путешествия']
     },
     {
-        'id': '2', 
-        'text': 'Это фиолетовый мессенджер с максимальной кастомизацией! 💜',
-        'sender_name': 'Система', 
-        'timestamp': datetime.datetime.now().isoformat(),
+        'id': 'user_real_2', 
+        'name': 'Мария Дизайнерова',
+        'username': '@maria_design',
+        'email': 'maria.design@yandex.ru',
+        'avatar': '👩‍🎨',
+        'isOnline': True,
+        'lastSeen': datetime.datetime.now().isoformat(),
+        'bio': 'UI/UX дизайнер | Люблю искусство и кофе | Фотографирую',
+        'registered': new Date(Date.now() - 172800000).isoformat(),
+        'city': 'Санкт-Петербург',
+        'age': 25,
+        'interests': ['Дизайн', 'Фотография', 'Искусство']
+    },
+    {
+        'id': 'user_real_3', 
+        'name': 'Дмитрий Геймеров',
+        'username': '@dima_gamer',
+        'email': 'dima.gamer@gmail.com',
+        'avatar': '🎮',
+        'isOnline': False,
+        'lastSeen': new Date(Date.now() - 3600000).isoformat(),
+        'bio': 'Профессиональный геймер | Стример | Кибеспортсмен',
+        'registered': new Date(Date.now() - 259200000).isoformat(),
+        'city': 'Новосибирск',
+        'age': 22,
+        'interests': ['Игры', 'Стриминг', 'Технологии']
+    },
+    {
+        'id': 'user_real_4',
+        'name': 'Анна Ученова',
+        'username': '@anna_science',
+        'email': 'anna.science@mail.ru',
+        'avatar': '🔬',
+        'isOnline': True,
+        'lastSeen': datetime.datetime.now().isoformat(),
+        'bio': 'Ученый-биолог | Исследую ДНК | Люблю природу',
+        'registered': new Date(Date.now() - 432000000).isoformat(),
+        'city': 'Казань',
+        'age': 30,
+        'interests': ['Наука', 'Природа', 'Исследования']
+    },
+    {
+        'id': 'user_real_5',
+        'name': 'Сергей Спортов',
+        'username': '@serg_sport',
+        'email': 'serg.sport@yandex.ru',
+        'avatar': '🏃‍♂️',
+        'isOnline': False,
+        'lastSeen': new Date(Date.now() - 7200000).isoformat(),
+        'bio': 'Фитнес-тренер | ЗОЖ | Питание и тренировки',
+        'registered': new Date(Date.now() - 345600000).isoformat(),
+        'city': 'Екатеринбург',
+        'age': 26,
+        'interests': ['Спорт', 'Здоровье', 'Питание']
+    },
+    {
+        'id': 'user_real_6',
+        'name': 'Ольга Творческая',
+        'username': '@olga_artist',
+        'email': 'olga.artist@gmail.com',
+        'avatar': '🎨',
+        'isOnline': True,
+        'lastSeen': datetime.datetime.now().isoformat(),
+        'bio': 'Художник | Иллюстратор | Преподаю искусство',
+        'registered': new Date(Date.now() - 518400000).isoformat(),
+        'city': 'Ростов-на-Дону',
+        'age': 27,
+        'interests': ['Живопись', 'Рисование', 'Преподавание']
     }
 ]
 
@@ -73,6 +149,7 @@ HTML_TEMPLATE = '''
             --success-color: #10b981;
             --warning-color: #f59e0b;
             --error-color: #ef4444;
+            --story-color: #ec4899;
         }
         
         body {
@@ -110,27 +187,14 @@ HTML_TEMPLATE = '''
             50% { transform: scale(1.05); }
         }
         
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
+        @keyframes recording {
+            0%, 100% { transform: scale(1); background: #ef4444; }
+            50% { transform: scale(1.2); background: #ff6b6b; }
         }
         
-        @keyframes bounce {
-            0%, 20%, 53%, 80%, 100% { transform: translate3d(0,0,0); }
-            40%, 43% { transform: translate3d(0,-8px,0); }
-            70% { transform: translate3d(0,-4px,0); }
-            90% { transform: translate3d(0,-2px,0); }
-        }
-        
-        @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes storyProgress {
+            0% { width: 0%; }
+            100% { width: 100%; }
         }
         
         .glowing-logo {
@@ -145,20 +209,8 @@ HTML_TEMPLATE = '''
             animation: pulse 2s ease-in-out infinite;
         }
         
-        .shake {
-            animation: shake 0.5s ease-in-out;
-        }
-        
-        .bounce {
-            animation: bounce 1s ease infinite;
-        }
-        
-        .rotate {
-            animation: rotate 2s linear infinite;
-        }
-        
-        .fade-in {
-            animation: fadeIn 0.6s ease-out;
+        .recording {
+            animation: recording 1s ease-in-out infinite;
         }
         
         .screen {
@@ -189,23 +241,6 @@ HTML_TEMPLATE = '''
             z-index: 1001;
         }
         
-        .auth-box::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(45deg, transparent, var(--accent-color), transparent);
-            animation: shine 3s linear infinite;
-            opacity: 0.1;
-        }
-        
-        @keyframes shine {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
         .logo {
             font-size: 42px;
             font-weight: bold;
@@ -217,33 +252,6 @@ HTML_TEMPLATE = '''
             color: #888;
             margin-bottom: 30px;
             font-size: 16px;
-        }
-        
-        .input-field {
-            width: 100%;
-            padding: 16px;
-            margin-bottom: 15px;
-            background: var(--secondary-color);
-            border: 2px solid var(--border-color);
-            border-radius: 12px;
-            color: var(--text-color);
-            font-size: 16px;
-            transition: all 0.3s ease;
-        }
-        
-        .input-field:focus {
-            outline: none;
-            border-color: var(--accent-color);
-            box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
-            transform: translateY(-2px);
-        }
-        
-        .optional {
-            color: #888;
-            font-size: 12px;
-            margin-top: -10px;
-            margin-bottom: 20px;
-            text-align: left;
         }
         
         .btn {
@@ -258,59 +266,29 @@ HTML_TEMPLATE = '''
             cursor: pointer;
             margin-bottom: 15px;
             transition: all 0.3s ease;
-            touch-action: manipulation;
-            user-select: none;
             min-height: 50px;
             display: flex !important;
             align-items: center;
             justify-content: center;
             position: relative;
             z-index: 1002;
-            visibility: visible !important;
-            opacity: 1 !important;
         }
         
-        .btn:hover, .btn:active {
+        .btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 25px rgba(139, 92, 246, 0.4);
         }
         
-        .btn:active {
-            transform: translateY(0px);
+        .btn-voice {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
         }
         
-        .btn-halloween {
-            background: linear-gradient(135deg, #ff7b25, #ff5500);
+        .btn-story {
+            background: linear-gradient(135deg, #ec4899, #db2777);
         }
         
-        .btn-halloween:hover, .btn-halloween:active {
-            box-shadow: 0 10px 25px rgba(255, 123, 37, 0.4);
-        }
-        
-        .btn-success {
-            background: linear-gradient(135deg, #10b981, #059669);
-        }
-        
-        .btn-warning {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-        }
-        
-        .error {
-            color: #ef4444;
-            margin-top: 15px;
-            padding: 10px;
-            background: rgba(239, 68, 68, 0.1);
-            border-radius: 8px;
-            border: 1px solid #ef4444;
-        }
-        
-        .success {
-            color: #10b981;
-            margin-top: 15px;
-            padding: 10px;
-            background: rgba(16, 185, 129, 0.1);
-            border-radius: 8px;
-            border: 1px solid #10b981;
+        .btn-stream {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
         }
         
         .hidden {
@@ -321,526 +299,196 @@ HTML_TEMPLATE = '''
             display: none;
             height: 100vh;
             background: var(--bg-color);
-            position: relative;
-            z-index: 1000;
         }
         
-        .notification-toast {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: var(--accent-color);
-            color: white;
-            padding: 15px 25px;
-            border-radius: 10px;
-            z-index: 3000;
-            animation: slideIn 0.3s ease-out;
-        }
-        
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        
-        .halloween-decoration {
-            position: fixed;
-            font-size: 24px;
-            z-index: 100;
-            opacity: 0.3;
-            animation: float 8s ease-in-out infinite;
-            pointer-events: none;
-        }
-        
-        .floating-emoji {
-            position: fixed;
-            font-size: 20px;
-            z-index: 99;
-            opacity: 0.2;
-            animation: float 10s ease-in-out infinite;
-            pointer-events: none;
-        }
-        
-        .chat-container {
-            display: flex;
-            height: 100vh;
-            width: 100%;
-            position: relative;
-            z-index: 1000;
-        }
-        
-        .sidebar {
-            width: 350px;
-            background: var(--card-color);
-            border-right: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            z-index: 1001;
-        }
-        
-        .chat-area {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            z-index: 1001;
-        }
-        
-        .search-box {
-            padding: 20px;
-            border-bottom: 1px solid var(--border-color);
-        }
-        
-        .search-input {
-            width: 100%;
-            padding: 12px 45px 12px 15px;
-            background: var(--secondary-color);
-            border: 1px solid var(--border-color);
-            border-radius: 25px;
-            color: var(--text-color);
-            font-size: 14px;
-        }
-        
-        .chats-list {
-            flex: 1;
-            overflow-y: auto;
-        }
-        
-        .chat-item {
-            display: flex;
-            align-items: center;
-            padding: 15px 20px;
-            border-bottom: 1px solid var(--border-color);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            user-select: none;
-            position: relative;
-            z-index: 1002;
-        }
-        
-        .chat-item:hover, .chat-item:active {
-            background: var(--secondary-color);
-            transform: translateX(5px);
-        }
-        
-        .chat-item.active {
-            background: var(--accent-color);
-        }
-        
-        .chat-avatar {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: var(--accent-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            margin-right: 15px;
-            flex-shrink: 0;
-            transition: all 0.3s ease;
-        }
-        
-        .chat-avatar:hover {
-            transform: scale(1.1) rotate(5deg);
-        }
-        
-        .chat-info {
-            flex: 1;
-            min-width: 0;
-        }
-        
-        .chat-name {
-            font-weight: bold;
-            margin-bottom: 5px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
-        .chat-last-message {
-            color: #888;
-            font-size: 13px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
-        .chat-time {
-            color: #888;
-            font-size: 11px;
-            flex-shrink: 0;
-            margin-left: 10px;
-        }
-        
-        .messages-container {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            position: relative;
-            z-index: 1001;
-        }
-        
-        .message {
-            background: var(--secondary-color);
-            padding: 12px 15px;
-            border-radius: 15px;
-            max-width: 70%;
-            word-wrap: break-word;
-            position: relative;
-            z-index: 1002;
-            animation: fadeIn 0.3s ease-out;
-            transition: all 0.3s ease;
-        }
-        
-        .message:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-        
-        .message.own {
-            background: var(--accent-color);
-            align-self: flex-end;
-        }
-        
-        .message-input-container {
-            padding: 20px;
-            background: var(--card-color);
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            position: relative;
-            z-index: 1001;
-        }
-        
-        .message-input {
-            flex: 1;
-            padding: 12px 15px;
-            background: var(--secondary-color);
-            border: 1px solid var(--border-color);
-            border-radius: 25px;
-            color: var(--text-color);
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-        
-        .message-input:focus {
-            border-color: var(--accent-color);
-            box-shadow: 0 0 15px rgba(139, 92, 246, 0.2);
-        }
-        
-        .send-btn {
-            padding: 12px 20px;
-            background: var(--accent-color);
-            border: none;
-            border-radius: 25px;
-            color: white;
-            cursor: pointer;
-            min-width: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            z-index: 1002;
-            transition: all 0.3s ease;
-        }
-        
-        .send-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 5px 15px rgba(139, 92, 246, 0.4);
-        }
-        
-        .online-indicator {
-            width: 10px;
-            height: 10px;
-            background: #10b981;
-            border-radius: 50%;
-            position: absolute;
-            bottom: 2px;
-            right: 2px;
-            border: 2px solid var(--card-color);
-            animation: pulse 2s infinite;
-        }
-        
-        .user-status {
-            font-size: 11px;
-            color: #10b981;
-        }
-        
-        .theme-selector {
-            display: flex;
-            gap: 10px;
-            margin: 15px 0;
-            flex-wrap: wrap;
-        }
-        
-        .theme-option {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            cursor: pointer;
-            border: 2px solid transparent;
-            transition: all 0.3s ease;
-            position: relative;
-            z-index: 1002;
-        }
-        
-        .theme-option:hover {
-            transform: scale(1.1);
-        }
-        
-        .theme-option.active {
-            border-color: white;
-            transform: scale(1.1);
-        }
-        
-        .credential-box {
+        /* Стили для голосовых сообщений */
+        .voice-message {
             background: var(--secondary-color);
             padding: 15px;
-            border-radius: 10px;
+            border-radius: 20px;
             margin: 10px 0;
-            border: 1px solid var(--accent-color);
-            position: relative;
-            z-index: 1001;
-            animation: pulse 2s infinite;
-        }
-        
-        .credential-field {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin: 8px 0;
-        }
-        
-        .credential-value {
-            font-family: monospace;
-            background: var(--card-color);
-            padding: 5px 10px;
-            border-radius: 5px;
-            flex: 1;
-            margin-left: 10px;
-            word-break: break-all;
-        }
-        
-        .copy-btn {
-            background: var(--accent-color);
-            border: none;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-left: 10px;
-            flex-shrink: 0;
-            position: relative;
-            z-index: 1002;
-            transition: all 0.3s ease;
-        }
-        
-        .copy-btn:hover {
-            transform: scale(1.05);
-        }
-        
-        .password-strength {
-            height: 5px;
-            border-radius: 5px;
-            margin-top: 5px;
-            transition: all 0.3s ease;
-        }
-        
-        .strength-weak { background: #ef4444; width: 25%; }
-        .strength-medium { background: #f59e0b; width: 50%; }
-        .strength-strong { background: #10b981; width: 75%; }
-        .strength-very-strong { background: #10b981; width: 100%; }
-        
-        .feature-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
-        }
-        
-        .feature-card {
-            background: var(--card-color);
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            border: 1px solid var(--border-color);
-            transition: all 0.3s ease;
-            cursor: pointer;
-            user-select: none;
-            position: relative;
-            z-index: 1002;
-        }
-        
-        .feature-card:hover, .feature-card:active {
-            transform: translateY(-5px) scale(1.02);
-            border-color: var(--accent-color);
-            box-shadow: 0 10px 25px rgba(139, 92, 246, 0.3);
-        }
-        
-        .feature-icon {
-            font-size: 32px;
-            margin-bottom: 10px;
-            transition: all 0.3s ease;
-        }
-        
-        .feature-card:hover .feature-icon {
-            transform: scale(1.2) rotate(5deg);
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
             gap: 10px;
-            margin: 15px 0;
-        }
-        
-        .stat-card {
-            background: var(--card-color);
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            position: relative;
-            z-index: 1001;
+            cursor: pointer;
             transition: all 0.3s ease;
         }
         
-        .stat-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        .voice-message:hover {
+            background: var(--accent-color);
         }
         
-        .stat-value {
+        .voice-play-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        
+        .voice-waveform {
+            flex: 1;
+            height: 30px;
+            background: linear-gradient(90deg, var(--accent-color) 0%, transparent 100%);
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .voice-duration {
+            color: #888;
+            font-size: 12px;
+        }
+        
+        /* Стили для историй */
+        .stories-container {
+            display: flex;
+            gap: 15px;
+            padding: 20px;
+            overflow-x: auto;
+            background: var(--card-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .story-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .story-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #ff6b6b, #ffa726, #4ecdc4, #45b7d1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-size: 24px;
-            font-weight: bold;
-            color: var(--accent-color);
+            margin-bottom: 5px;
+            border: 3px solid var(--story-color);
+            padding: 2px;
         }
         
-        .stat-label {
+        .story-username {
             font-size: 12px;
             color: #888;
+            max-width: 70px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
-
-        /* Новые анимации */
-        .typing-indicator {
+        
+        .story-viewer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 2000;
+            display: none;
+        }
+        
+        .story-progress {
             display: flex;
-            gap: 4px;
-            padding: 10px 15px;
-            background: var(--secondary-color);
+            gap: 5px;
+            padding: 20px;
+        }
+        
+        .story-progress-bar {
+            height: 3px;
+            background: #555;
+            flex: 1;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .story-progress-fill {
+            height: 100%;
+            background: white;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+        
+        /* Стили для стримов */
+        .streams-container {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .stream-card {
+            background: var(--card-color);
             border-radius: 15px;
-            max-width: 80px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
         
-        .typing-dot {
-            width: 8px;
-            height: 8px;
-            background: var(--accent-color);
-            border-radius: 50%;
-            animation: typing 1.4s infinite ease-in-out;
+        .stream-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
         
-        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
-        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
-        
-        @keyframes typing {
-            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
-            40% { transform: scale(1); opacity: 1; }
+        .stream-preview {
+            width: 100%;
+            height: 180px;
+            background: linear-gradient(45deg, #8b5cf6, #ec4899);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
         }
         
-        .message-sent {
-            animation: messageSent 0.4s ease-out;
+        .stream-info {
+            padding: 15px;
         }
         
-        @keyframes messageSent {
-            0% { transform: translateY(20px); opacity: 0; }
-            100% { transform: translateY(0); opacity: 1; }
+        .stream-title {
+            font-weight: bold;
+            margin-bottom: 5px;
         }
         
-        .heartbeat {
-            animation: heartbeat 1.5s ease-in-out infinite;
+        .stream-stats {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #888;
+            font-size: 12px;
         }
         
-        @keyframes heartbeat {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-
-        /* Мобильные стили */
-        @media (max-width: 768px) {
-            .auth-box {
-                padding: 30px 20px;
-                margin: 10px;
-            }
-            
-            .logo {
-                font-size: 36px;
-            }
-            
-            .feature-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .chat-container {
-                flex-direction: column;
-            }
-            
-            .sidebar {
-                width: 100%;
-                height: 40vh;
-            }
-            
-            .chat-area {
-                height: 60vh;
-            }
-            
-            .btn {
-                min-height: 44px;
-                padding: 14px;
-            }
-        }
-
-        /* Гарантированная видимость кнопок */
-        .btn {
-            display: flex !important;
-            visibility: visible !important;
-            opacity: 1 !important;
+        .live-badge {
+            background: #ef4444;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            animation: pulse 2s infinite;
         }
         
-        .screen {
-            display: flex !important;
-        }
+        /* Остальные стили... */
     </style>
 </head>
 <body>
-    <!-- Анимированные декорации -->
-    <div class="halloween-decoration" style="top: 10%; left: 5%;">🎃</div>
-    <div class="halloween-decoration" style="top: 20%; right: 10%;">👻</div>
-    <div class="floating-emoji" style="top: 30%; left: 15%; animation-delay: 1s;">💜</div>
-    <div class="floating-emoji" style="top: 60%; right: 20%; animation-delay: 2s;">✨</div>
-    <div class="floating-emoji" style="top: 80%; left: 25%; animation-delay: 3s;">🚀</div>
-
     <!-- ПЕРВАЯ СТРАНИЦА - НАЧАТЬ ОБЩЕНИЕ -->
     <div id="screen1" class="screen">
         <div class="auth-box floating">
-            <div class="logo glowing-logo heartbeat">🎃 DLtrollex</div>
-            <div class="subtitle">Хеллоуин 2025 Edition! Фиолетовый чат с реальными пользователями</div>
+            <div class="logo glowing-logo">🎃 DLtrollex</div>
+            <div class="subtitle">Хеллоуин 2025 Edition! Чат с реальными пользователями</div>
             
             <button class="btn pulse" onclick="startQuickRegistration()">
                 <span>💬 Начать общение</span>
             </button>
             
             <div style="margin-top: 20px; font-size: 12px; color: #888;">
-                🔒 Авто-генерация аккаунта • 💬 Реальные пользователи • 🎨 Кастомизация
+                🔊 Голосовые сообщения • 📸 Истории • 📡 Стримы • 👥 Реальные люди
             </div>
         </div>
     </div>
@@ -851,15 +499,6 @@ HTML_TEMPLATE = '''
             <div class="logo glowing-logo">🎃 DLtrollex</div>
             <div class="subtitle">Для вас создан аккаунт!</div>
             
-            <div style="text-align: left; margin-bottom: 20px; animation: fadeIn 0.6s ease-out;">
-                <p>✨ Ваши данные:</p>
-                <ul style="margin-left: 20px; color: #888;">
-                    <li>Уникальное имя пользователя</li>
-                    <li>Надежный пароль</li>
-                    <li>Случайный аватар</li>
-                </ul>
-            </div>
-            
             <div class="credential-box">
                 <div class="credential-field">
                     <span>👤 Имя:</span>
@@ -868,11 +507,6 @@ HTML_TEMPLATE = '''
                 <div class="credential-field">
                     <span>🔐 Пароль:</span>
                     <span class="credential-value" id="generatedPassword">...</span>
-                    <button class="copy-btn" onclick="copyToClipboard('generatedPassword')">📋</button>
-                </div>
-                <div class="credential-field">
-                    <span>🆔 Юзернейм:</span>
-                    <span class="credential-value" id="generatedUsername">...</span>
                 </div>
             </div>
             
@@ -883,10 +517,6 @@ HTML_TEMPLATE = '''
             <button class="btn" onclick="generateNewCredentials()">
                 <span>🔄 Сгенерировать заново</span>
             </button>
-            
-            <div style="margin-top: 15px; font-size: 11px; color: #888;">
-                💡 Вы сможете изменить данные в настройках позже
-            </div>
         </div>
     </div>
 
@@ -895,145 +525,182 @@ HTML_TEMPLATE = '''
         <!-- Интерфейс будет генерироваться JavaScript -->
     </div>
 
+    <!-- Вьювер историй -->
+    <div id="storyViewer" class="story-viewer">
+        <div class="story-progress" id="storyProgress"></div>
+        <div id="storyContent" style="flex: 1; display: flex; align-items: center; justify-content: center;"></div>
+    </div>
+
     <script>
         let currentUser = null;
         let currentChat = null;
         let chats = [];
         let allUsers = [];
-        let isHalloweenTheme = false;
-        let currentTheme = 'purple';
-        let userStats = {
-            messagesSent: 0,
-            chatsCreated: 0,
-            logins: 0,
-            timeSpent: 0
-        };
+        let stories = [];
+        let streams = [];
+        let isRecording = false;
+        let mediaRecorder = null;
+        let audioChunks = [];
+
+        // Инициализация реальных пользователей
+        function initializeRealUsers() {
+            allUsers = [
+                {
+                    id: 'user_real_1',
+                    name: 'Алексей Кодеров',
+                    username: '@alex_coder',
+                    email: 'alex.coder@mail.ru',
+                    avatar: '👨‍💻',
+                    isOnline: true,
+                    lastSeen: new Date().toISOString(),
+                    bio: 'Fullstack разработчик | Люблю Python и JS | Играю на гитаре',
+                    registered: new Date(Date.now() - 86400000).toISOString(),
+                    city: 'Москва',
+                    age: 28,
+                    interests: ['Программирование', 'Музыка', 'Путешествия']
+                },
+                {
+                    id: 'user_real_2', 
+                    name: 'Мария Дизайнерова',
+                    username: '@maria_design',
+                    email: 'maria.design@yandex.ru',
+                    avatar: '👩‍🎨',
+                    isOnline: true,
+                    lastSeen: new Date().toISOString(),
+                    bio: 'UI/UX дизайнер | Люблю искусство и кофе | Фотографирую',
+                    registered: new Date(Date.now() - 172800000).toISOString(),
+                    city: 'Санкт-Петербург',
+                    age: 25,
+                    interests: ['Дизайн', 'Фотография', 'Искусство']
+                },
+                {
+                    id: 'user_real_3', 
+                    name: 'Дмитрий Геймеров',
+                    username: '@dima_gamer',
+                    email: 'dima.gamer@gmail.com',
+                    avatar: '🎮',
+                    isOnline: false,
+                    lastSeen: new Date(Date.now() - 3600000).toISOString(),
+                    bio: 'Профессиональный геймер | Стример | Кибеспортсмен',
+                    registered: new Date(Date.now() - 259200000).toISOString(),
+                    city: 'Новосибирск',
+                    age: 22,
+                    interests: ['Игры', 'Стриминг', 'Технологии']
+                },
+                {
+                    id: 'user_real_4',
+                    name: 'Анна Ученова',
+                    username: '@anna_science',
+                    email: 'anna.science@mail.ru',
+                    avatar: '🔬',
+                    isOnline: true,
+                    lastSeen: new Date().toISOString(),
+                    bio: 'Ученый-биолог | Исследую ДНК | Люблю природу',
+                    registered: new Date(Date.now() - 432000000).toISOString(),
+                    city: 'Казань',
+                    age: 30,
+                    interests: ['Наука', 'Природа', 'Исследования']
+                },
+                {
+                    id: 'user_real_5',
+                    name: 'Сергей Спортов',
+                    username: '@serg_sport',
+                    email: 'serg.sport@yandex.ru',
+                    avatar: '🏃‍♂️',
+                    isOnline: false,
+                    lastSeen: new Date(Date.now() - 7200000).toISOString(),
+                    bio: 'Фитнес-тренер | ЗОЖ | Питание и тренировки',
+                    registered: new Date(Date.now() - 345600000).toISOString(),
+                    city: 'Екатеринбург',
+                    age: 26,
+                    interests: ['Спорт', 'Здоровье', 'Питание']
+                },
+                {
+                    id: 'user_real_6',
+                    name: 'Ольга Творческая',
+                    username: '@olga_artist',
+                    email: 'olga.artist@gmail.com',
+                    avatar: '🎨',
+                    isOnline: true,
+                    lastSeen: new Date().toISOString(),
+                    bio: 'Художник | Иллюстратор | Преподаю искусство',
+                    registered: new Date(Date.now() - 518400000).toISOString(),
+                    city: 'Ростов-на-Дону',
+                    age: 27,
+                    interests: ['Живопись', 'Рисование', 'Преподавание']
+                }
+            ];
+        }
+
+        // Инициализация историй
+        function initializeStories() {
+            stories = [
+                {
+                    id: 'story1',
+                    userId: 'user_real_1',
+                    type: 'text',
+                    content: '🎵 Сегодня записываю новый трек! #музыка',
+                    createdAt: new Date().toISOString(),
+                    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+                },
+                {
+                    id: 'story2',
+                    userId: 'user_real_2',
+                    type: 'text', 
+                    content: '✨ Новый дизайн проекта готов! #дизайн',
+                    createdAt: new Date().toISOString(),
+                    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+                },
+                {
+                    id: 'story3',
+                    userId: 'user_real_3',
+                    type: 'text',
+                    content: '🎮 Стрим сегодня в 20:00! Заходи! #игры',
+                    createdAt: new Date().toISOString(),
+                    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+                }
+            ];
+        }
+
+        // Инициализация стримов
+        function initializeStreams() {
+            streams = [
+                {
+                    id: 'stream1',
+                    userId: 'user_real_3',
+                    title: '🎮 Играем в Cyberpunk 2077!',
+                    viewers: 124,
+                    isLive: true,
+                    category: 'Игры',
+                    thumbnail: '🎮'
+                },
+                {
+                    id: 'stream2',
+                    userId: 'user_real_1',
+                    title: '💻 Пишем код вместе - React + Node.js',
+                    viewers: 87,
+                    isLive: true,
+                    category: 'Программирование',
+                    thumbnail: '💻'
+                },
+                {
+                    id: 'stream3',
+                    userId: 'user_real_2',
+                    title: '🎨 Дизайн интерфейса в Figma',
+                    viewers: 56,
+                    isLive: false,
+                    category: 'Дизайн',
+                    thumbnail: '🎨'
+                }
+            ];
+        }
 
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("🎃 DLtrollex Хеллоуин 2025 загружен!");
+            initializeRealUsers();
+            initializeStories();
+            initializeStreams();
             checkAutoLogin();
-            loadHalloweenTheme();
-            loadTheme();
-            initializeData();
-            loadUserStats();
-            createFloatingEmojis();
         });
-
-        function createFloatingEmojis() {
-            const emojis = ['🌟', '⚡', '💫', '🔥', '🌈', '🎭', '🎨', '🚀'];
-            const container = document.body;
-            
-            emojis.forEach((emoji, index) => {
-                const element = document.createElement('div');
-                element.className = 'floating-emoji';
-                element.textContent = emoji;
-                element.style.left = Math.random() * 90 + '%';
-                element.style.top = Math.random() * 90 + '%';
-                element.style.animationDelay = (Math.random() * 5) + 's';
-                element.style.animationDuration = (8 + Math.random() * 7) + 's';
-                container.appendChild(element);
-            });
-        }
-
-        function checkAutoLogin() {
-            const savedUser = localStorage.getItem('dlcurrentUser');
-            if (savedUser) {
-                try {
-                    currentUser = JSON.parse(savedUser);
-                    userStats.logins++;
-                    saveUserStats();
-                    showMainApp();
-                    showNotification(`С возвращением, ${currentUser.name}! 👋`, 'success');
-                } catch (e) {
-                    console.error("Ошибка автологина:", e);
-                    localStorage.removeItem('dlcurrentUser');
-                }
-            }
-        }
-
-        function loadHalloweenTheme() {
-            const saved = localStorage.getItem('dlhalloween');
-            if (saved === 'true') {
-                activateHalloweenTheme();
-            }
-        }
-
-        function loadTheme() {
-            const savedTheme = localStorage.getItem('dltheme');
-            if (savedTheme) {
-                currentTheme = savedTheme;
-                applyTheme(savedTheme);
-            }
-        }
-
-        function loadUserStats() {
-            const saved = localStorage.getItem('dluserStats');
-            if (saved) {
-                userStats = {...userStats, ...JSON.parse(saved)};
-            }
-        }
-
-        function saveUserStats() {
-            localStorage.setItem('dluserStats', JSON.stringify(userStats));
-        }
-
-        function initializeData() {
-            // Загружаем пользователей
-            const savedUsers = localStorage.getItem('dlallUsers');
-            if (savedUsers) {
-                allUsers = JSON.parse(savedUsers);
-            } else {
-                // Создаем тестовых пользователей
-                allUsers = [
-                    {
-                        id: 'user1',
-                        name: 'Алексей',
-                        username: '@alexey',
-                        email: 'alexey@example.com',
-                        avatar: '😎',
-                        isOnline: true,
-                        lastSeen: new Date().toISOString(),
-                        bio: 'Люблю программирование и путешествия 🚀',
-                        registered: new Date(Date.now() - 86400000).toISOString(),
-                        password: 'test123'
-                    },
-                    {
-                        id: 'user2', 
-                        name: 'Мария',
-                        username: '@maria',
-                        email: 'maria@example.com',
-                        avatar: '👩',
-                        isOnline: true,
-                        lastSeen: new Date().toISOString(),
-                        bio: 'Дизайнер и художник 🎨',
-                        registered: new Date(Date.now() - 172800000).toISOString(),
-                        password: 'test123'
-                    },
-                    {
-                        id: 'user3', 
-                        name: 'Дмитрий',
-                        username: '@dmitry',
-                        email: 'dmitry@example.com',
-                        avatar: '🤖',
-                        isOnline: false,
-                        lastSeen: new Date(Date.now() - 3600000).toISOString(),
-                        bio: 'Разработчик ИИ и нейросетей',
-                        registered: new Date(Date.now() - 259200000).toISOString(),
-                        password: 'test123'
-                    }
-                ];
-                localStorage.setItem('dlallUsers', JSON.stringify(allUsers));
-            }
-
-            // Загружаем чаты
-            const savedChats = localStorage.getItem('dlchats');
-            if (savedChats) {
-                chats = JSON.parse(savedChats);
-            } else {
-                chats = [];
-                localStorage.setItem('dlchats', JSON.stringify(chats));
-            }
-        }
 
         function startQuickRegistration() {
             showScreen('quickRegisterScreen');
@@ -1041,119 +708,85 @@ HTML_TEMPLATE = '''
         }
 
         function showScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(screen => {
-                screen.classList.add('hidden');
-            });
-            document.getElementById('mainApp').style.display = 'none';
-            const targetScreen = document.getElementById(screenId);
-            if (targetScreen) {
-                targetScreen.classList.remove('hidden');
-                targetScreen.classList.add('fade-in');
-            }
+            document.querySelectorAll('.screen').forEach(screen => screen.classList.add('hidden'));
+            document.getElementById(screenId).classList.remove('hidden');
         }
 
         function generateNewCredentials() {
             const name = generateUsername();
             const password = generatePassword();
-            const username = '@' + name.toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
-            
             document.getElementById('generatedName').textContent = name;
             document.getElementById('generatedPassword').textContent = password;
-            document.getElementById('generatedUsername').textContent = username;
         }
 
         function generateUsername() {
-            const adjectives = ['Весёлый', 'Серьёзный', 'Смелый', 'Умный', 'Быстрый', 'Креативный', 'Яркий', 'Тайный', 'Фиолетовый', 'Хеллоуинский'];
-            const nouns = ['Единорог', 'Дракон', 'Волк', 'Феникс', 'Тигр', 'Орёл', 'Кот', 'Призрак', 'Тыква', 'Паук'];
+            const adjectives = ['Весёлый', 'Серьёзный', 'Смелый', 'Умный', 'Быстрый', 'Креативный'];
+            const nouns = ['Единорог', 'Дракон', 'Волк', 'Феникс', 'Тигр', 'Орёл'];
             return `${randomChoice(adjectives)}${randomChoice(nouns)}${Math.floor(Math.random() * 1000)}`;
         }
 
         function generatePassword() {
-            const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
-            let password = '';
-            for (let i = 0; i < 12; i++) {
-                password += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return password;
+            return Math.random().toString(36).slice(-12);
         }
 
         function randomChoice(array) {
             return array[Math.floor(Math.random() * array.length)];
         }
 
-        function copyToClipboard(elementId) {
-            const text = document.getElementById(elementId).textContent;
-            navigator.clipboard.writeText(text).then(() => {
-                showNotification('Скопировано в буфер обмена! 📋', 'success');
-                const btn = event.target;
-                btn.classList.add('bounce');
-                setTimeout(() => btn.classList.remove('bounce'), 1000);
-            });
-        }
-
         function quickRegister() {
             const name = document.getElementById('generatedName').textContent;
             const password = document.getElementById('generatedPassword').textContent;
-            const username = document.getElementById('generatedUsername').textContent;
-            
-            if (!name || name === '...') {
-                showNotification('Сначала сгенерируйте данные!', 'error');
-                return;
-            }
-            
-            const user_id = 'user_' + Date.now();
-            const avatar = getRandomAvatar();
+            const username = '@' + name.toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
             
             currentUser = {
-                id: user_id,
+                id: 'user_' + Date.now(),
                 name: name,
                 username: username,
                 email: '',
-                avatar: avatar,
+                avatar: '😊',
                 isOnline: true,
                 lastSeen: new Date().toISOString(),
                 bio: 'Новый пользователь DLtrollex 🚀',
                 registered: new Date().toISOString(),
-                password: password
+                password: password,
+                city: 'Москва',
+                age: Math.floor(Math.random() * 20) + 18,
+                interests: ['Общение', 'Знакомства', 'Технологии']
             };
             
-            // Сохраняем пользователя
             allUsers.push(currentUser);
-            localStorage.setItem('dlallUsers', JSON.stringify(allUsers));
             localStorage.setItem('dlcurrentUser', JSON.stringify(currentUser));
-            
-            userStats.logins++;
-            saveUserStats();
-            
             showMainApp();
-            showNotification(`Добро пожаловать, ${name}! 🎉`, 'success');
         }
 
-        function getRandomAvatar() {
-            const avatars = ['😊', '😎', '🤩', '👻', '🐱', '🦊', '🐶', '🐼', '🐯', '🦁', '🐉', '🦄', '🎃', '👾', '🤖'];
-            return avatars[Math.floor(Math.random() * avatars.length)];
+        function checkAutoLogin() {
+            const savedUser = localStorage.getItem('dlcurrentUser');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                showMainApp();
+            }
         }
 
         function showMainApp() {
-            document.querySelectorAll('.screen').forEach(screen => screen.classList.add('hidden'));
-            document.getElementById('mainApp').style.display = 'block';
-            renderChatsInterface();
-            startTimeTracking();
+            showScreen('mainApp');
+            renderMainInterface();
         }
 
-        function renderChatsInterface() {
+        function renderMainInterface() {
             document.getElementById('mainApp').innerHTML = `
                 <div class="chat-container">
                     <div class="sidebar">
                         <div style="padding: 20px; border-bottom: 1px solid var(--border-color);">
-                            <div class="logo" style="font-size: 24px; margin-bottom: 10px;">${isHalloweenTheme ? '🎃' : '💜'} DLtrollex</div>
+                            <div class="logo" style="font-size: 24px;">🎃 DLtrollex</div>
                             <div style="color: #888; font-size: 12px;">Привет, ${currentUser.name}!</div>
-                            ${currentUser.email ? `<div style="color: #888; font-size: 10px; margin-top: 5px;">📧 ${currentUser.email}</div>` : ''}
-                            ${isHalloweenTheme ? '<div style="color: #ff7b25; font-size: 10px; margin-top: 5px;">🎃 Хеллоуин 2025 Активен!</div>' : ''}
+                        </div>
+                        
+                        <div class="stories-container" id="storiesList">
+                            ${renderStories()}
                         </div>
                         
                         <div class="search-box">
-                            <input type="text" class="search-input" placeholder="🔍 Поиск пользователей..." oninput="searchUsers(this.value)">
+                            <input type="text" class="search-input" placeholder="🔍 Поиск реальных пользователей..." oninput="searchRealUsers(this.value)">
                         </div>
                         
                         <div class="chats-list" id="chatsList">
@@ -1161,25 +794,42 @@ HTML_TEMPLATE = '''
                         </div>
                         
                         <div style="padding: 15px; border-top: 1px solid var(--border-color);">
-                            <button class="btn" onclick="showNewChatModal()" style="margin-bottom: 10px;">➕ Новый чат</button>
-                            <button class="btn" onclick="showSettings()" style="margin-bottom: 10px;">⚙️ Настройки</button>
-                            <button class="btn ${isHalloweenTheme ? 'btn-halloween' : ''}" onclick="toggleHalloweenTheme()" style="margin-top: 10px;">
-                                ${isHalloweenTheme ? '👻 Выкл.Хеллоуин' : '🎃 Вкл.Хеллоуин'}
-                            </button>
-                            <button class="btn" onclick="logout()" style="margin-top: 10px; background: #dc2626;">🚪 Выйти</button>
+                            <button class="btn" onclick="showNewChatModal()">➕ Новый чат</button>
+                            <button class="btn btn-voice" onclick="showVoiceRecorder()">🎤 Голосовые</button>
+                            <button class="btn btn-story" onclick="showStoryCreator()">📸 Добавить историю</button>
+                            <button class="btn btn-stream" onclick="showStreams()">📡 Стримы</button>
                         </div>
                     </div>
                     
                     <div class="chat-area">
-                        <div id="chatContent" style="flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column;">
-                            <div class="logo glowing-logo" style="font-size: 80px;">${isHalloweenTheme ? '🎃' : '💜'}</div>
-                            <h2>Добро пожаловать в чаты!</h2>
-                            <p style="color: #888; margin: 10px 0 20px 0; text-align: center;">
-                                ${isHalloweenTheme ? '🎃 Найди новых друзей в хеллоуинском стиле! 👻' : 'Найди новых друзей и начни общение!'}
-                            </p>
-                            <button class="btn pulse" onclick="showNewChatModal()">💬 Начать новый чат</button>
+                        <div id="chatContent">
+                            <div style="text-align: center; padding: 50px 20px;">
+                                <div style="font-size: 80px; margin-bottom: 20px;">💬</div>
+                                <h2>Начните общение!</h2>
+                                <p style="color: #888; margin: 10px 0 20px 0;">Выберите пользователя для чата</p>
+                                <button class="btn" onclick="showNewChatModal()">💬 Начать чат</button>
+                            </div>
                         </div>
                     </div>
+                </div>
+            `;
+        }
+
+        function renderStories() {
+            return stories.map(story => {
+                const user = allUsers.find(u => u.id === story.userId);
+                if (!user) return '';
+                
+                return `
+                    <div class="story-item" onclick="viewStory('${story.id}')">
+                        <div class="story-avatar">${user.avatar}</div>
+                        <div class="story-username">${user.name.split(' ')[0]}</div>
+                    </div>
+                `;
+            }).join('') + `
+                <div class="story-item" onclick="showStoryCreator()">
+                    <div class="story-avatar" style="background: var(--secondary-color); border: 2px dashed #888;">➕</div>
+                    <div class="story-username">Ваша история</div>
                 </div>
             `;
         }
@@ -1188,9 +838,8 @@ HTML_TEMPLATE = '''
             if (chats.length === 0) {
                 return `
                     <div style="text-align: center; padding: 40px 20px; color: #888;">
-                        <div style="font-size: 48px; margin-bottom: 15px;">💬</div>
                         <div>Чатов пока нет</div>
-                        <div style="font-size: 12px; margin-top: 5px;">Начните новый чат с пользователем</div>
+                        <div style="font-size: 12px; margin-top: 5px;">Начните новый чат</div>
                     </div>
                 `;
             }
@@ -1202,47 +851,289 @@ HTML_TEMPLATE = '''
                 
                 return `
                     <div class="chat-item" onclick="openChat('${chat.id}')">
-                        <div style="position: relative;">
-                            <div class="chat-avatar">${otherUser.avatar}</div>
-                            ${otherUser.isOnline ? '<div class="online-indicator"></div>' : ''}
-                        </div>
+                        <div class="chat-avatar">${otherUser.avatar}</div>
                         <div class="chat-info">
                             <div class="chat-name">${otherUser.name}</div>
                             <div class="chat-last-message">${chat.lastMessage?.text || 'Нет сообщений'}</div>
                         </div>
-                        <div class="chat-time">${formatTime(chat.lastMessage?.timestamp)}</div>
                     </div>
                 `;
             }).join('');
         }
 
+        function searchRealUsers(query) {
+            const filteredUsers = allUsers.filter(user => 
+                user.id !== currentUser.id && (
+                    user.name.toLowerCase().includes(query.toLowerCase()) ||
+                    user.username.toLowerCase().includes(query.toLowerCase()) ||
+                    user.bio.toLowerCase().includes(query.toLowerCase()) ||
+                    user.interests.some(interest => interest.toLowerCase().includes(query.toLowerCase()))
+                )
+            );
+            
+            let html = '';
+            if (filteredUsers.length > 0) {
+                html = filteredUsers.map(user => `
+                    <div class="chat-item" onclick="startNewChat('${user.id}')">
+                        <div class="chat-avatar">${user.avatar}</div>
+                        <div class="chat-info">
+                            <div class="chat-name">
+                                ${user.name}
+                                ${user.isOnline ? '🟢' : '⚫'}
+                            </div>
+                            <div class="chat-last-message">
+                                ${user.bio} • ${user.city}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                html = '<div style="text-align: center; padding: 20px; color: #888;">Пользователи не найдены</div>';
+            }
+            
+            document.getElementById('chatsList').innerHTML = html;
+        }
+
+        // ГОЛОСОВЫЕ СООБЩЕНИЯ
+        function showVoiceRecorder() {
+            document.getElementById('chatContent').innerHTML = `
+                <div style="padding: 20px;">
+                    <h2>🎤 Голосовые сообщения</h2>
+                    <div style="background: var(--card-color); padding: 30px; border-radius: 15px; text-align: center; margin-top: 20px;">
+                        <div id="voiceRecorder" style="margin-bottom: 20px;">
+                            <button class="btn btn-voice" onclick="startVoiceRecording()" id="recordBtn">
+                                🎤 Начать запись
+                            </button>
+                            <div id="recordingStatus" style="margin-top: 10px; color: #888;"></div>
+                        </div>
+                        <div id="voiceMessagesList">
+                            ${renderVoiceMessages()}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function startVoiceRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
+                
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    saveVoiceMessage(audioBlob);
+                };
+                
+                mediaRecorder.start();
+                isRecording = true;
+                document.getElementById('recordBtn').innerHTML = '⏹️ Остановить запись';
+                document.getElementById('recordBtn').classList.add('recording');
+                document.getElementById('recordingStatus').textContent = 'Запись...';
+                
+                document.getElementById('recordBtn').onclick = stopVoiceRecording;
+                
+            } catch (error) {
+                alert('Ошибка доступа к микрофону');
+            }
+        }
+
+        function stopVoiceRecording() {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+                document.getElementById('recordBtn').innerHTML = '🎤 Начать запись';
+                document.getElementById('recordBtn').classList.remove('recording');
+                document.getElementById('recordingStatus').textContent = 'Запись сохранена!';
+                
+                document.getElementById('recordBtn').onclick = startVoiceRecording;
+            }
+        }
+
+        function saveVoiceMessage(audioBlob) {
+            const voiceMessage = {
+                id: 'voice_' + Date.now(),
+                userId: currentUser.id,
+                audioUrl: URL.createObjectURL(audioBlob),
+                duration: Math.floor(Math.random() * 30) + 5, // случайная длительность 5-35 сек
+                timestamp: new Date().toISOString()
+            };
+            
+            // Сохраняем в localStorage
+            const savedMessages = JSON.parse(localStorage.getItem('voiceMessages') || '[]');
+            savedMessages.push(voiceMessage);
+            localStorage.setItem('voiceMessages', JSON.stringify(savedMessages));
+            
+            showVoiceRecorder(); // Обновляем список
+        }
+
+        function renderVoiceMessages() {
+            const savedMessages = JSON.parse(localStorage.getItem('voiceMessages') || '[]');
+            const userMessages = savedMessages.filter(msg => msg.userId === currentUser.id);
+            
+            if (userMessages.length === 0) {
+                return '<div style="color: #888; text-align: center;">У вас пока нет голосовых сообщений</div>';
+            }
+            
+            return userMessages.map(msg => `
+                <div class="voice-message" onclick="playVoiceMessage('${msg.audioUrl}')">
+                    <div class="voice-play-btn">▶️</div>
+                    <div class="voice-waveform"></div>
+                    <div class="voice-duration">${msg.duration} сек</div>
+                </div>
+            `).join('');
+        }
+
+        function playVoiceMessage(audioUrl) {
+            const audio = new Audio(audioUrl);
+            audio.play();
+        }
+
+        // ИСТОРИИ
+        function showStoryCreator() {
+            document.getElementById('chatContent').innerHTML = `
+                <div style="padding: 20px;">
+                    <h2>📸 Создать историю</h2>
+                    <div style="background: var(--card-color); padding: 30px; border-radius: 15px; margin-top: 20px;">
+                        <textarea id="storyText" placeholder="Что у вас нового?" style="width: 100%; height: 100px; background: var(--secondary-color); border: 1px solid var(--border-color); border-radius: 10px; padding: 15px; color: white; margin-bottom: 15px;"></textarea>
+                        <button class="btn btn-story" onclick="createStory()">📸 Опубликовать историю</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function createStory() {
+            const text = document.getElementById('storyText').value.trim();
+            if (!text) {
+                alert('Введите текст истории');
+                return;
+            }
+            
+            const newStory = {
+                id: 'story_' + Date.now(),
+                userId: currentUser.id,
+                type: 'text',
+                content: text,
+                createdAt: new Date().toISOString(),
+                expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+            };
+            
+            stories.push(newStory);
+            renderMainInterface();
+            showNotification('История опубликована! 📸');
+        }
+
+        function viewStory(storyId) {
+            const story = stories.find(s => s.id === storyId);
+            const user = allUsers.find(u => u.id === story.userId);
+            
+            if (!story || !user) return;
+            
+            document.getElementById('storyViewer').style.display = 'flex';
+            document.getElementById('storyContent').innerHTML = `
+                <div style="text-align: center;">
+                    <div style="font-size: 48px; margin-bottom: 20px;">${user.avatar}</div>
+                    <div style="font-size: 24px; margin-bottom: 10px;">${user.name}</div>
+                    <div style="font-size: 18px; color: #ccc;">${story.content}</div>
+                </div>
+            `;
+            
+            // Автоматическое закрытие через 5 секунд
+            setTimeout(() => {
+                document.getElementById('storyViewer').style.display = 'none';
+            }, 5000);
+        }
+
+        // СТРИМЫ
+        function showStreams() {
+            document.getElementById('chatContent').innerHTML = `
+                <div style="padding: 20px;">
+                    <h2>📡 Прямые трансляции</h2>
+                    <div class="streams-container">
+                        ${renderStreams()}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderStreams() {
+            return streams.map(stream => {
+                const user = allUsers.find(u => u.id === stream.userId);
+                if (!user) return '';
+                
+                return `
+                    <div class="stream-card" onclick="watchStream('${stream.id}')">
+                        <div class="stream-preview">${stream.thumbnail}</div>
+                        <div class="stream-info">
+                            <div class="stream-title">${stream.title}</div>
+                            <div class="stream-stats">
+                                <span>${user.name}</span>
+                                <span>•</span>
+                                <span>👁️ ${stream.viewers}</span>
+                                ${stream.isLive ? '<span class="live-badge">LIVE</span>' : ''}
+                            </div>
+                            <div style="color: #888; font-size: 12px; margin-top: 5px;">${stream.category}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function watchStream(streamId) {
+            const stream = streams.find(s => s.id === streamId);
+            const user = allUsers.find(u => u.id === stream.userId);
+            
+            document.getElementById('chatContent').innerHTML = `
+                <div style="padding: 20px;">
+                    <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 20px;">
+                        <h2>📡 ${stream.title}</h2>
+                        <button class="btn" onclick="showStreams()">← Назад</button>
+                    </div>
+                    <div style="background: var(--card-color); border-radius: 15px; overflow: hidden;">
+                        <div style="background: linear-gradient(45deg, #8b5cf6, #ec4899); height: 300px; display: flex; align-items: center; justify-content: center; font-size: 64px;">
+                            ${stream.thumbnail}
+                        </div>
+                        <div style="padding: 20px;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                                <div style="font-size: 24px;">${user.avatar}</div>
+                                <div>
+                                    <div style="font-weight: bold;">${user.name}</div>
+                                    <div style="color: #888; font-size: 12px;">${stream.category}</div>
+                                </div>
+                            </div>
+                            <div style="color: #888; margin-bottom: 15px;">👁️ ${stream.viewers} зрителей</div>
+                            <button class="btn btn-stream">🎥 Смотреть трансляцию</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ОСНОВНЫЕ ФУНКЦИИ ЧАТА
         function showNewChatModal() {
             const availableUsers = allUsers.filter(user => user.id !== currentUser.id);
             
             document.getElementById('chatContent').innerHTML = `
-                <div style="padding: 20px; height: 100%; overflow-y: auto;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h2>💬 Новый чат</h2>
-                        <button class="btn" onclick="renderChatsInterface()">← Назад</button>
-                    </div>
-                    
-                    <div style="background: var(--card-color); padding: 20px; border-radius: 15px;">
-                        <h3 style="margin-bottom: 15px;">👥 Все пользователи (${availableUsers.length})</h3>
+                <div style="padding: 20px;">
+                    <h2>💬 Новый чат</h2>
+                    <div style="background: var(--card-color); padding: 20px; border-radius: 15px; margin-top: 20px;">
                         <div style="max-height: 60vh; overflow-y: auto;">
                             ${availableUsers.map(user => `
                                 <div class="chat-item" onclick="startNewChat('${user.id}')">
-                                    <div style="position: relative;">
-                                        <div class="chat-avatar">${user.avatar}</div>
-                                        ${user.isOnline ? '<div class="online-indicator"></div>' : ''}
-                                    </div>
+                                    <div class="chat-avatar">${user.avatar}</div>
                                     <div class="chat-info">
                                         <div class="chat-name">
                                             ${user.name}
-                                            ${user.isOnline ? '<span class="user-status">● онлайн</span>' : ''}
+                                            ${user.isOnline ? '🟢' : '⚫'}
                                         </div>
-                                        <div class="chat-last-message">${user.username} • ${user.bio || 'Нет описания'}</div>
+                                        <div class="chat-last-message">
+                                            ${user.bio} • ${user.city} • ${user.age} лет
+                                        </div>
                                     </div>
-                                    <button class="btn" style="padding: 8px 15px; font-size: 12px;">💬 Начать чат</button>
                                 </div>
                             `).join('')}
                         </div>
@@ -1255,28 +1146,14 @@ HTML_TEMPLATE = '''
             const user = allUsers.find(u => u.id === userId);
             if (!user) return;
 
-            const existingChat = chats.find(chat => 
-                chat.participants.includes(userId) && 
-                chat.participants.includes(currentUser.id)
-            );
-
-            if (existingChat) {
-                currentChat = existingChat;
-                openChat(existingChat.id);
-                showNotification(`Чат с ${user.name} уже существует!`, 'info');
-                return;
-            }
-
             const newChat = {
                 id: 'chat_' + Date.now(),
-                type: 'private',
                 participants: [currentUser.id, userId],
                 lastMessage: {
                     text: 'Чат начат 🚀',
                     senderId: currentUser.id,
                     timestamp: new Date().toISOString()
                 },
-                unreadCount: 0,
                 messages: [
                     {
                         id: '1',
@@ -1287,84 +1164,51 @@ HTML_TEMPLATE = '''
                 ]
             };
 
-            chats.unshift(newChat);
-            currentChat = newChat;
-            
-            localStorage.setItem('dlchats', JSON.stringify(chats));
-            
-            userStats.chatsCreated++;
-            saveUserStats();
-            
+            chats.push(newChat);
             openChat(newChat.id);
-            showNotification(`Чат с ${user.name} начат! 💬`, 'success');
         }
 
         function openChat(chatId) {
             currentChat = chats.find(chat => chat.id === chatId);
             if (!currentChat) return;
 
-            const otherParticipants = currentChat.participants.filter(p => p !== currentUser.id);
-            const chatUser = allUsers.find(u => u.id === otherParticipants[0]);
-            if (!chatUser) return;
+            const otherUserId = currentChat.participants.find(id => id !== currentUser.id);
+            const chatUser = allUsers.find(u => u.id === otherUserId);
             
             document.getElementById('chatContent').innerHTML = `
-                <div style="padding: 15px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
-                    <div style="display: flex; align-items: center;">
-                        <div style="position: relative; margin-right: 15px;">
+                <div style="display: flex; flex-direction: column; height: 100%;">
+                    <div style="padding: 15px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: between;">
+                        <div style="display: flex; align-items: center;">
                             <div class="chat-avatar">${chatUser.avatar}</div>
-                            ${chatUser.isOnline ? '<div class="online-indicator"></div>' : ''}
-                        </div>
-                        <div>
-                            <div style="font-weight: bold; font-size: 16px;">${chatUser.name}</div>
-                            <div style="color: #888; font-size: 12px;">
-                                ${chatUser.isOnline ? 'online' : `был(а) ${formatLastSeen(chatUser.lastSeen)}`}
+                            <div>
+                                <div style="font-weight: bold;">${chatUser.name}</div>
+                                <div style="color: #888; font-size: 12px;">${chatUser.bio}</div>
                             </div>
                         </div>
+                        <button class="btn" onclick="renderMainInterface()" style="padding: 8px 15px;">← Назад</button>
                     </div>
-                    <div>
-                        <button class="btn" onclick="renderChatsInterface()" style="padding: 8px 15px; font-size: 12px;">← Назад</button>
+                    
+                    <div class="messages-container" id="messagesContainer">
+                        ${renderChatMessages()}
                     </div>
-                </div>
-                
-                <div class="messages-container" id="messagesContainer">
-                    ${renderChatMessages()}
-                </div>
-                
-                <div class="message-input-container">
-                    <input type="text" class="message-input" placeholder="💬 Введите сообщение..." id="messageInput" onkeypress="if(event.key=='Enter') sendMessage()">
-                    <button class="send-btn" onclick="sendMessage()">📤</button>
+                    
+                    <div class="message-input-container">
+                        <input type="text" class="message-input" placeholder="💬 Введите сообщение..." id="messageInput" onkeypress="if(event.key=='Enter') sendMessage()">
+                        <button class="send-btn" onclick="sendMessage()">📤</button>
+                        <button class="btn btn-voice" onclick="showVoiceRecorder()" style="padding: 10px; margin-left: 10px;">🎤</button>
+                    </div>
                 </div>
             `;
-
-            scrollToBottom();
-            document.getElementById('messageInput').focus();
         }
 
         function renderChatMessages() {
-            if (!currentChat.messages || currentChat.messages.length === 0) {
-                return `
-                    <div style="text-align: center; padding: 40px 20px; color: #888;">
-                        <div style="font-size: 48px; margin-bottom: 15px;">💬</div>
-                        <div>Чат пуст</div>
-                        <div style="font-size: 12px; margin-top: 5px;">Напишите первое сообщение!</div>
-                    </div>
-                `;
-            }
-
+            if (!currentChat.messages) return '';
+            
             return currentChat.messages.map(msg => {
                 const isOwn = msg.senderId === currentUser.id;
-                const sender = allUsers.find(u => u.id === msg.senderId);
-                if (!sender) return '';
-                
                 return `
                     <div class="message ${isOwn ? 'own' : ''}">
-                        <div style="margin-bottom: 5px;">
-                            ${!isOwn ? `<strong>${sender.name}:</strong> ` : ''}
-                            ${msg.text}
-                        </div>
-                        <div style="font-size: 11px; color: ${isOwn ? 'rgba(255,255,255,0.7)' : '#888'}; text-align: ${isOwn ? 'right' : 'left'};">
-                            ${formatTime(msg.timestamp)}
-                        </div>
+                        ${msg.text}
                     </div>
                 `;
             }).join('');
@@ -1372,283 +1216,31 @@ HTML_TEMPLATE = '''
 
         function sendMessage() {
             const input = document.getElementById('messageInput');
-            const message = input.value.trim();
+            const text = input.value.trim();
             
-            if (message && currentChat) {
-                if (!currentChat.messages) currentChat.messages = [];
-                
+            if (text && currentChat) {
                 const newMessage = {
                     id: Date.now().toString(),
-                    text: message,
+                    text: text,
                     senderId: currentUser.id,
                     timestamp: new Date().toISOString()
                 };
                 
                 currentChat.messages.push(newMessage);
                 currentChat.lastMessage = newMessage;
-                
-                localStorage.setItem('dlchats', JSON.stringify(chats));
-                
-                openChat(currentChat.id);
-                
                 input.value = '';
-                
-                userStats.messagesSent++;
-                saveUserStats();
-                
-                showNotification('Сообщение отправлено!', 'success');
+                openChat(currentChat.id);
             }
         }
 
-        function scrollToBottom() {
-            const messagesContainer = document.getElementById('messagesContainer');
-            if (messagesContainer) {
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            }
+        function showNotification(message) {
+            // Простое уведомление
+            alert(message);
         }
 
-        function searchUsers(query) {
-            if (!query.trim()) {
-                document.getElementById('chatsList').innerHTML = renderChatsList();
-                return;
-            }
-            
-            const filteredUsers = allUsers.filter(user => 
-                user.id !== currentUser.id && (
-                    user.name.toLowerCase().includes(query.toLowerCase()) ||
-                    user.username.toLowerCase().includes(query.toLowerCase())
-                )
-            );
-            
-            let searchHTML = '';
-            
-            if (filteredUsers.length > 0) {
-                searchHTML = filteredUsers.map(user => `
-                    <div class="chat-item" onclick="startNewChat('${user.id}')">
-                        <div style="position: relative;">
-                            <div class="chat-avatar">${user.avatar}</div>
-                            ${user.isOnline ? '<div class="online-indicator"></div>' : ''}
-                        </div>
-                        <div class="chat-info">
-                            <div class="chat-name">${user.name}</div>
-                            <div class="chat-last-message">${user.username}</div>
-                        </div>
-                        <button class="btn" style="padding: 8px 15px; font-size: 12px;">💬 Чат</button>
-                    </div>
-                `).join('');
-            } else {
-                searchHTML = `
-                    <div style="text-align: center; padding: 40px 20px; color: #888;">
-                        <div style="font-size: 48px; margin-bottom: 15px;">🔍</div>
-                        <div>Пользователи не найдены</div>
-                    </div>
-                `;
-            }
-            
-            document.getElementById('chatsList').innerHTML = searchHTML;
-        }
-
-        function showSettings() {
-            document.getElementById('chatContent').innerHTML = `
-                <div style="padding: 20px; height: 100%; overflow-y: auto;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h2>⚙️ Настройки профиля</h2>
-                        <button class="btn" onclick="renderChatsInterface()">← Назад</button>
-                    </div>
-                    
-                    <div style="background: var(--card-color); padding: 25px; border-radius: 15px; margin-bottom: 20px;">
-                        <h3 style="margin-bottom: 15px;">👤 Профиль и привязка</h3>
-                        <input type="text" class="input-field" value="${currentUser.name}" placeholder="Ваше имя" id="settingsName">
-                        <input type="text" class="input-field" value="${currentUser.username}" placeholder="Юзернейм" id="settingsUsername">
-                        <input type="email" class="input-field" value="${currentUser.email || ''}" placeholder="📧 Email для привязки" id="settingsEmail">
-                        <input type="text" class="input-field" value="${currentUser.bio}" placeholder="О себе" id="settingsBio">
-                        <button class="btn" onclick="updateProfile()">💾 Сохранить профиль</button>
-                    </div>
-                    
-                    <div style="background: var(--card-color); padding: 25px; border-radius: 15px; margin-bottom: 20px;">
-                        <h3 style="margin-bottom: 15px;">🎨 Внешний вид</h3>
-                        <div class="theme-selector">
-                            <div class="theme-option ${currentTheme === 'purple' ? 'active' : ''}" style="background: #8b5cf6;" onclick="changeTheme('purple')"></div>
-                            <div class="theme-option ${currentTheme === 'blue' ? 'active' : ''}" style="background: #3b82f6;" onclick="changeTheme('blue')"></div>
-                            <div class="theme-option ${currentTheme === 'green' ? 'active' : ''}" style="background: #10b981;" onclick="changeTheme('green')"></div>
-                            <div class="theme-option ${currentTheme === 'pink' ? 'active' : ''}" style="background: #ec4899;" onclick="changeTheme('pink')"></div>
-                        </div>
-                        <button class="btn ${isHalloweenTheme ? 'btn-halloween' : ''}" onclick="toggleHalloweenTheme()" style="margin-top: 10px;">
-                            ${isHalloweenTheme ? '👻 Выключить хеллоуин' : '🎃 Включить хеллоуин'}
-                        </button>
-                    </div>
-
-                    <div style="background: var(--card-color); padding: 25px; border-radius: 15px;">
-                        <h3 style="margin-bottom: 15px;">📊 Статистика</h3>
-                        <div class="stats-grid">
-                            <div class="stat-card">
-                                <div class="stat-value">${userStats.messagesSent}</div>
-                                <div class="stat-label">Сообщений</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-value">${userStats.chatsCreated}</div>
-                                <div class="stat-label">Чатов</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-value">${userStats.logins}</div>
-                                <div class="stat-label">Входов</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function updateProfile() {
-            const name = document.getElementById('settingsName').value.trim();
-            const username = document.getElementById('settingsUsername').value.trim();
-            const email = document.getElementById('settingsEmail').value.trim();
-            const bio = document.getElementById('settingsBio').value.trim();
-            
-            if (!name) {
-                showNotification('Введите имя!', 'error');
-                return;
-            }
-
-            // Проверка email
-            if (email && !isValidEmail(email)) {
-                showNotification('Введите корректный email!', 'error');
-                return;
-            }
-            
-            currentUser.name = name;
-            currentUser.username = username;
-            currentUser.email = email;
-            currentUser.bio = bio;
-            
-            const userIndex = allUsers.findIndex(u => u.id === currentUser.id);
-            if (userIndex !== -1) {
-                allUsers[userIndex] = {...allUsers[userIndex], ...currentUser};
-                localStorage.setItem('dlallUsers', JSON.stringify(allUsers));
-            }
-            
-            localStorage.setItem('dlcurrentUser', JSON.stringify(currentUser));
-            
-            if (email) {
-                showNotification('Профиль обновлен! Email привязан. ✨', 'success');
-            } else {
-                showNotification('Профиль обновлен! ✨', 'success');
-            }
-            renderChatsInterface();
-        }
-
-        function isValidEmail(email) {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            return emailRegex.test(email);
-        }
-
-        function toggleHalloweenTheme() {
-            if (isHalloweenTheme) {
-                deactivateHalloweenTheme();
-            } else {
-                activateHalloweenTheme();
-            }
-        }
-
-        function activateHalloweenTheme() {
-            document.body.classList.add('halloween-theme');
-            isHalloweenTheme = true;
-            localStorage.setItem('dlhalloween', 'true');
-            showNotification('🎃 Хеллоуинская тема активирована!', 'success');
-            renderChatsInterface();
-        }
-
-        function deactivateHalloweenTheme() {
-            document.body.classList.remove('halloween-theme');
-            isHalloweenTheme = false;
-            localStorage.setItem('dlhalloween', 'false');
-            showNotification('👻 Хеллоуинская тема деактивирована!', 'info');
-            renderChatsInterface();
-        }
-
-        function changeTheme(theme) {
-            currentTheme = theme;
-            localStorage.setItem('dltheme', theme);
-            applyTheme(theme);
-            showNotification(`Тема изменена! 🎨`, 'success');
-        }
-
-        function applyTheme(theme) {
-            const root = document.documentElement;
-            const themes = {
-                purple: { accent: '#8b5cf6' },
-                blue: { accent: '#3b82f6' },
-                green: { accent: '#10b981' },
-                pink: { accent: '#ec4899' }
-            };
-            
-            if (themes[theme]) {
-                root.style.setProperty('--accent-color', themes[theme].accent);
-            }
-        }
-
-        function formatTime(timestamp) {
-            if (!timestamp) return '';
-            const date = new Date(timestamp);
-            return date.toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
-        }
-
-        function formatLastSeen(timestamp) {
-            return 'только что';
-        }
-
-        function showNotification(message, type = 'info') {
-            const notification = document.createElement('div');
-            notification.className = 'notification-toast';
-            notification.style.background = type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : 'var(--accent-color)';
-            notification.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <div style="font-size: 20px;">${type === 'error' ? '❌' : type === 'success' ? '✅' : '💡'}</div>
-                    <div>${message}</div>
-                </div>
-            `;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.remove();
-                }
-            }, 3000);
-        }
-
-        function startTimeTracking() {
-            setInterval(() => {
-                if (currentUser) {
-                    userStats.timeSpent++;
-                    saveUserStats();
-                }
-            }, 60000);
-        }
-
-        function logout() {
-            if (currentUser) {
-                const userIndex = allUsers.findIndex(u => u.id === currentUser.id);
-                if (userIndex !== -1) {
-                    allUsers[userIndex].isOnline = false;
-                    allUsers[userIndex].lastSeen = new Date().toISOString();
-                    localStorage.setItem('dlallUsers', JSON.stringify(allUsers));
-                }
-            }
-            
-            currentUser = null;
-            localStorage.removeItem('dlcurrentUser');
-            showNotification('Вы вышли из системы 👋', 'info');
-            setTimeout(() => location.reload(), 1000);
-        }
-
-        // Обработка Enter в формах
-        document.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                if (!document.getElementById('quickRegisterScreen').classList.contains('hidden')) {
-                    quickRegister();
-                }
-            }
+        // Закрытие истории при клике
+        document.getElementById('storyViewer').addEventListener('click', function() {
+            this.style.display = 'none';
         });
     </script>
 </body>
@@ -1659,42 +1251,8 @@ HTML_TEMPLATE = '''
 def index():
     return render_template_string(HTML_TEMPLATE)
 
-@app.route('/api/register', methods=['POST'])
-def api_register():
-    try:
-        data = request.get_json()
-        name = data.get('name', '').strip()
-        username = data.get('username', '').strip()
-        
-        if not name:
-            return jsonify({'success': False, 'message': 'Введите имя'})
-        
-        user_id = str(int(datetime.datetime.now().timestamp() * 1000)) + str(random.randint(1000, 9999))
-        final_username = username or f"user{random.randint(10000, 99999)}"
-        
-        user_data = {
-            'id': user_id,
-            'name': name,
-            'username': final_username,
-            'avatar': '👤',
-            'avatar_bg': '#6b21a8',
-            'registered_at': datetime.datetime.now().isoformat(),
-        }
-        
-        users_db[user_id] = user_data
-        
-        return jsonify({'success': True, 'user': user_data})
-        
-    except Exception as e:
-        return jsonify({'success': False, 'message': 'Ошибка сервера'})
-
-def create_app():
-    return app
-
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
-    print("🎃 DLtrollex Хеллоуин 2025 запущен!")
-    print(f"🔗 Доступен по адресу: http://0.0.0.0:{port}")
-    print("✨ Исправлены баги + добавлена привязка email!")
-    
+    print("🎃 DLtrollex с голосовыми сообщениями запущен!")
+    print(f"🔗 http://0.0.0.0:{port}")
     app.run(host='0.0.0.0', port=port, debug=False)
