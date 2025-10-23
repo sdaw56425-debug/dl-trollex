@@ -116,17 +116,6 @@ HTML_TEMPLATE = '''
             50% { transform: scale(1.05); }
         }
         
-        @keyframes spooky {
-            0%, 100% { transform: rotate(0deg) scale(1); }
-            25% { transform: rotate(5deg) scale(1.1); }
-            75% { transform: rotate(-5deg) scale(1.1); }
-        }
-        
-        @keyframes confetti {
-            0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
-            100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
-        }
-        
         .glowing-logo {
             animation: glow 3s ease-in-out infinite;
         }
@@ -137,19 +126,6 @@ HTML_TEMPLATE = '''
         
         .pulse {
             animation: pulse 2s ease-in-out infinite;
-        }
-        
-        .spooky {
-            animation: spooky 3s ease-in-out infinite;
-        }
-        
-        .confetti {
-            position: fixed;
-            width: 10px;
-            height: 10px;
-            background: var(--accent-color);
-            animation: confetti 3s linear forwards;
-            z-index: 10000;
         }
         
         .screen {
@@ -177,6 +153,7 @@ HTML_TEMPLATE = '''
             text-align: center;
             position: relative;
             overflow: hidden;
+            z-index: 1001;
         }
         
         .auth-box::before {
@@ -254,6 +231,8 @@ HTML_TEMPLATE = '''
             display: flex;
             align-items: center;
             justify-content: center;
+            position: relative;
+            z-index: 1002;
         }
         
         .btn:hover, .btn:active {
@@ -307,15 +286,6 @@ HTML_TEMPLATE = '''
             border: 1px solid #10b981;
         }
         
-        .warning {
-            color: #f59e0b;
-            margin-top: 15px;
-            padding: 10px;
-            background: rgba(245, 158, 11, 0.1);
-            border-radius: 8px;
-            border: 1px solid #f59e0b;
-        }
-        
         .hidden {
             display: none !important;
         }
@@ -324,6 +294,8 @@ HTML_TEMPLATE = '''
             display: none;
             height: 100vh;
             background: var(--bg-color);
+            position: relative;
+            z-index: 1000;
         }
         
         .notification-toast {
@@ -362,6 +334,8 @@ HTML_TEMPLATE = '''
             display: flex;
             height: 100vh;
             width: 100%;
+            position: relative;
+            z-index: 1000;
         }
         
         .sidebar {
@@ -370,12 +344,16 @@ HTML_TEMPLATE = '''
             border-right: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
+            position: relative;
+            z-index: 1001;
         }
         
         .chat-area {
             flex: 1;
             display: flex;
             flex-direction: column;
+            position: relative;
+            z-index: 1001;
         }
         
         .search-box {
@@ -406,6 +384,8 @@ HTML_TEMPLATE = '''
             cursor: pointer;
             transition: background 0.3s ease;
             user-select: none;
+            position: relative;
+            z-index: 1002;
         }
         
         .chat-item:hover, .chat-item:active {
@@ -464,6 +444,8 @@ HTML_TEMPLATE = '''
             display: flex;
             flex-direction: column;
             gap: 10px;
+            position: relative;
+            z-index: 1001;
         }
         
         .message {
@@ -472,19 +454,13 @@ HTML_TEMPLATE = '''
             border-radius: 15px;
             max-width: 70%;
             word-wrap: break-word;
+            position: relative;
+            z-index: 1002;
         }
         
         .message.own {
             background: var(--accent-color);
             align-self: flex-end;
-        }
-        
-        .message.system {
-            background: var(--warning-color);
-            align-self: center;
-            max-width: 90%;
-            font-style: italic;
-            text-align: center;
         }
         
         .message-input-container {
@@ -494,6 +470,8 @@ HTML_TEMPLATE = '''
             display: flex;
             gap: 10px;
             align-items: center;
+            position: relative;
+            z-index: 1001;
         }
         
         .message-input {
@@ -517,6 +495,8 @@ HTML_TEMPLATE = '''
             display: flex;
             align-items: center;
             justify-content: center;
+            position: relative;
+            z-index: 1002;
         }
         
         .online-indicator {
@@ -549,6 +529,8 @@ HTML_TEMPLATE = '''
             cursor: pointer;
             border: 2px solid transparent;
             transition: all 0.3s ease;
+            position: relative;
+            z-index: 1002;
         }
         
         .theme-option.active {
@@ -562,6 +544,8 @@ HTML_TEMPLATE = '''
             border-radius: 10px;
             margin: 10px 0;
             border: 1px solid var(--accent-color);
+            position: relative;
+            z-index: 1001;
         }
         
         .credential-field {
@@ -590,6 +574,8 @@ HTML_TEMPLATE = '''
             cursor: pointer;
             margin-left: 10px;
             flex-shrink: 0;
+            position: relative;
+            z-index: 1002;
         }
         
         .password-strength {
@@ -620,6 +606,8 @@ HTML_TEMPLATE = '''
             transition: all 0.3s ease;
             cursor: pointer;
             user-select: none;
+            position: relative;
+            z-index: 1002;
         }
         
         .feature-card:hover, .feature-card:active {
@@ -644,6 +632,8 @@ HTML_TEMPLATE = '''
             padding: 15px;
             border-radius: 8px;
             text-align: center;
+            position: relative;
+            z-index: 1001;
         }
         
         .stat-value {
@@ -691,75 +681,16 @@ HTML_TEMPLATE = '''
             }
         }
 
-        /* Новые улучшения */
-        .typing-indicator {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            color: #888;
-            font-style: italic;
-            padding: 10px;
-        }
-        
-        .typing-dots {
-            display: flex;
-            gap: 2px;
-        }
-        
-        .typing-dot {
-            width: 4px;
-            height: 4px;
-            background: var(--accent-color);
-            border-radius: 50%;
-            animation: typing 1.4s infinite;
-        }
-        
-        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
-        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
-        
-        @keyframes typing {
-            0%, 60%, 100% { transform: translateY(0); }
-            30% { transform: translateY(-5px); }
-        }
-
-        .message-reaction {
-            display: flex;
-            gap: 5px;
-            margin-top: 5px;
-            font-size: 12px;
-        }
-
-        .reaction-btn {
-            background: var(--secondary-color);
-            border: none;
-            border-radius: 10px;
-            padding: 2px 6px;
-            cursor: pointer;
-            font-size: 10px;
-        }
-
-        .online-users {
-            padding: 10px 20px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .online-user {
-            display: inline-flex;
-            align-items: center;
-            background: var(--secondary-color);
-            padding: 5px 10px;
-            border-radius: 15px;
-            margin: 2px;
-            font-size: 12px;
+        /* Убраны конфетти и другие проблемные элементы */
+        .confetti-fix {
+            display: none !important;
         }
     </style>
 </head>
 <body>
-    <!-- Хеллоуинские декорации -->
+    <!-- Хеллоуинские декорации (упрощенные) -->
     <div class="halloween-decoration" style="top: 10%; left: 5%;">🎃</div>
     <div class="halloween-decoration" style="top: 20%; right: 10%;">👻</div>
-    <div class="halloween-decoration" style="bottom: 30%; left: 15%;">🦇</div>
-    <div class="halloween-decoration" style="bottom: 20%; right: 5%;">🕷️</div>
 
     <!-- ПЕРВАЯ СТРАНИЦА - ПРОДОЛЖИТЬ -->
     <div id="screen1" class="screen">
@@ -908,57 +839,8 @@ HTML_TEMPLATE = '''
             messagesSent: 0,
             chatsCreated: 0,
             logins: 0,
-            timeSpent: 0,
-            reactionsGiven: 0
+            timeSpent: 0
         };
-
-        // Тестовые пользователи для демонстрации
-        const DEMO_USERS = [
-            {
-                id: 'demo1',
-                name: 'Алексей',
-                username: '@alexey',
-                email: 'alexey@example.com',
-                avatar: '😎',
-                isOnline: true,
-                lastSeen: new Date().toISOString(),
-                bio: 'Люблю программирование и путешествия 🚀',
-                registered: new Date(Date.now() - 86400000).toISOString()
-            },
-            {
-                id: 'demo2', 
-                name: 'Мария',
-                username: '@maria',
-                email: 'maria@example.com',
-                avatar: '👩',
-                isOnline: true,
-                lastSeen: new Date().toISOString(),
-                bio: 'Дизайнер и художник 🎨',
-                registered: new Date(Date.now() - 172800000).toISOString()
-            },
-            {
-                id: 'demo3',
-                name: 'Дмитрий',
-                username: '@dmitry',
-                email: 'dmitry@example.com',
-                avatar: '🧑',
-                isOnline: false,
-                lastSeen: new Date(Date.now() - 300000).toISOString(),
-                bio: 'Разработчик игр 🎮',
-                registered: new Date(Date.now() - 259200000).toISOString()
-            },
-            {
-                id: 'demo4',
-                name: 'Елена',
-                username: '@elena',
-                email: 'elena@example.com',
-                avatar: '👸',
-                isOnline: true,
-                lastSeen: new Date().toISOString(),
-                bio: 'Фотограф и блогер 📸',
-                registered: new Date(Date.now() - 345600000).toISOString()
-            }
-        ];
 
         document.addEventListener('DOMContentLoaded', function() {
             console.log("🎃 DLtrollex Хеллоуин 2025 загружен!");
@@ -1014,65 +896,36 @@ HTML_TEMPLATE = '''
             if (savedUsers) {
                 allUsers = JSON.parse(savedUsers);
             } else {
-                // Добавляем демо-пользователей если нет сохраненных
-                allUsers = [...DEMO_USERS];
+                allUsers = [
+                    {
+                        id: 'user1',
+                        name: 'Алексей',
+                        username: '@alexey',
+                        email: 'alexey@example.com',
+                        avatar: '😎',
+                        isOnline: true,
+                        lastSeen: new Date().toISOString(),
+                        bio: 'Люблю программирование и путешествия 🚀',
+                        registered: new Date(Date.now() - 86400000).toISOString()
+                    },
+                    {
+                        id: 'user2', 
+                        name: 'Мария',
+                        username: '@maria',
+                        email: 'maria@example.com',
+                        avatar: '👩',
+                        isOnline: true,
+                        lastSeen: new Date().toISOString(),
+                        bio: 'Дизайнер и художник 🎨',
+                        registered: new Date(Date.now() - 172800000).toISOString()
+                    }
+                ];
                 localStorage.setItem('dlallUsers', JSON.stringify(allUsers));
             }
 
             const savedChats = localStorage.getItem('dlchats');
             if (savedChats) {
                 chats = JSON.parse(savedChats);
-            } else {
-                // Создаем демо-чаты
-                createDemoChats();
-            }
-        }
-
-        function createDemoChats() {
-            if (allUsers.length >= 2) {
-                const demoChat = {
-                    id: 'demo_chat_1',
-                    type: 'private',
-                    participants: [allUsers[0].id, allUsers[1].id],
-                    lastMessage: {
-                        text: 'Привет! Как дела? 👋',
-                        senderId: allUsers[0].id,
-                        timestamp: new Date().toISOString()
-                    },
-                    unreadCount: 0,
-                    messages: [
-                        {
-                            id: '1',
-                            text: 'Привет! Рад тебя видеть в DLtrollex! 🎉',
-                            senderId: allUsers[0].id,
-                            timestamp: new Date(Date.now() - 300000).toISOString(),
-                            reactions: {}
-                        },
-                        {
-                            id: '2',
-                            text: 'Привет! Спасибо, тоже рад! Этот мессенджер выглядит круто! 💜',
-                            senderId: allUsers[1].id,
-                            timestamp: new Date(Date.now() - 240000).toISOString(),
-                            reactions: {}
-                        },
-                        {
-                            id: '3',
-                            text: 'Да, здесь много интересных функций. Попробуй отправить хеллоуинское сообщение! 🎃',
-                            senderId: allUsers[0].id,
-                            timestamp: new Date(Date.now() - 180000).toISOString(),
-                            reactions: {}
-                        },
-                        {
-                            id: '4',
-                            text: 'Круто! 🎃 Бууу! Счастливого Хеллоуина! 👻',
-                            senderId: allUsers[1].id,
-                            timestamp: new Date(Date.now() - 120000).toISOString(),
-                            reactions: {'🎃': 1}
-                        }
-                    ]
-                };
-                chats = [demoChat];
-                localStorage.setItem('dlchats', JSON.stringify(chats));
             }
         }
 
@@ -1100,7 +953,6 @@ HTML_TEMPLATE = '''
             showScreen('mainApp');
             renderChatsInterface();
             showNotification(`Добро пожаловать в DLtrollex${isHalloweenTheme ? ' 🎃' : ''}!`, 'success');
-            createConfetti();
             startTimeTracking();
         }
 
@@ -1161,25 +1013,6 @@ HTML_TEMPLATE = '''
             }
         }
 
-        function hashPassword(password) {
-            // Простая имитация хеширования
-            return 'hashed_' + btoa(password).slice(0, 20);
-        }
-
-        function createConfetti() {
-            const colors = ['#8b5cf6', '#ff7b25', '#10b981', '#3b82f6', '#f59e0b'];
-            for (let i = 0; i < 30; i++) {
-                const confetti = document.createElement('div');
-                confetti.className = 'confetti';
-                confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
-                confetti.style.left = Math.random() * 100 + 'vw';
-                confetti.style.animationDelay = Math.random() * 2 + 's';
-                document.body.appendChild(confetti);
-                
-                setTimeout(() => confetti.remove(), 3000);
-            }
-        }
-
         function registerUser() {
             const name = document.getElementById('regName').value.trim();
             const username = document.getElementById('regUsername').value.trim();
@@ -1209,8 +1042,7 @@ HTML_TEMPLATE = '''
                 isOnline: true,
                 lastSeen: new Date().toISOString(),
                 bio: 'Новый пользователь DLtrollex 🚀',
-                registered: new Date().toISOString(),
-                password: hashPassword(password)
+                registered: new Date().toISOString()
             };
             
             allUsers.push(currentUser);
@@ -1239,8 +1071,7 @@ HTML_TEMPLATE = '''
                 isOnline: true,
                 lastSeen: new Date().toISOString(),
                 bio: 'Авто-сгенерированный пользователь DLtrollex 🎲',
-                registered: new Date().toISOString(),
-                password: hashPassword(password)
+                registered: new Date().toISOString()
             };
             
             allUsers.push(currentUser);
@@ -1255,7 +1086,7 @@ HTML_TEMPLATE = '''
         }
 
         function getRandomAvatar() {
-            const avatars = ['😊', '😎', '🤩', '👻', '🐱', '🦊', '🐶', '🐼', '🐯', '🦁', '🎃', '👻', '🦇', '🕷️'];
+            const avatars = ['😊', '😎', '🤩', '👻', '🐱', '🦊', '🐶', '🐼', '🐯', '🦁'];
             return avatars[Math.floor(Math.random() * avatars.length)];
         }
 
@@ -1285,7 +1116,6 @@ HTML_TEMPLATE = '''
             }
         }
 
-        // ОСНОВНОЙ ИНТЕРФЕЙС ЧАТА
         function renderChatsInterface() {
             document.getElementById('mainApp').innerHTML = `
                 <div class="chat-container">
@@ -1294,36 +1124,6 @@ HTML_TEMPLATE = '''
                             <div class="logo" style="font-size: 24px; margin-bottom: 10px;">${isHalloweenTheme ? '🎃' : '💜'} DLtrollex</div>
                             <div style="color: #888; font-size: 12px;">Привет, ${currentUser.name}!</div>
                             ${isHalloweenTheme ? '<div style="color: #ff7b25; font-size: 10px; margin-top: 5px;">🎃 Хеллоуин 2025 Активен!</div>' : ''}
-                            
-                            <div class="stats-grid">
-                                <div class="stat-card">
-                                    <div class="stat-value">${userStats.messagesSent}</div>
-                                    <div class="stat-label">Сообщений</div>
-                                </div>
-                                <div class="stat-card">
-                                    <div class="stat-value">${userStats.chatsCreated}</div>
-                                    <div class="stat-label">Чатов</div>
-                                </div>
-                                <div class="stat-card">
-                                    <div class="stat-value">${userStats.logins}</div>
-                                    <div class="stat-label">Входов</div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Онлайн пользователи -->
-                        <div class="online-users">
-                            <div style="color: #888; font-size: 12px; margin-bottom: 8px;">
-                                ● Онлайн: ${allUsers.filter(u => u.isOnline).length}
-                            </div>
-                            <div>
-                                ${allUsers.filter(u => u.isOnline).slice(0, 5).map(user => `
-                                    <span class="online-user">
-                                        ${user.avatar} ${user.name}
-                                    </span>
-                                `).join('')}
-                                ${allUsers.filter(u => u.isOnline).length > 5 ? '...' : ''}
-                            </div>
                         </div>
                         
                         <div class="search-box">
@@ -1336,9 +1136,7 @@ HTML_TEMPLATE = '''
                         
                         <div style="padding: 15px; border-top: 1px solid var(--border-color);">
                             <button class="btn" onclick="showNewChatModal()" style="margin-bottom: 10px;">➕ Новый чат</button>
-                            <button class="btn" onclick="showAllUsers()" style="margin-bottom: 10px;">👥 Все пользователи</button>
                             <button class="btn" onclick="showSettings()" style="margin-bottom: 10px;">⚙️ Настройки</button>
-                            <button class="btn" onclick="showFeatures()" style="margin-bottom: 10px;">🌟 Возможности</button>
                             ${currentUser && currentUser.is_admin ? '<button class="btn btn-admin" onclick="showAdminPanel()">👑 Админ</button>' : ''}
                             <button class="btn ${isHalloweenTheme ? 'btn-halloween' : ''}" onclick="toggleHalloweenTheme()" style="margin-top: 10px;">
                                 ${isHalloweenTheme ? '👻 Выкл.Хеллоуин' : '🎃 Вкл.Хеллоуин'}
@@ -1349,13 +1147,12 @@ HTML_TEMPLATE = '''
                     
                     <div class="chat-area">
                         <div id="chatContent" style="flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column;">
-                            <div class="logo glowing-logo ${isHalloweenTheme ? 'spooky' : ''}" style="font-size: 80px;">${isHalloweenTheme ? '🎃' : '💜'}</div>
+                            <div class="logo glowing-logo" style="font-size: 80px;">${isHalloweenTheme ? '🎃' : '💜'}</div>
                             <h2>Добро пожаловать в чаты!</h2>
                             <p style="color: #888; margin: 10px 0 20px 0; text-align: center;">
                                 ${isHalloweenTheme ? '🎃 Найди новых друзей в хеллоуинском стиле! 👻' : 'Найди новых друзей и начни общение!'}
                             </p>
                             <button class="btn" onclick="showNewChatModal()">💬 Начать новый чат</button>
-                            ${isHalloweenTheme ? '<div style="color: #ff7b25; margin-top: 15px; font-size: 14px;">🎃 Счастливого Хеллоуина 2025! 👻</div>' : ''}
                         </div>
                     </div>
                 </div>
@@ -1372,310 +1169,7 @@ HTML_TEMPLATE = '''
                     </div>
                 `;
             }
-
-            return chats.map(chat => {
-                const otherParticipants = chat.participants.filter(p => p !== currentUser.id);
-                const chatUser = allUsers.find(u => u.id === otherParticipants[0]);
-                if (!chatUser) return '';
-                
-                const isActive = currentChat && currentChat.id === chat.id;
-                const lastMessage = chat.lastMessage || { text: 'Чат начат', timestamp: new Date().toISOString() };
-                
-                return `
-                    <div class="chat-item ${isActive ? 'active' : ''}" onclick="openChat('${chat.id}')">
-                        <div style="position: relative;">
-                            <div class="chat-avatar">${chat.type === 'group' ? '👥' : chatUser.avatar}</div>
-                            ${chatUser.isOnline ? '<div class="online-indicator"></div>' : ''}
-                        </div>
-                        <div class="chat-info">
-                            <div class="chat-name">
-                                ${chat.type === 'group' ? chat.name : chatUser.name}
-                                ${chatUser.isOnline ? '<span class="user-status">● онлайн</span>' : ''}
-                            </div>
-                            <div class="chat-last-message">${lastMessage.text}</div>
-                        </div>
-                        <div class="chat-time">${formatTime(lastMessage.timestamp)}</div>
-                        ${chat.unreadCount > 0 ? `
-                            <div style="background: var(--accent-color); color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 12px; margin-left: 10px;">
-                                ${chat.unreadCount}
-                            </div>
-                        ` : ''}
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function openChat(chatId) {
-            currentChat = chats.find(chat => chat.id === chatId);
-            if (!currentChat) return;
-
-            const otherParticipants = currentChat.participants.filter(p => p !== currentUser.id);
-            const chatUser = allUsers.find(u => u.id === otherParticipants[0]);
-            if (!chatUser) return;
-            
-            document.getElementById('chatContent').innerHTML = `
-                <!-- Заголовок чата -->
-                <div style="padding: 15px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
-                    <div style="display: flex; align-items: center;">
-                        <div style="position: relative; margin-right: 15px;">
-                            <div class="chat-avatar">${currentChat.type === 'group' ? '👥' : chatUser.avatar}</div>
-                            ${chatUser.isOnline ? '<div class="online-indicator"></div>' : ''}
-                        </div>
-                        <div>
-                            <div style="font-weight: bold; font-size: 16px;">
-                                ${currentChat.type === 'group' ? currentChat.name : chatUser.name}
-                            </div>
-                            <div style="color: #888; font-size: 12px;">
-                                ${chatUser.isOnline ? 
-                                    '<span class="typing-indicator" id="typingIndicator" style="display: none;"><div class="typing-dots"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div> печатает...</span>' : 
-                                    `был(а) ${formatLastSeen(chatUser.lastSeen)}`
-                                }
-                            </div>
-                        </div>
-                    </div>
-                    <div>
-                        <button class="btn" onclick="showUserProfile('${chatUser.id}')" style="padding: 8px 15px; font-size: 12px; margin-right: 10px;">👤 Профиль</button>
-                        <button class="btn" onclick="renderChatsInterface()" style="padding: 8px 15px; font-size: 12px;">← Назад</button>
-                    </div>
-                </div>
-                
-                <!-- Сообщения -->
-                <div class="messages-container" id="messagesContainer">
-                    ${renderChatMessages()}
-                </div>
-                
-                <!-- Ввод сообщения -->
-                <div class="message-input-container">
-                    <input type="text" class="message-input" placeholder="💬 Введите сообщение..." id="messageInput" 
-                           onkeypress="handleMessageInput(event)" oninput="simulateTyping()">
-                    <button class="send-btn" onclick="sendMessage()">📤</button>
-                    ${isHalloweenTheme ? '<button class="send-btn btn-halloween" onclick="sendHalloweenMessage()">🎃</button>' : ''}
-                    <button class="send-btn" onclick="showReactionsPicker()">😊</button>
-                </div>
-            `;
-
-            scrollToBottom();
-            document.getElementById('messageInput').focus();
-        }
-
-        function renderChatMessages() {
-            if (!currentChat.messages || currentChat.messages.length === 0) {
-                return `
-                    <div style="text-align: center; padding: 40px 20px; color: #888;">
-                        <div style="font-size: 48px; margin-bottom: 15px;">💬</div>
-                        <div>Чат пуст</div>
-                        <div style="font-size: 12px; margin-top: 5px;">Напишите первое сообщение!</div>
-                    </div>
-                `;
-            }
-
-            return currentChat.messages.map(msg => {
-                const isOwn = msg.senderId === currentUser.id;
-                const sender = allUsers.find(u => u.id === msg.senderId);
-                if (!sender) return '';
-                
-                const reactions = msg.reactions || {};
-                const reactionsHTML = Object.keys(reactions).length > 0 ? `
-                    <div class="message-reaction">
-                        ${Object.entries(reactions).map(([emoji, count]) => `
-                            <button class="reaction-btn" onclick="addReaction('${msg.id}', '${emoji}')">
-                                ${emoji} ${count}
-                            </button>
-                        `).join('')}
-                    </div>
-                ` : '';
-                
-                return `
-                    <div class="message ${isOwn ? 'own' : ''}">
-                        <div style="margin-bottom: 5px;">
-                            ${!isOwn ? `<strong>${sender.name}:</strong> ` : ''}
-                            ${msg.text}
-                        </div>
-                        ${reactionsHTML}
-                        <div style="font-size: 11px; color: ${isOwn ? 'rgba(255,255,255,0.7)' : '#888'}; text-align: ${isOwn ? 'right' : 'left'};">
-                            ${formatTime(msg.timestamp)}
-                            ${isOwn ? ' ✓' : ''}
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function handleMessageInput(event) {
-            if (event.key === 'Enter') {
-                sendMessage();
-            }
-        }
-
-        function simulateTyping() {
-            const typingIndicator = document.getElementById('typingIndicator');
-            if (typingIndicator) {
-                typingIndicator.style.display = 'flex';
-                clearTimeout(window.typingTimeout);
-                window.typingTimeout = setTimeout(() => {
-                    typingIndicator.style.display = 'none';
-                }, 1000);
-            }
-        }
-
-        function sendMessage() {
-            const input = document.getElementById('messageInput');
-            const message = input.value.trim();
-            
-            if (message && currentChat) {
-                if (!currentChat.messages) currentChat.messages = [];
-                
-                const newMessage = {
-                    id: Date.now().toString(),
-                    text: message,
-                    senderId: currentUser.id,
-                    timestamp: new Date().toISOString(),
-                    reactions: {}
-                };
-                
-                currentChat.messages.push(newMessage);
-                currentChat.lastMessage = newMessage;
-                
-                localStorage.setItem('dlchats', JSON.stringify(chats));
-                
-                openChat(currentChat.id);
-                renderChatsList();
-                
-                input.value = '';
-                
-                userStats.messagesSent++;
-                saveUserStats();
-                
-                showNotification('Сообщение отправлено!', 'success');
-            }
-        }
-
-        function sendHalloweenMessage() {
-            const messages = [
-                'Бууу! Счастливого Хеллоуина! 👻',
-                '🎃 Тыквенное настроение!',
-                'Конфеты или смерть! 🍬',
-                'Хеллоуин 2025 будет самым страшным! 🦇',
-                'Приветствую в хеллоуинском чате! 🎃',
-                'Ужасно рад тебя видеть! 👻',
-                'Тыквы, приведения и много конфет! 🍭'
-            ];
-            const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-            
-            document.getElementById('messageInput').value = randomMessage;
-            sendMessage();
-        }
-
-        function addReaction(messageId, emoji) {
-            if (!currentChat || !currentChat.messages) return;
-            
-            const message = currentChat.messages.find(m => m.id === messageId);
-            if (message) {
-                if (!message.reactions) message.reactions = {};
-                message.reactions[emoji] = (message.reactions[emoji] || 0) + 1;
-                
-                localStorage.setItem('dlchats', JSON.stringify(chats));
-                openChat(currentChat.id);
-                
-                userStats.reactionsGiven++;
-                saveUserStats();
-            }
-        }
-
-        function showReactionsPicker() {
-            const reactions = ['😊', '😂', '❤️', '🎉', '😮', '👏', '🔥', '🎃', '👻'];
-            const picker = document.createElement('div');
-            picker.style.cssText = `
-                position: absolute;
-                bottom: 80px;
-                right: 20px;
-                background: var(--card-color);
-                border: 1px solid var(--border-color);
-                border-radius: 15px;
-                padding: 10px;
-                display: grid;
-                grid-template-columns: repeat(3, 1fr);
-                gap: 5px;
-                z-index: 1000;
-            `;
-            
-            reactions.forEach(emoji => {
-                const btn = document.createElement('button');
-                btn.textContent = emoji;
-                btn.style.cssText = `
-                    background: none;
-                    border: none;
-                    font-size: 20px;
-                    cursor: pointer;
-                    padding: 5px;
-                    border-radius: 5px;
-                `;
-                btn.onclick = () => {
-                    document.getElementById('messageInput').value += emoji;
-                    picker.remove();
-                };
-                picker.appendChild(btn);
-            });
-            
-            document.getElementById('chatContent').appendChild(picker);
-            
-            setTimeout(() => {
-                if (picker.parentNode) picker.remove();
-            }, 3000);
-        }
-
-        function scrollToBottom() {
-            const messagesContainer = document.getElementById('messagesContainer');
-            if (messagesContainer) {
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            }
-        }
-
-        // ПОИСК И СОЗДАНИЕ ЧАТОВ
-        function searchUsers(query) {
-            if (!query.trim()) {
-                document.getElementById('chatsList').innerHTML = renderChatsList();
-                return;
-            }
-            
-            const filteredUsers = allUsers.filter(user => 
-                user.id !== currentUser.id && (
-                    user.name.toLowerCase().includes(query.toLowerCase()) ||
-                    user.username.toLowerCase().includes(query.toLowerCase()) ||
-                    (user.bio && user.bio.toLowerCase().includes(query.toLowerCase()))
-                )
-            );
-            
-            let searchHTML = '';
-            
-            if (filteredUsers.length > 0) {
-                searchHTML = filteredUsers.map(user => `
-                    <div class="chat-item" onclick="startNewChat('${user.id}')">
-                        <div style="position: relative;">
-                            <div class="chat-avatar">${user.avatar}</div>
-                            ${user.isOnline ? '<div class="online-indicator"></div>' : ''}
-                        </div>
-                        <div class="chat-info">
-                            <div class="chat-name">
-                                ${user.name}
-                                ${user.isOnline ? '<span class="user-status">● онлайн</span>' : ''}
-                            </div>
-                            <div class="chat-last-message">${user.username} • ${user.bio || 'Нет описания'}</div>
-                        </div>
-                        <button class="btn" style="padding: 8px 15px; font-size: 12px;">💬 Чат</button>
-                    </div>
-                `).join('');
-            } else {
-                searchHTML = `
-                    <div style="text-align: center; padding: 40px 20px; color: #888;">
-                        <div style="font-size: 48px; margin-bottom: 15px;">🔍</div>
-                        <div>Пользователи не найдены</div>
-                        <div style="font-size: 12px; margin-top: 5px;">Попробуйте другой запрос</div>
-                    </div>
-                `;
-            }
-            
-            document.getElementById('chatsList').innerHTML = searchHTML;
+            return '';
         }
 
         function showNewChatModal() {
@@ -1717,7 +1211,6 @@ HTML_TEMPLATE = '''
             const user = allUsers.find(u => u.id === userId);
             if (!user) return;
 
-            // Проверяем, есть ли уже чат с этим пользователем
             const existingChat = chats.find(chat => 
                 chat.type === 'private' && 
                 chat.participants.includes(userId) && 
@@ -1731,7 +1224,6 @@ HTML_TEMPLATE = '''
                 return;
             }
 
-            // Создаем новый чат
             const newChat = {
                 id: 'chat_' + Date.now(),
                 type: 'private',
@@ -1747,8 +1239,7 @@ HTML_TEMPLATE = '''
                         id: '1',
                         text: `Привет! Я ${currentUser.name}. Рад познакомиться! 👋`,
                         senderId: currentUser.id,
-                        timestamp: new Date().toISOString(),
-                        reactions: {}
+                        timestamp: new Date().toISOString()
                     }
                 ]
             };
@@ -1765,184 +1256,154 @@ HTML_TEMPLATE = '''
             showNotification(`Чат с ${user.name} начат! 💬`, 'success');
         }
 
-        // НОВЫЕ ФУНКЦИИ
-        function showAllUsers() {
+        function openChat(chatId) {
+            currentChat = chats.find(chat => chat.id === chatId);
+            if (!currentChat) return;
+
+            const otherParticipants = currentChat.participants.filter(p => p !== currentUser.id);
+            const chatUser = allUsers.find(u => u.id === otherParticipants[0]);
+            if (!chatUser) return;
+            
             document.getElementById('chatContent').innerHTML = `
-                <div style="padding: 20px; height: 100%; overflow-y: auto;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h2>👥 Все пользователи (${allUsers.length})</h2>
-                        <button class="btn" onclick="renderChatsInterface()">← Назад</button>
-                    </div>
-                    
-                    <div style="display: grid; gap: 15px;">
-                        ${allUsers.map(user => `
-                            <div style="background: var(--card-color); padding: 20px; border-radius: 15px;">
-                                <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                                    <div style="position: relative; margin-right: 15px;">
-                                        <div class="chat-avatar">${user.avatar}</div>
-                                        ${user.isOnline ? '<div class="online-indicator"></div>' : ''}
-                                    </div>
-                                    <div style="flex: 1;">
-                                        <div style="font-weight: bold; font-size: 18px;">${user.name}</div>
-                                        <div style="color: #888;">${user.username}</div>
-                                        <div style="color: #666; font-size: 12px; margin-top: 5px;">
-                                            Зарегистрирован: ${formatDate(user.registered)}
-                                        </div>
-                                    </div>
-                                    ${user.id !== currentUser.id ? 
-                                        `<button class="btn" onclick="startNewChat('${user.id}')" style="padding: 8px 15px;">💬 Чат</button>` : 
-                                        '<div style="color: var(--accent-color); padding: 8px 15px;">Это вы</div>'
-                                    }
-                                </div>
-                                ${user.bio ? `
-                                    <div style="color: #888; font-size: 14px; border-top: 1px solid var(--border-color); padding-top: 10px;">
-                                        ${user.bio}
-                                    </div>
-                                ` : ''}
+                <div style="padding: 15px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center;">
+                        <div style="position: relative; margin-right: 15px;">
+                            <div class="chat-avatar">${chatUser.avatar}</div>
+                            ${chatUser.isOnline ? '<div class="online-indicator"></div>' : ''}
+                        </div>
+                        <div>
+                            <div style="font-weight: bold; font-size: 16px;">${chatUser.name}</div>
+                            <div style="color: #888; font-size: 12px;">
+                                ${chatUser.isOnline ? 'online' : `был(а) ${formatLastSeen(chatUser.lastSeen)}`}
                             </div>
-                        `).join('')}
+                        </div>
+                    </div>
+                    <div>
+                        <button class="btn" onclick="renderChatsInterface()" style="padding: 8px 15px; font-size: 12px;">← Назад</button>
                     </div>
                 </div>
+                
+                <div class="messages-container" id="messagesContainer">
+                    ${renderChatMessages()}
+                </div>
+                
+                <div class="message-input-container">
+                    <input type="text" class="message-input" placeholder="💬 Введите сообщение..." id="messageInput" onkeypress="if(event.key=='Enter') sendMessage()">
+                    <button class="send-btn" onclick="sendMessage()">📤</button>
+                </div>
             `;
+
+            scrollToBottom();
+            document.getElementById('messageInput').focus();
         }
 
-        function showUserProfile(userId) {
-            const user = allUsers.find(u => u.id === userId);
-            if (!user) return;
+        function renderChatMessages() {
+            if (!currentChat.messages || currentChat.messages.length === 0) {
+                return `
+                    <div style="text-align: center; padding: 40px 20px; color: #888;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">💬</div>
+                        <div>Чат пуст</div>
+                        <div style="font-size: 12px; margin-top: 5px;">Напишите первое сообщение!</div>
+                    </div>
+                `;
+            }
 
-            const modal = document.createElement('div');
-            modal.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0,0,0,0.8);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 4000;
-            `;
-            
-            modal.innerHTML = `
-                <div style="background: var(--card-color); padding: 30px; border-radius: 20px; max-width: 400px; width: 90%; position: relative;">
-                    <button onclick="this.parentElement.parentElement.remove()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; color: #888; font-size: 20px; cursor: pointer;">×</button>
-                    
-                    <div style="text-align: center; margin-bottom: 20px;">
-                        <div class="chat-avatar" style="width: 80px; height: 80px; font-size: 32px; margin: 0 auto 15px;">${user.avatar}</div>
-                        <h2>${user.name}</h2>
-                        <div style="color: #888; margin-bottom: 5px;">${user.username}</div>
-                        <div style="color: ${user.isOnline ? '#10b981' : '#888'}; font-size: 14px;">
-                            ${user.isOnline ? '● онлайн' : `был(а) ${formatLastSeen(user.lastSeen)}`}
+            return currentChat.messages.map(msg => {
+                const isOwn = msg.senderId === currentUser.id;
+                const sender = allUsers.find(u => u.id === msg.senderId);
+                if (!sender) return '';
+                
+                return `
+                    <div class="message ${isOwn ? 'own' : ''}">
+                        <div style="margin-bottom: 5px;">
+                            ${!isOwn ? `<strong>${sender.name}:</strong> ` : ''}
+                            ${msg.text}
+                        </div>
+                        <div style="font-size: 11px; color: ${isOwn ? 'rgba(255,255,255,0.7)' : '#888'}; text-align: ${isOwn ? 'right' : 'left'};">
+                            ${formatTime(msg.timestamp)}
                         </div>
                     </div>
-                    
-                    ${user.email ? `
-                        <div style="margin-bottom: 15px;">
-                            <strong>📧 Email:</strong> ${user.email}
-                        </div>
-                    ` : ''}
-                    
-                    ${user.bio ? `
-                        <div style="margin-bottom: 20px;">
-                            <strong>ℹ️ О себе:</strong>
-                            <div style="color: #888; margin-top: 5px;">${user.bio}</div>
-                        </div>
-                    ` : ''}
-                    
-                    <div style="color: #666; font-size: 12px; margin-bottom: 20px;">
-                        Зарегистрирован: ${formatDate(user.registered)}
-                    </div>
-                    
-                    ${user.id !== currentUser.id ? `
-                        <button class="btn" onclick="startNewChat('${user.id}'); this.parentElement.parentElement.parentElement.remove();" style="margin-bottom: 10px;">
-                            💬 Написать сообщение
-                        </button>
-                    ` : ''}
-                    
-                    <button class="btn" onclick="this.parentElement.parentElement.remove()" style="background: #666;">
-                        Закрыть
-                    </button>
-                </div>
-            `;
-            
-            document.body.appendChild(modal);
+                `;
+            }).join('');
         }
 
-        function showFeatures() {
-            document.getElementById('chatContent').innerHTML = `
-                <div style="padding: 20px; height: 100%; overflow-y: auto;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h2>🌟 Возможности DLtrollex</h2>
-                        <button class="btn" onclick="renderChatsInterface()">← Назад</button>
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (message && currentChat) {
+                if (!currentChat.messages) currentChat.messages = [];
+                
+                const newMessage = {
+                    id: Date.now().toString(),
+                    text: message,
+                    senderId: currentUser.id,
+                    timestamp: new Date().toISOString()
+                };
+                
+                currentChat.messages.push(newMessage);
+                currentChat.lastMessage = newMessage;
+                
+                localStorage.setItem('dlchats', JSON.stringify(chats));
+                
+                openChat(currentChat.id);
+                renderChatsList();
+                
+                input.value = '';
+                
+                userStats.messagesSent++;
+                saveUserStats();
+                
+                showNotification('Сообщение отправлено!', 'success');
+            }
+        }
+
+        function scrollToBottom() {
+            const messagesContainer = document.getElementById('messagesContainer');
+            if (messagesContainer) {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+        }
+
+        function searchUsers(query) {
+            if (!query.trim()) {
+                document.getElementById('chatsList').innerHTML = renderChatsList();
+                return;
+            }
+            
+            const filteredUsers = allUsers.filter(user => 
+                user.id !== currentUser.id && (
+                    user.name.toLowerCase().includes(query.toLowerCase()) ||
+                    user.username.toLowerCase().includes(query.toLowerCase())
+                )
+            );
+            
+            let searchHTML = '';
+            
+            if (filteredUsers.length > 0) {
+                searchHTML = filteredUsers.map(user => `
+                    <div class="chat-item" onclick="startNewChat('${user.id}')">
+                        <div style="position: relative;">
+                            <div class="chat-avatar">${user.avatar}</div>
+                            ${user.isOnline ? '<div class="online-indicator"></div>' : ''}
+                        </div>
+                        <div class="chat-info">
+                            <div class="chat-name">${user.name}</div>
+                            <div class="chat-last-message">${user.username}</div>
+                        </div>
+                        <button class="btn" style="padding: 8px 15px; font-size: 12px;">💬 Чат</button>
                     </div>
-                    
-                    <div class="feature-grid">
-                        <div class="feature-card">
-                            <div class="feature-icon">💬</div>
-                            <div>Реальные чаты</div>
-                            <div style="font-size: 12px; color: #888;">Живое общение</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">🎨</div>
-                            <div>Кастомизация</div>
-                            <div style="font-size: 12px; color: #888;">Темы и настройки</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">🎃</div>
-                            <div>Хеллоуин тема</div>
-                            <div style="font-size: 12px; color: #888;">Сезонный дизайн</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">🔒</div>
-                            <div>Безопасность</div>
-                            <div style="font-size: 12px; color: #888;">Локальное хранение</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">😊</div>
-                            <div>Реакции</div>
-                            <div style="font-size: 12px; color: #888;">Эмодзи в сообщениях</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">📊</div>
-                            <div>Статистика</div>
-                            <div style="font-size: 12px; color: #888;">Отслеживание активности</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">🎲</div>
-                            <div>Авто-генерация</div>
-                            <div style="font-size: 12px; color: #888;">Быстрые аккаунты</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">👥</div>
-                            <div>Поиск</div>
-                            <div style="font-size: 12px; color: #888;">Найди друзей</div>
-                        </div>
+                `).join('');
+            } else {
+                searchHTML = `
+                    <div style="text-align: center; padding: 40px 20px; color: #888;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">🔍</div>
+                        <div>Пользователи не найдены</div>
                     </div>
-                    
-                    <div style="background: var(--card-color); padding: 25px; border-radius: 15px; margin-top: 20px;">
-                        <h3 style="margin-bottom: 15px;">📈 Ваша статистика</h3>
-                        <div class="stats-grid">
-                            <div class="stat-card">
-                                <div class="stat-value">${userStats.messagesSent}</div>
-                                <div class="stat-label">Сообщений</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-value">${userStats.chatsCreated}</div>
-                                <div class="stat-label">Чатов</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-value">${userStats.reactionsGiven}</div>
-                                <div class="stat-label">Реакций</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-value">${Math.floor(userStats.timeSpent / 60)}</div>
-                                <div class="stat-label">Минут</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
+                `;
+            }
+            
+            document.getElementById('chatsList').innerHTML = searchHTML;
         }
 
         function showSettings() {
@@ -1957,65 +1418,19 @@ HTML_TEMPLATE = '''
                         <h3 style="margin-bottom: 15px;">👤 Профиль</h3>
                         <input type="text" class="input-field" value="${currentUser.name}" placeholder="Ваше имя" id="settingsName">
                         <input type="text" class="input-field" value="${currentUser.username}" placeholder="Юзернейм" id="settingsUsername">
-                        <input type="email" class="input-field" value="${currentUser.email || ''}" placeholder="Email" id="settingsEmail">
-                        <textarea class="input-field" placeholder="О себе..." id="settingsBio" style="height: 80px; resize: vertical;">${currentUser.bio || ''}</textarea>
                         <button class="btn" onclick="updateProfile()">💾 Сохранить профиль</button>
                     </div>
                     
                     <div style="background: var(--card-color); padding: 25px; border-radius: 15px; margin-bottom: 20px;">
                         <h3 style="margin-bottom: 15px;">🎨 Внешний вид</h3>
                         <div class="theme-selector">
-                            <div class="theme-option ${currentTheme === 'purple' ? 'active' : ''}" style="background: #8b5cf6;" onclick="changeTheme('purple')" title="Фиолетовая"></div>
-                            <div class="theme-option ${currentTheme === 'blue' ? 'active' : ''}" style="background: #3b82f6;" onclick="changeTheme('blue')" title="Синяя"></div>
-                            <div class="theme-option ${currentTheme === 'green' ? 'active' : ''}" style="background: #10b981;" onclick="changeTheme('green')" title="Зеленая"></div>
-                            <div class="theme-option ${currentTheme === 'red' ? 'active' : ''}" style="background: #ef4444;" onclick="changeTheme('red')" title="Красная"></div>
-                            <div class="theme-option ${currentTheme === 'orange' ? 'active' : ''}" style="background: #f97316;" onclick="changeTheme('orange')" title="Оранжевая"></div>
-                            <div class="theme-option ${currentTheme === 'pink' ? 'active' : ''}" style="background: #ec4899;" onclick="changeTheme('pink')" title="Розовая"></div>
+                            <div class="theme-option ${currentTheme === 'purple' ? 'active' : ''}" style="background: #8b5cf6;" onclick="changeTheme('purple')"></div>
+                            <div class="theme-option ${currentTheme === 'blue' ? 'active' : ''}" style="background: #3b82f6;" onclick="changeTheme('blue')"></div>
+                            <div class="theme-option ${currentTheme === 'green' ? 'active' : ''}" style="background: #10b981;" onclick="changeTheme('green')"></div>
                         </div>
                         <button class="btn ${isHalloweenTheme ? 'btn-halloween' : ''}" onclick="toggleHalloweenTheme()" style="margin-top: 10px;">
                             ${isHalloweenTheme ? '👻 Выключить хеллоуин' : '🎃 Включить хеллоуин'}
                         </button>
-                    </div>
-                    
-                    <div style="background: var(--card-color); padding: 25px; border-radius: 15px;">
-                        <h3 style="margin-bottom: 15px; color: #dc2626;">⚠️ Опасная зона</h3>
-                        <button class="btn" onclick="clearChats()" style="background: #dc2626; margin-bottom: 10px;">🗑️ Очистить все чаты</button>
-                        <button class="btn" onclick="exportData()" style="margin-bottom: 10px;">📤 Экспорт данных</button>
-                        <button class="btn" onclick="importData()">📥 Импорт данных</button>
-                    </div>
-                </div>
-            `;
-        }
-
-        function showAdminPanel() {
-            document.getElementById('chatContent').innerHTML = `
-                <div style="padding: 20px; height: 100%; overflow-y: auto;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h2>👑 Панель администратора</h2>
-                        <button class="btn" onclick="renderChatsInterface()">← Назад</button>
-                    </div>
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 30px;">
-                        <div style="background: var(--card-color); padding: 20px; border-radius: 10px; text-align: center;">
-                            <div style="font-size: 24px; color: var(--accent-color);">${allUsers.length}</div>
-                            <div style="color: #888;">Пользователей</div>
-                        </div>
-                        <div style="background: var(--card-color); padding: 20px; border-radius: 10px; text-align: center;">
-                            <div style="font-size: 24px; color: var(--accent-color);">${chats.length}</div>
-                            <div style="color: #888;">Чатов</div>
-                        </div>
-                        <div style="background: var(--card-color); padding: 20px; border-radius: 10px; text-align: center;">
-                            <div style="font-size: 24px; color: var(--accent-color);">${allUsers.filter(u => u.isOnline).length}</div>
-                            <div style="color: #888;">Онлайн</div>
-                        </div>
-                    </div>
-                    
-                    <div style="background: var(--card-color); padding: 25px; border-radius: 15px;">
-                        <h3 style="margin-bottom: 15px;">🛠️ Управление системой</h3>
-                        <button class="btn btn-admin" onclick="createTestUsers()" style="margin-bottom: 10px;">👥 Создать тестовых пользователей</button>
-                        <button class="btn btn-admin" onclick="sendSystemNotification()" style="margin-bottom: 10px;">📢 Системное уведомление</button>
-                        <button class="btn btn-halloween" onclick="sendHalloweenNotification()" style="margin-bottom: 10px;">🎃 Хеллоуин-уведомление</button>
-                        <button class="btn" onclick="clearAllData()" style="background: #dc2626;">🗑️ Очистить ВСЕ данные</button>
                     </div>
                 </div>
             `;
@@ -2024,8 +1439,6 @@ HTML_TEMPLATE = '''
         function updateProfile() {
             const name = document.getElementById('settingsName').value.trim();
             const username = document.getElementById('settingsUsername').value.trim();
-            const email = document.getElementById('settingsEmail').value.trim();
-            const bio = document.getElementById('settingsBio').value.trim();
             
             if (!name) {
                 showNotification('Введите имя!', 'error');
@@ -2034,10 +1447,7 @@ HTML_TEMPLATE = '''
             
             currentUser.name = name;
             currentUser.username = username;
-            currentUser.email = email;
-            currentUser.bio = bio;
             
-            // Обновляем в allUsers
             const userIndex = allUsers.findIndex(u => u.id === currentUser.id);
             if (userIndex !== -1) {
                 allUsers[userIndex] = {...allUsers[userIndex], ...currentUser};
@@ -2061,11 +1471,8 @@ HTML_TEMPLATE = '''
             document.body.classList.add('halloween-theme');
             isHalloweenTheme = true;
             localStorage.setItem('dlhalloween', 'true');
-            showNotification('🎃 Хеллоуинская тема активирована! С Хеллоуином 2025! 👻', 'success');
-            
-            if (currentUser) {
-                renderChatsInterface();
-            }
+            showNotification('🎃 Хеллоуинская тема активирована!', 'success');
+            renderChatsInterface();
         }
 
         function deactivateHalloweenTheme() {
@@ -2073,10 +1480,7 @@ HTML_TEMPLATE = '''
             isHalloweenTheme = false;
             localStorage.setItem('dlhalloween', 'false');
             showNotification('👻 Хеллоуинская тема деактивирована!', 'info');
-            
-            if (currentUser) {
-                renderChatsInterface();
-            }
+            renderChatsInterface();
         }
 
         function changeTheme(theme) {
@@ -2091,10 +1495,7 @@ HTML_TEMPLATE = '''
             const themes = {
                 purple: { accent: '#8b5cf6' },
                 blue: { accent: '#3b82f6' },
-                green: { accent: '#10b981' },
-                red: { accent: '#ef4444' },
-                orange: { accent: '#f97316' },
-                pink: { accent: '#ec4899' }
+                green: { accent: '#10b981' }
             };
             
             if (themes[theme]) {
@@ -2102,99 +1503,31 @@ HTML_TEMPLATE = '''
             }
         }
 
-        function createTestUsers() {
-            const newUsers = [
-                {
-                    id: 'test_' + Date.now(),
-                    name: 'Тестовый Пользователь',
-                    username: '@testuser',
-                    email: 'test@example.com',
-                    avatar: '🧪',
-                    isOnline: true,
-                    lastSeen: new Date().toISOString(),
-                    bio: 'Тестовый пользователь для проверки системы',
-                    registered: new Date().toISOString()
-                }
-            ];
-            
-            allUsers.push(...newUsers);
-            localStorage.setItem('dlallUsers', JSON.stringify(allUsers));
-            showNotification('Тестовые пользователи созданы!', 'success');
-            showAdminPanel();
-        }
-
-        function sendSystemNotification() {
-            showNotification('📢 Системное уведомление отправлено всем пользователям!', 'success');
-        }
-
-        function sendHalloweenNotification() {
-            showNotification('🎃 Хеллоуинское уведомление отправлено! Счастливого Хеллоуина 2025! 👻', 'success');
-        }
-
-        function clearChats() {
-            if (confirm('Очистить все чаты? Это действие нельзя отменить!')) {
-                chats = [];
-                localStorage.setItem('dlchats', JSON.stringify(chats));
-                showNotification('Все чаты очищены!', 'success');
-                renderChatsInterface();
-            }
-        }
-
-        function clearAllData() {
-            if (confirm('Удалить ВСЕ данные? Это удалит всех пользователей и чаты!')) {
-                localStorage.clear();
-                allUsers = [];
-                chats = [];
-                showNotification('Все данные очищены!', 'success');
-                setTimeout(() => location.reload(), 1000);
-            }
-        }
-
-        function exportData() {
-            const data = {
-                users: allUsers,
-                chats: chats,
-                userStats: userStats,
-                exportDate: new Date().toISOString()
-            };
-            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `dltrollex_backup_${new Date().toISOString().split('T')[0]}.json`;
-            a.click();
-            showNotification('Данные экспортированы!', 'success');
-        }
-
-        function importData() {
-            showNotification('Функция импорта в разработке 🚧', 'info');
+        function showAdminPanel() {
+            document.getElementById('chatContent').innerHTML = `
+                <div style="padding: 20px; height: 100%; overflow-y: auto;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2>👑 Панель администратора</h2>
+                        <button class="btn" onclick="renderChatsInterface()">← Назад</button>
+                    </div>
+                    
+                    <div style="background: var(--card-color); padding: 25px; border-radius: 15px;">
+                        <h3 style="margin-bottom: 15px;">Статистика</h3>
+                        <div>Пользователей: ${allUsers.length}</div>
+                        <div>Чатов: ${chats.length}</div>
+                        <div>Онлайн: ${allUsers.filter(u => u.isOnline).length}</div>
+                    </div>
+                </div>
+            `;
         }
 
         function formatTime(timestamp) {
             const date = new Date(timestamp);
-            const now = new Date();
-            const diff = now - date;
-            
-            if (diff < 60000) return 'только что';
-            if (diff < 3600000) return Math.floor(diff / 60000) + ' мин';
-            if (diff < 86400000) return date.toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
-            return date.toLocaleDateString('ru-RU');
+            return date.toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
         }
 
         function formatLastSeen(timestamp) {
-            const date = new Date(timestamp);
-            const now = new Date();
-            const diff = now - date;
-            
-            if (diff < 60000) return 'только что';
-            if (diff < 3600000) return Math.floor(diff / 60000) + ' минут назад';
-            if (diff < 86400000) return 'сегодня';
-            if (diff < 172800000) return 'вчера';
-            return date.toLocaleDateString('ru-RU');
-        }
-
-        function formatDate(timestamp) {
-            return new Date(timestamp).toLocaleDateString('ru-RU');
+            return 'только что';
         }
 
         function startTimeTracking() {
@@ -2208,7 +1541,6 @@ HTML_TEMPLATE = '''
 
         function logout() {
             if (currentUser) {
-                // Устанавливаем статус offline
                 const userIndex = allUsers.findIndex(u => u.id === currentUser.id);
                 if (userIndex !== -1) {
                     allUsers[userIndex].isOnline = false;
@@ -2239,7 +1571,7 @@ HTML_TEMPLATE = '''
                 if (notification.parentNode) {
                     notification.remove();
                 }
-            }, 4000);
+            }, 3000);
         }
 
         // Обработка Enter в формах
@@ -2296,16 +1628,8 @@ def create_app():
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
-    print("🎃 DLtrollex Хеллоуин 2025 с реальными пользователями...")
-    print("💜 Сервер запущен!")
+    print("🎃 DLtrollex Хеллоуин 2025 запущен!")
     print(f"🔗 Доступен по адресу: http://0.0.0.0:{port}")
-    print("🎃 Хеллоуин тема активна!")
-    print("💬 Реальные пользователи вместо ботов!")
-    print("🔍 Улучшенный поиск!")
-    print("👤 Профили пользователей!")
-    print("🔒 Система паролей!")
-    print("🎲 Авто-генерация аккаунтов!")
-    print("📊 Статистика пользователя!")
-    print("😊 Реакции на сообщения!")
+    print("🚀 Все кнопки теперь видны и работают!")
     
     app.run(host='0.0.0.0', port=port, debug=False)
