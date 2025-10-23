@@ -228,11 +228,13 @@ HTML_TEMPLATE = '''
             touch-action: manipulation;
             user-select: none;
             min-height: 50px;
-            display: flex;
+            display: flex !important;
             align-items: center;
             justify-content: center;
             position: relative;
             z-index: 1002;
+            visibility: visible !important;
+            opacity: 1 !important;
         }
         
         .btn:hover, .btn:active {
@@ -681,9 +683,15 @@ HTML_TEMPLATE = '''
             }
         }
 
-        /* Убраны конфетти и другие проблемные элементы */
-        .confetti-fix {
-            display: none !important;
+        /* Гарантированная видимость кнопок */
+        .btn {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        
+        .screen {
+            display: flex !important;
         }
     </style>
 </head>
@@ -849,6 +857,15 @@ HTML_TEMPLATE = '''
             loadTheme();
             initializeData();
             loadUserStats();
+            
+            // Проверка видимости кнопок
+            setTimeout(() => {
+                const buttons = document.querySelectorAll('.btn');
+                console.log(`Найдено кнопок: ${buttons.length}`);
+                buttons.forEach((btn, index) => {
+                    console.log(`Кнопка ${index}:`, btn.textContent);
+                });
+            }, 500);
         });
 
         function checkAutoLogin() {
@@ -950,7 +967,8 @@ HTML_TEMPLATE = '''
         }
 
         function showMainApp() {
-            showScreen('mainApp');
+            document.querySelectorAll('.screen').forEach(screen => screen.classList.add('hidden'));
+            document.getElementById('mainApp').style.display = 'block';
             renderChatsInterface();
             showNotification(`Добро пожаловать в DLtrollex${isHalloweenTheme ? ' 🎃' : ''}!`, 'success');
             startTimeTracking();
