@@ -943,7 +943,9 @@ HTML_TEMPLATE = '''
                     userStats.logins++;
                     saveUserStats();
                     showMainApp();
+                    showNotification(`С возвращением, ${currentUser.name}! 👋`, 'success');
                 } catch (e) {
+                    console.error("Ошибка автологина:", e);
                     localStorage.removeItem('dlcurrentUser');
                 }
             }
@@ -976,10 +978,12 @@ HTML_TEMPLATE = '''
         }
 
         function initializeData() {
+            // Загружаем пользователей
             const savedUsers = localStorage.getItem('dlallUsers');
             if (savedUsers) {
                 allUsers = JSON.parse(savedUsers);
             } else {
+                // Создаем тестовых пользователей
                 allUsers = [
                     {
                         id: 'user1',
@@ -990,7 +994,8 @@ HTML_TEMPLATE = '''
                         isOnline: true,
                         lastSeen: new Date().toISOString(),
                         bio: 'Люблю программирование и путешествия 🚀',
-                        registered: new Date(Date.now() - 86400000).toISOString()
+                        registered: new Date(Date.now() - 86400000).toISOString(),
+                        password: 'test123'
                     },
                     {
                         id: 'user2', 
@@ -1001,7 +1006,8 @@ HTML_TEMPLATE = '''
                         isOnline: true,
                         lastSeen: new Date().toISOString(),
                         bio: 'Дизайнер и художник 🎨',
-                        registered: new Date(Date.now() - 172800000).toISOString()
+                        registered: new Date(Date.now() - 172800000).toISOString(),
+                        password: 'test123'
                     },
                     {
                         id: 'user3', 
@@ -1012,15 +1018,20 @@ HTML_TEMPLATE = '''
                         isOnline: false,
                         lastSeen: new Date(Date.now() - 3600000).toISOString(),
                         bio: 'Разработчик ИИ и нейросетей',
-                        registered: new Date(Date.now() - 259200000).toISOString()
+                        registered: new Date(Date.now() - 259200000).toISOString(),
+                        password: 'test123'
                     }
                 ];
                 localStorage.setItem('dlallUsers', JSON.stringify(allUsers));
             }
 
+            // Загружаем чаты
             const savedChats = localStorage.getItem('dlchats');
             if (savedChats) {
                 chats = JSON.parse(savedChats);
+            } else {
+                chats = [];
+                localStorage.setItem('dlchats', JSON.stringify(chats));
             }
         }
 
@@ -1074,7 +1085,6 @@ HTML_TEMPLATE = '''
             const text = document.getElementById(elementId).textContent;
             navigator.clipboard.writeText(text).then(() => {
                 showNotification('Скопировано в буфер обмена! 📋', 'success');
-                // Анимация кнопки
                 const btn = event.target;
                 btn.classList.add('bounce');
                 setTimeout(() => btn.classList.remove('bounce'), 1000);
@@ -1085,6 +1095,11 @@ HTML_TEMPLATE = '''
             const name = document.getElementById('generatedName').textContent;
             const password = document.getElementById('generatedPassword').textContent;
             const username = document.getElementById('generatedUsername').textContent;
+            
+            if (!name || name === '...') {
+                showNotification('Сначала сгенерируйте данные!', 'error');
+                return;
+            }
             
             const user_id = 'user_' + Date.now();
             const avatar = getRandomAvatar();
@@ -1098,9 +1113,11 @@ HTML_TEMPLATE = '''
                 isOnline: true,
                 lastSeen: new Date().toISOString(),
                 bio: 'Новый пользователь DLtrollex 🚀',
-                registered: new Date().toISOString()
+                registered: new Date().toISOString(),
+                password: password
             };
             
+            // Сохраняем пользователя
             allUsers.push(currentUser);
             localStorage.setItem('dlallUsers', JSON.stringify(allUsers));
             localStorage.setItem('dlcurrentUser', JSON.stringify(currentUser));
@@ -1121,7 +1138,6 @@ HTML_TEMPLATE = '''
             document.querySelectorAll('.screen').forEach(screen => screen.classList.add('hidden'));
             document.getElementById('mainApp').style.display = 'block';
             renderChatsInterface();
-            showNotification(`Добро пожаловать в DLtrollex${isHalloweenTheme ? ' 🎃' : ''}!`, 'success');
             startTimeTracking();
         }
 
@@ -1132,6 +1148,7 @@ HTML_TEMPLATE = '''
                         <div style="padding: 20px; border-bottom: 1px solid var(--border-color);">
                             <div class="logo" style="font-size: 24px; margin-bottom: 10px;">${isHalloweenTheme ? '🎃' : '💜'} DLtrollex</div>
                             <div style="color: #888; font-size: 12px;">Привет, ${currentUser.name}!</div>
+                            ${currentUser.email ? `<div style="color: #888; font-size: 10px; margin-top: 5px;">📧 ${currentUser.email}</div>` : ''}
                             ${isHalloweenTheme ? '<div style="color: #ff7b25; font-size: 10px; margin-top: 5px;">🎃 Хеллоуин 2025 Активен!</div>' : ''}
                         </div>
                         
@@ -1167,8 +1184,269 @@ HTML_TEMPLATE = '''
             `;
         }
 
-        // Остальные функции остаются без значительных изменений
-        // ... (renderChatsList, showNewChatModal, startNewChat, openChat, renderChatMessages, sendMessage и т.д.)
+        function renderChatsList() {
+            if (chats.length === 0) {
+                return `
+                    <div style="text-align: center; padding: 40px 20px; color: #888;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">💬</div>
+                        <div>Чатов пока нет</div>
+                        <div style="font-size: 12px; margin-top: 5px;">Начните новый чат с пользователем</div>
+                    </div>
+                `;
+            }
+            
+            return chats.map(chat => {
+                const otherUserId = chat.participants.find(id => id !== currentUser.id);
+                const otherUser = allUsers.find(u => u.id === otherUserId);
+                if (!otherUser) return '';
+                
+                return `
+                    <div class="chat-item" onclick="openChat('${chat.id}')">
+                        <div style="position: relative;">
+                            <div class="chat-avatar">${otherUser.avatar}</div>
+                            ${otherUser.isOnline ? '<div class="online-indicator"></div>' : ''}
+                        </div>
+                        <div class="chat-info">
+                            <div class="chat-name">${otherUser.name}</div>
+                            <div class="chat-last-message">${chat.lastMessage?.text || 'Нет сообщений'}</div>
+                        </div>
+                        <div class="chat-time">${formatTime(chat.lastMessage?.timestamp)}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function showNewChatModal() {
+            const availableUsers = allUsers.filter(user => user.id !== currentUser.id);
+            
+            document.getElementById('chatContent').innerHTML = `
+                <div style="padding: 20px; height: 100%; overflow-y: auto;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2>💬 Новый чат</h2>
+                        <button class="btn" onclick="renderChatsInterface()">← Назад</button>
+                    </div>
+                    
+                    <div style="background: var(--card-color); padding: 20px; border-radius: 15px;">
+                        <h3 style="margin-bottom: 15px;">👥 Все пользователи (${availableUsers.length})</h3>
+                        <div style="max-height: 60vh; overflow-y: auto;">
+                            ${availableUsers.map(user => `
+                                <div class="chat-item" onclick="startNewChat('${user.id}')">
+                                    <div style="position: relative;">
+                                        <div class="chat-avatar">${user.avatar}</div>
+                                        ${user.isOnline ? '<div class="online-indicator"></div>' : ''}
+                                    </div>
+                                    <div class="chat-info">
+                                        <div class="chat-name">
+                                            ${user.name}
+                                            ${user.isOnline ? '<span class="user-status">● онлайн</span>' : ''}
+                                        </div>
+                                        <div class="chat-last-message">${user.username} • ${user.bio || 'Нет описания'}</div>
+                                    </div>
+                                    <button class="btn" style="padding: 8px 15px; font-size: 12px;">💬 Начать чат</button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function startNewChat(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (!user) return;
+
+            const existingChat = chats.find(chat => 
+                chat.participants.includes(userId) && 
+                chat.participants.includes(currentUser.id)
+            );
+
+            if (existingChat) {
+                currentChat = existingChat;
+                openChat(existingChat.id);
+                showNotification(`Чат с ${user.name} уже существует!`, 'info');
+                return;
+            }
+
+            const newChat = {
+                id: 'chat_' + Date.now(),
+                type: 'private',
+                participants: [currentUser.id, userId],
+                lastMessage: {
+                    text: 'Чат начат 🚀',
+                    senderId: currentUser.id,
+                    timestamp: new Date().toISOString()
+                },
+                unreadCount: 0,
+                messages: [
+                    {
+                        id: '1',
+                        text: `Привет! Я ${currentUser.name}. Рад познакомиться! 👋`,
+                        senderId: currentUser.id,
+                        timestamp: new Date().toISOString()
+                    }
+                ]
+            };
+
+            chats.unshift(newChat);
+            currentChat = newChat;
+            
+            localStorage.setItem('dlchats', JSON.stringify(chats));
+            
+            userStats.chatsCreated++;
+            saveUserStats();
+            
+            openChat(newChat.id);
+            showNotification(`Чат с ${user.name} начат! 💬`, 'success');
+        }
+
+        function openChat(chatId) {
+            currentChat = chats.find(chat => chat.id === chatId);
+            if (!currentChat) return;
+
+            const otherParticipants = currentChat.participants.filter(p => p !== currentUser.id);
+            const chatUser = allUsers.find(u => u.id === otherParticipants[0]);
+            if (!chatUser) return;
+            
+            document.getElementById('chatContent').innerHTML = `
+                <div style="padding: 15px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center;">
+                        <div style="position: relative; margin-right: 15px;">
+                            <div class="chat-avatar">${chatUser.avatar}</div>
+                            ${chatUser.isOnline ? '<div class="online-indicator"></div>' : ''}
+                        </div>
+                        <div>
+                            <div style="font-weight: bold; font-size: 16px;">${chatUser.name}</div>
+                            <div style="color: #888; font-size: 12px;">
+                                ${chatUser.isOnline ? 'online' : `был(а) ${formatLastSeen(chatUser.lastSeen)}`}
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <button class="btn" onclick="renderChatsInterface()" style="padding: 8px 15px; font-size: 12px;">← Назад</button>
+                    </div>
+                </div>
+                
+                <div class="messages-container" id="messagesContainer">
+                    ${renderChatMessages()}
+                </div>
+                
+                <div class="message-input-container">
+                    <input type="text" class="message-input" placeholder="💬 Введите сообщение..." id="messageInput" onkeypress="if(event.key=='Enter') sendMessage()">
+                    <button class="send-btn" onclick="sendMessage()">📤</button>
+                </div>
+            `;
+
+            scrollToBottom();
+            document.getElementById('messageInput').focus();
+        }
+
+        function renderChatMessages() {
+            if (!currentChat.messages || currentChat.messages.length === 0) {
+                return `
+                    <div style="text-align: center; padding: 40px 20px; color: #888;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">💬</div>
+                        <div>Чат пуст</div>
+                        <div style="font-size: 12px; margin-top: 5px;">Напишите первое сообщение!</div>
+                    </div>
+                `;
+            }
+
+            return currentChat.messages.map(msg => {
+                const isOwn = msg.senderId === currentUser.id;
+                const sender = allUsers.find(u => u.id === msg.senderId);
+                if (!sender) return '';
+                
+                return `
+                    <div class="message ${isOwn ? 'own' : ''}">
+                        <div style="margin-bottom: 5px;">
+                            ${!isOwn ? `<strong>${sender.name}:</strong> ` : ''}
+                            ${msg.text}
+                        </div>
+                        <div style="font-size: 11px; color: ${isOwn ? 'rgba(255,255,255,0.7)' : '#888'}; text-align: ${isOwn ? 'right' : 'left'};">
+                            ${formatTime(msg.timestamp)}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (message && currentChat) {
+                if (!currentChat.messages) currentChat.messages = [];
+                
+                const newMessage = {
+                    id: Date.now().toString(),
+                    text: message,
+                    senderId: currentUser.id,
+                    timestamp: new Date().toISOString()
+                };
+                
+                currentChat.messages.push(newMessage);
+                currentChat.lastMessage = newMessage;
+                
+                localStorage.setItem('dlchats', JSON.stringify(chats));
+                
+                openChat(currentChat.id);
+                
+                input.value = '';
+                
+                userStats.messagesSent++;
+                saveUserStats();
+                
+                showNotification('Сообщение отправлено!', 'success');
+            }
+        }
+
+        function scrollToBottom() {
+            const messagesContainer = document.getElementById('messagesContainer');
+            if (messagesContainer) {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+        }
+
+        function searchUsers(query) {
+            if (!query.trim()) {
+                document.getElementById('chatsList').innerHTML = renderChatsList();
+                return;
+            }
+            
+            const filteredUsers = allUsers.filter(user => 
+                user.id !== currentUser.id && (
+                    user.name.toLowerCase().includes(query.toLowerCase()) ||
+                    user.username.toLowerCase().includes(query.toLowerCase())
+                )
+            );
+            
+            let searchHTML = '';
+            
+            if (filteredUsers.length > 0) {
+                searchHTML = filteredUsers.map(user => `
+                    <div class="chat-item" onclick="startNewChat('${user.id}')">
+                        <div style="position: relative;">
+                            <div class="chat-avatar">${user.avatar}</div>
+                            ${user.isOnline ? '<div class="online-indicator"></div>' : ''}
+                        </div>
+                        <div class="chat-info">
+                            <div class="chat-name">${user.name}</div>
+                            <div class="chat-last-message">${user.username}</div>
+                        </div>
+                        <button class="btn" style="padding: 8px 15px; font-size: 12px;">💬 Чат</button>
+                    </div>
+                `).join('');
+            } else {
+                searchHTML = `
+                    <div style="text-align: center; padding: 40px 20px; color: #888;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">🔍</div>
+                        <div>Пользователи не найдены</div>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('chatsList').innerHTML = searchHTML;
+        }
 
         function showSettings() {
             document.getElementById('chatContent').innerHTML = `
@@ -1179,9 +1457,10 @@ HTML_TEMPLATE = '''
                     </div>
                     
                     <div style="background: var(--card-color); padding: 25px; border-radius: 15px; margin-bottom: 20px;">
-                        <h3 style="margin-bottom: 15px;">👤 Профиль</h3>
+                        <h3 style="margin-bottom: 15px;">👤 Профиль и привязка</h3>
                         <input type="text" class="input-field" value="${currentUser.name}" placeholder="Ваше имя" id="settingsName">
                         <input type="text" class="input-field" value="${currentUser.username}" placeholder="Юзернейм" id="settingsUsername">
+                        <input type="email" class="input-field" value="${currentUser.email || ''}" placeholder="📧 Email для привязки" id="settingsEmail">
                         <input type="text" class="input-field" value="${currentUser.bio}" placeholder="О себе" id="settingsBio">
                         <button class="btn" onclick="updateProfile()">💾 Сохранить профиль</button>
                     </div>
@@ -1223,15 +1502,23 @@ HTML_TEMPLATE = '''
         function updateProfile() {
             const name = document.getElementById('settingsName').value.trim();
             const username = document.getElementById('settingsUsername').value.trim();
+            const email = document.getElementById('settingsEmail').value.trim();
             const bio = document.getElementById('settingsBio').value.trim();
             
             if (!name) {
                 showNotification('Введите имя!', 'error');
                 return;
             }
+
+            // Проверка email
+            if (email && !isValidEmail(email)) {
+                showNotification('Введите корректный email!', 'error');
+                return;
+            }
             
             currentUser.name = name;
             currentUser.username = username;
+            currentUser.email = email;
             currentUser.bio = bio;
             
             const userIndex = allUsers.findIndex(u => u.id === currentUser.id);
@@ -1241,8 +1528,18 @@ HTML_TEMPLATE = '''
             }
             
             localStorage.setItem('dlcurrentUser', JSON.stringify(currentUser));
-            showNotification('Профиль обновлен! ✨', 'success');
+            
+            if (email) {
+                showNotification('Профиль обновлен! Email привязан. ✨', 'success');
+            } else {
+                showNotification('Профиль обновлен! ✨', 'success');
+            }
             renderChatsInterface();
+        }
+
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
         }
 
         function toggleHalloweenTheme() {
@@ -1290,6 +1587,16 @@ HTML_TEMPLATE = '''
             }
         }
 
+        function formatTime(timestamp) {
+            if (!timestamp) return '';
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
+        }
+
+        function formatLastSeen(timestamp) {
+            return 'только что';
+        }
+
         function showNotification(message, type = 'info') {
             const notification = document.createElement('div');
             notification.className = 'notification-toast';
@@ -1331,7 +1638,8 @@ HTML_TEMPLATE = '''
             
             currentUser = null;
             localStorage.removeItem('dlcurrentUser');
-            location.reload();
+            showNotification('Вы вышли из системы 👋', 'info');
+            setTimeout(() => location.reload(), 1000);
         }
 
         // Обработка Enter в формах
@@ -1342,9 +1650,6 @@ HTML_TEMPLATE = '''
                 }
             }
         });
-
-        // Добавляем остальные функции которые были в оригинале
-        // ... (renderChatsList, showNewChatModal, startNewChat, openChat, renderChatMessages, sendMessage, searchUsers и т.д.)
     </script>
 </body>
 </html>
@@ -1390,6 +1695,6 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
     print("🎃 DLtrollex Хеллоуин 2025 запущен!")
     print(f"🔗 Доступен по адресу: http://0.0.0.0:{port}")
-    print("✨ Улучшенная версия с анимациями и авто-регистрацией!")
+    print("✨ Исправлены баги + добавлена привязка email!")
     
     app.run(host='0.0.0.0', port=port, debug=False)
