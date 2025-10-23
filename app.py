@@ -13,113 +13,8 @@ app.config['SECRET_KEY'] = 'mydltrollex2024'
 users_db = {}
 messages_db = {}
 chats_db = {}
-stories_db = {}
-streams_db = {}
-
-# Реальные пользователи (без ботов)
-real_users = [
-    {
-        'id': 'user_real_1',
-        'name': 'Алексей Кодеров',
-        'username': '@alex_coder',
-        'email': 'alex.coder@mail.ru',
-        'avatar': '👨‍💻',
-        'isOnline': True,
-        'lastSeen': datetime.datetime.now().isoformat(),
-        'bio': 'Fullstack разработчик | Люблю Python и JS | Играю на гитаре',
-        'registered': new Date(Date.now() - 86400000).isoformat(),
-        'city': 'Москва',
-        'age': 28,
-        'interests': ['Программирование', 'Музыка', 'Путешествия']
-    },
-    {
-        'id': 'user_real_2', 
-        'name': 'Мария Дизайнерова',
-        'username': '@maria_design',
-        'email': 'maria.design@yandex.ru',
-        'avatar': '👩‍🎨',
-        'isOnline': True,
-        'lastSeen': datetime.datetime.now().isoformat(),
-        'bio': 'UI/UX дизайнер | Люблю искусство и кофе | Фотографирую',
-        'registered': new Date(Date.now() - 172800000).isoformat(),
-        'city': 'Санкт-Петербург',
-        'age': 25,
-        'interests': ['Дизайн', 'Фотография', 'Искусство']
-    },
-    {
-        'id': 'user_real_3', 
-        'name': 'Дмитрий Геймеров',
-        'username': '@dima_gamer',
-        'email': 'dima.gamer@gmail.com',
-        'avatar': '🎮',
-        'isOnline': False,
-        'lastSeen': new Date(Date.now() - 3600000).isoformat(),
-        'bio': 'Профессиональный геймер | Стример | Кибеспортсмен',
-        'registered': new Date(Date.now() - 259200000).isoformat(),
-        'city': 'Новосибирск',
-        'age': 22,
-        'interests': ['Игры', 'Стриминг', 'Технологии']
-    },
-    {
-        'id': 'user_real_4',
-        'name': 'Анна Ученова',
-        'username': '@anna_science',
-        'email': 'anna.science@mail.ru',
-        'avatar': '🔬',
-        'isOnline': True,
-        'lastSeen': datetime.datetime.now().isoformat(),
-        'bio': 'Ученый-биолог | Исследую ДНК | Люблю природу',
-        'registered': new Date(Date.now() - 432000000).isoformat(),
-        'city': 'Казань',
-        'age': 30,
-        'interests': ['Наука', 'Природа', 'Исследования']
-    },
-    {
-        'id': 'user_real_5',
-        'name': 'Сергей Спортов',
-        'username': '@serg_sport',
-        'email': 'serg.sport@yandex.ru',
-        'avatar': '🏃‍♂️',
-        'isOnline': False,
-        'lastSeen': new Date(Date.now() - 7200000).isoformat(),
-        'bio': 'Фитнес-тренер | ЗОЖ | Питание и тренировки',
-        'registered': new Date(Date.now() - 345600000).isoformat(),
-        'city': 'Екатеринбург',
-        'age': 26,
-        'interests': ['Спорт', 'Здоровье', 'Питание']
-    },
-    {
-        'id': 'user_real_6',
-        'name': 'Ольга Творческая',
-        'username': '@olga_artist',
-        'email': 'olga.artist@gmail.com',
-        'avatar': '🎨',
-        'isOnline': True,
-        'lastSeen': datetime.datetime.now().isoformat(),
-        'bio': 'Художник | Иллюстратор | Преподаю искусство',
-        'registered': new Date(Date.now() - 518400000).isoformat(),
-        'city': 'Ростов-на-Дону',
-        'age': 27,
-        'interests': ['Живопись', 'Рисование', 'Преподавание']
-    }
-]
-
-def generate_username():
-    adjectives = ['Весёлый', 'Серьёзный', 'Смелый', 'Умный', 'Быстрый', 'Креативный', 'Яркий', 'Тайный', 'Фиолетовый', 'Хеллоуинский']
-    nouns = ['Единорог', 'Дракон', 'Волк', 'Феникс', 'Тигр', 'Орёл', 'Кот', 'Призрак', 'Тыква', 'Паук']
-    return f"{random.choice(adjectives)}_{random.choice(nouns)}{random.randint(100, 999)}"
-
-def generate_password():
-    chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*'
-    return ''.join(random.choice(chars) for _ in range(12))
-
-@app.route('/favicon.ico')
-def favicon():
-    return '', 204
-
-@app.route('/health')
-def health_check():
-    return jsonify({'status': 'healthy', 'message': 'DLtrollex is running'})
+friends_db = {}
+calls_db = {}
 
 HTML_TEMPLATE = '''
 <!DOCTYPE html>
@@ -145,74 +40,145 @@ HTML_TEMPLATE = '''
             --text-color: #ffffff;
             --secondary-color: #2d2d2d;
             --border-color: #3d3d3d;
-            --halloween-color: #ff7b25;
-            --success-color: #10b981;
-            --warning-color: #f59e0b;
-            --error-color: #ef4444;
-            --story-color: #ec4899;
+        }
+        
+        /* ТЕМЫ */
+        body.theme-ocean {
+            --bg-color: #001f3f;
+            --card-color: #003366;
+            --accent-color: #0074D9;
+            --text-color: #ffffff;
+            --secondary-color: #004080;
+        }
+        
+        body.theme-night {
+            --bg-color: #0a0a0a;
+            --card-color: #1a1a1a;
+            --accent-color: #6b46c1;
+            --text-color: #e2e8f0;
+            --secondary-color: #2d3748;
+        }
+        
+        body.theme-sunset {
+            --bg-color: #2d1b69;
+            --card-color: #4a2c8a;
+            --accent-color: #e53e3e;
+            --text-color: #fed7d7;
+            --secondary-color: #5e2ca5;
+        }
+        
+        body.theme-forest {
+            --bg-color: #1a3c2d;
+            --card-color: #2d5a45;
+            --accent-color: #38a169;
+            --text-color: #c6f6d5;
+            --secondary-color: #366c4f;
+        }
+        
+        body.theme-midnight {
+            --bg-color: #1a202c;
+            --card-color: #2d3748;
+            --accent-color: #805ad5;
+            --text-color: #e2e8f0;
+            --secondary-color: #4a5568;
         }
         
         body {
             background: var(--bg-color);
             color: var(--text-color);
-            height: 100vh;
-            overflow: hidden;
+            min-height: 100vh;
+            overflow-x: hidden;
             transition: all 0.3s ease;
+        }
+        
+        /* МОБИЛЬНАЯ ОПТИМИЗАЦИЯ */
+        @media (max-width: 768px) {
+            .chat-container {
+                flex-direction: column;
+                height: 100vh;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: 50vh;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+            
+            .chat-area {
+                height: 50vh;
+            }
+            
+            .auth-box {
+                margin: 10px;
+                padding: 30px 20px;
+            }
+            
+            .logo {
+                font-size: 32px;
+            }
+            
+            .btn {
+                min-height: 44px;
+                padding: 12px;
+                font-size: 14px;
+            }
+            
+            .stories-container {
+                padding: 15px;
+                gap: 10px;
+            }
+            
+            .story-avatar {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+            
+            .message {
+                max-width: 85%;
+                font-size: 14px;
+            }
+            
+            .call-container {
+                padding: 20px;
+            }
+            
+            .call-controls {
+                bottom: 20px;
+            }
+        }
+        
+        /* СЕНСОРНЫЕ ЭЛЕМЕНТЫ */
+        .btn {
             touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 12px;
+            background: var(--accent-color);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin: 5px 0;
         }
         
-        body.halloween-theme {
-            --accent-color: #ff7b25;
-            --bg-color: #1a0f00;
-            --card-color: #2a1a00;
-            --secondary-color: #3a2a00;
+        .btn:active {
+            transform: scale(0.95);
         }
         
-        @keyframes glow {
-            0%, 100% {
-                text-shadow: 0 0 10px var(--accent-color), 0 0 20px var(--accent-color);
-            }
-            50% {
-                text-shadow: 0 0 20px var(--accent-color), 0 0 30px var(--accent-color), 0 0 40px var(--accent-color);
-            }
+        .chat-item {
+            padding: 12px 15px;
+            min-height: 60px;
         }
         
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
-        
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-        
-        @keyframes recording {
-            0%, 100% { transform: scale(1); background: #ef4444; }
-            50% { transform: scale(1.2); background: #ff6b6b; }
-        }
-        
-        @keyframes storyProgress {
-            0% { width: 0%; }
-            100% { width: 100%; }
-        }
-        
-        .glowing-logo {
-            animation: glow 3s ease-in-out infinite;
-        }
-        
-        .floating {
-            animation: float 6s ease-in-out infinite;
-        }
-        
-        .pulse {
-            animation: pulse 2s ease-in-out infinite;
-        }
-        
-        .recording {
-            animation: recording 1s ease-in-out infinite;
-        }
-        
+        /* ОСНОВНЫЕ СТИЛИ */
         .screen {
             position: fixed;
             top: 0;
@@ -222,7 +188,7 @@ HTML_TEMPLATE = '''
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, var(--bg-color) 0%, var(--card-color) 100%);
+            background: var(--bg-color);
             z-index: 1000;
             padding: 20px;
         }
@@ -231,14 +197,9 @@ HTML_TEMPLATE = '''
             background: var(--card-color);
             padding: 40px 30px;
             border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-            border: 2px solid var(--accent-color);
             width: 100%;
-            max-width: 450px;
+            max-width: 400px;
             text-align: center;
-            position: relative;
-            overflow: hidden;
-            z-index: 1001;
         }
         
         .logo {
@@ -246,49 +207,6 @@ HTML_TEMPLATE = '''
             font-weight: bold;
             color: var(--accent-color);
             margin-bottom: 15px;
-        }
-        
-        .subtitle {
-            color: #888;
-            margin-bottom: 30px;
-            font-size: 16px;
-        }
-        
-        .btn {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, var(--accent-color), #7e22ce);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-bottom: 15px;
-            transition: all 0.3s ease;
-            min-height: 50px;
-            display: flex !important;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            z-index: 1002;
-        }
-        
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(139, 92, 246, 0.4);
-        }
-        
-        .btn-voice {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
-        }
-        
-        .btn-story {
-            background: linear-gradient(135deg, #ec4899, #db2777);
-        }
-        
-        .btn-stream {
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
         }
         
         .hidden {
@@ -301,234 +219,271 @@ HTML_TEMPLATE = '''
             background: var(--bg-color);
         }
         
-        /* Стили для голосовых сообщений */
-        .voice-message {
-            background: var(--secondary-color);
-            padding: 15px;
-            border-radius: 20px;
-            margin: 10px 0;
+        .chat-container {
             display: flex;
-            align-items: center;
-            gap: 10px;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            height: 100vh;
+            width: 100%;
         }
         
-        .voice-message:hover {
-            background: var(--accent-color);
-        }
-        
-        .voice-play-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: var(--accent-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-        }
-        
-        .voice-waveform {
-            flex: 1;
-            height: 30px;
-            background: linear-gradient(90deg, var(--accent-color) 0%, transparent 100%);
-            border-radius: 15px;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .voice-duration {
-            color: #888;
-            font-size: 12px;
-        }
-        
-        /* Стили для историй */
-        .stories-container {
-            display: flex;
-            gap: 15px;
-            padding: 20px;
-            overflow-x: auto;
+        .sidebar {
+            width: 350px;
             background: var(--card-color);
-            border-bottom: 1px solid var(--border-color);
-        }
-        
-        .story-item {
+            border-right: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
-            align-items: center;
-            cursor: pointer;
+        }
+        
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .messages-container {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .message {
+            background: var(--secondary-color);
+            padding: 10px 15px;
+            border-radius: 15px;
+            max-width: 70%;
+            word-wrap: break-word;
             position: relative;
         }
         
-        .story-avatar {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: linear-gradient(45deg, #ff6b6b, #ffa726, #4ecdc4, #45b7d1);
+        .message.own {
+            background: var(--accent-color);
+            align-self: flex-end;
+        }
+        
+        .message-actions {
+            position: absolute;
+            top: -25px;
+            right: 0;
+            background: var(--card-color);
+            border-radius: 10px;
+            padding: 5px;
+            display: none;
+        }
+        
+        .message:hover .message-actions {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            margin-bottom: 5px;
-            border: 3px solid var(--story-color);
-            padding: 2px;
         }
         
-        .story-username {
+        .delete-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
             font-size: 12px;
-            color: #888;
-            max-width: 70px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            cursor: pointer;
         }
         
-        .story-viewer {
+        /* ЗВОНКИ */
+        .call-container {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.9);
+            background: var(--bg-color);
             z-index: 2000;
             display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
         
-        .story-progress {
+        .call-avatar {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+        
+        .call-info {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .call-controls {
             display: flex;
-            gap: 5px;
-            padding: 20px;
-        }
-        
-        .story-progress-bar {
-            height: 3px;
-            background: #555;
-            flex: 1;
-            border-radius: 2px;
-            overflow: hidden;
-        }
-        
-        .story-progress-fill {
-            height: 100%;
-            background: white;
-            width: 0%;
-            transition: width 0.1s linear;
-        }
-        
-        /* Стили для стримов */
-        .streams-container {
-            padding: 20px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 20px;
         }
         
-        .stream-card {
-            background: var(--card-color);
-            border-radius: 15px;
-            overflow: hidden;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .stream-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-        
-        .stream-preview {
-            width: 100%;
-            height: 180px;
-            background: linear-gradient(45deg, #8b5cf6, #ec4899);
+        .call-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 48px;
+            font-size: 24px;
+            cursor: pointer;
         }
         
-        .stream-info {
-            padding: 15px;
+        .call-accept {
+            background: #10b981;
         }
         
-        .stream-title {
-            font-weight: bold;
-            margin-bottom: 5px;
+        .call-decline {
+            background: #ef4444;
         }
         
-        .stream-stats {
+        .call-end {
+            background: #ef4444;
+        }
+        
+        /* ДРУЗЬЯ */
+        .friend-item {
             display: flex;
             align-items: center;
-            gap: 10px;
-            color: #888;
-            font-size: 12px;
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
         }
         
-        .live-badge {
+        .friend-actions {
+            margin-left: auto;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .remove-friend {
             background: #ef4444;
             color: white;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 10px;
-            animation: pulse 2s infinite;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            font-size: 12px;
+            cursor: pointer;
         }
         
-        /* Остальные стили... */
+        .add-friend {
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        
+        /* АВАТАРКИ */
+        .avatar-upload {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            cursor: pointer;
+            margin: 0 auto 20px;
+            overflow: hidden;
+        }
+        
+        .avatar-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+        
+        .avatar-upload input {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+        
+        /* ТЕМЫ */
+        .theme-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .theme-option {
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        
+        .theme-option.active {
+            border-color: white;
+        }
+        
+        .theme-purple { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+        .theme-ocean { background: linear-gradient(135deg, #0074D9, #0056b3); }
+        .theme-night { background: linear-gradient(135deg, #6b46c1, #553c9a); }
+        .theme-sunset { background: linear-gradient(135deg, #e53e3e, #c53030); }
+        .theme-forest { background: linear-gradient(135deg, #38a169, #2f855a); }
+        .theme-midnight { background: linear-gradient(135deg, #805ad5, #6b46c1); }
     </style>
 </head>
-<body>
-    <!-- ПЕРВАЯ СТРАНИЦА - НАЧАТЬ ОБЩЕНИЕ -->
+<body class="theme-purple">
+    <!-- ПЕРВАЯ СТРАНИЦА -->
     <div id="screen1" class="screen">
-        <div class="auth-box floating">
-            <div class="logo glowing-logo">🎃 DLtrollex</div>
-            <div class="subtitle">Хеллоуин 2025 Edition! Чат с реальными пользователями</div>
+        <div class="auth-box">
+            <div class="logo">🎃 DLtrollex</div>
+            <div class="subtitle">Мобильный мессенджер нового поколения</div>
             
-            <button class="btn pulse" onclick="startQuickRegistration()">
+            <button class="btn" onclick="startQuickRegistration()">
                 <span>💬 Начать общение</span>
             </button>
             
             <div style="margin-top: 20px; font-size: 12px; color: #888;">
-                🔊 Голосовые сообщения • 📸 Истории • 📡 Стримы • 👥 Реальные люди
+                📱 Оптимизировано для телефонов • 🎨 Темы • 📞 Звонки • 👥 Друзья
             </div>
         </div>
     </div>
 
-    <!-- ВТОРАЯ СТРАНИЦА - АВТО-РЕГИСТРАЦИЯ -->
+    <!-- РЕГИСТРАЦИЯ -->
     <div id="quickRegisterScreen" class="screen hidden">
-        <div class="auth-box floating">
-            <div class="logo glowing-logo">🎃 DLtrollex</div>
-            <div class="subtitle">Для вас создан аккаунт!</div>
+        <div class="auth-box">
+            <div class="logo">🎃 DLtrollex</div>
+            <div class="subtitle">Создайте свой аккаунт</div>
             
-            <div class="credential-box">
-                <div class="credential-field">
-                    <span>👤 Имя:</span>
-                    <span class="credential-value" id="generatedName">...</span>
-                </div>
-                <div class="credential-field">
-                    <span>🔐 Пароль:</span>
-                    <span class="credential-value" id="generatedPassword">...</span>
-                </div>
+            <div class="avatar-upload" onclick="document.getElementById('avatarInput').click()">
+                <div id="avatarPreview">😊</div>
+                <input type="file" id="avatarInput" accept="image/*" onchange="previewAvatar(event)">
             </div>
             
-            <button class="btn btn-success pulse" onclick="quickRegister()">
-                <span>🚀 Продолжить в чат!</span>
-            </button>
+            <input type="text" class="input-field" placeholder="👤 Ваше имя" id="regName">
             
-            <button class="btn" onclick="generateNewCredentials()">
-                <span>🔄 Сгенерировать заново</span>
+            <button class="btn" onclick="quickRegister()">
+                <span>🚀 Начать использовать</span>
             </button>
         </div>
     </div>
 
-    <!-- Основной интерфейс мессенджера -->
+    <!-- ОСНОВНОЙ ИНТЕРФЕЙС -->
     <div id="mainApp" class="app">
-        <!-- Интерфейс будет генерироваться JavaScript -->
+        <!-- Генерируется JavaScript -->
     </div>
 
-    <!-- Вьювер историй -->
-    <div id="storyViewer" class="story-viewer">
-        <div class="story-progress" id="storyProgress"></div>
-        <div id="storyContent" style="flex: 1; display: flex; align-items: center; justify-content: center;"></div>
+    <!-- ЗВОНОК -->
+    <div id="callContainer" class="call-container">
+        <div class="call-avatar" id="callAvatar">👤</div>
+        <div class="call-info">
+            <div id="callUserName">Пользователь</div>
+            <div id="callStatus">Входящий вызов...</div>
+        </div>
+        <div class="call-controls">
+            <div class="call-btn call-accept" onclick="acceptCall()">📞</div>
+            <div class="call-btn call-decline" onclick="declineCall()">📵</div>
+        </div>
     </div>
 
     <script>
@@ -536,226 +491,84 @@ HTML_TEMPLATE = '''
         let currentChat = null;
         let chats = [];
         let allUsers = [];
-        let stories = [];
-        let streams = [];
-        let isRecording = false;
-        let mediaRecorder = null;
-        let audioChunks = [];
+        let friends = [];
+        let currentCall = null;
+        let currentTheme = 'purple';
 
-        // Инициализация реальных пользователей
+        // ИНИЦИАЛИЗАЦИЯ РЕАЛЬНЫХ ПОЛЬЗОВАТЕЛЕЙ
         function initializeRealUsers() {
             allUsers = [
                 {
-                    id: 'user_real_1',
-                    name: 'Алексей Кодеров',
-                    username: '@alex_coder',
-                    email: 'alex.coder@mail.ru',
-                    avatar: '👨‍💻',
-                    isOnline: true,
-                    lastSeen: new Date().toISOString(),
-                    bio: 'Fullstack разработчик | Люблю Python и JS | Играю на гитаре',
-                    registered: new Date(Date.now() - 86400000).toISOString(),
-                    city: 'Москва',
-                    age: 28,
-                    interests: ['Программирование', 'Музыка', 'Путешествия']
+                    id: 'user1', name: 'Алексей Кодеров', username: '@alex_coder', avatar: '👨‍💻',
+                    bio: 'Fullstack разработчик', city: 'Москва', age: 28, isOnline: true,
+                    interests: ['Программирование', 'Музыка']
                 },
                 {
-                    id: 'user_real_2', 
-                    name: 'Мария Дизайнерова',
-                    username: '@maria_design',
-                    email: 'maria.design@yandex.ru',
-                    avatar: '👩‍🎨',
-                    isOnline: true,
-                    lastSeen: new Date().toISOString(),
-                    bio: 'UI/UX дизайнер | Люблю искусство и кофе | Фотографирую',
-                    registered: new Date(Date.now() - 172800000).toISOString(),
-                    city: 'Санкт-Петербург',
-                    age: 25,
-                    interests: ['Дизайн', 'Фотография', 'Искусство']
+                    id: 'user2', name: 'Мария Дизайнерова', username: '@maria_design', avatar: '👩‍🎨',
+                    bio: 'UI/UX дизайнер', city: 'СПб', age: 25, isOnline: true,
+                    interests: ['Дизайн', 'Фотография']
                 },
                 {
-                    id: 'user_real_3', 
-                    name: 'Дмитрий Геймеров',
-                    username: '@dima_gamer',
-                    email: 'dima.gamer@gmail.com',
-                    avatar: '🎮',
-                    isOnline: false,
-                    lastSeen: new Date(Date.now() - 3600000).toISOString(),
-                    bio: 'Профессиональный геймер | Стример | Кибеспортсмен',
-                    registered: new Date(Date.now() - 259200000).toISOString(),
-                    city: 'Новосибирск',
-                    age: 22,
-                    interests: ['Игры', 'Стриминг', 'Технологии']
-                },
-                {
-                    id: 'user_real_4',
-                    name: 'Анна Ученова',
-                    username: '@anna_science',
-                    email: 'anna.science@mail.ru',
-                    avatar: '🔬',
-                    isOnline: true,
-                    lastSeen: new Date().toISOString(),
-                    bio: 'Ученый-биолог | Исследую ДНК | Люблю природу',
-                    registered: new Date(Date.now() - 432000000).toISOString(),
-                    city: 'Казань',
-                    age: 30,
-                    interests: ['Наука', 'Природа', 'Исследования']
-                },
-                {
-                    id: 'user_real_5',
-                    name: 'Сергей Спортов',
-                    username: '@serg_sport',
-                    email: 'serg.sport@yandex.ru',
-                    avatar: '🏃‍♂️',
-                    isOnline: false,
-                    lastSeen: new Date(Date.now() - 7200000).toISOString(),
-                    bio: 'Фитнес-тренер | ЗОЖ | Питание и тренировки',
-                    registered: new Date(Date.now() - 345600000).toISOString(),
-                    city: 'Екатеринбург',
-                    age: 26,
-                    interests: ['Спорт', 'Здоровье', 'Питание']
-                },
-                {
-                    id: 'user_real_6',
-                    name: 'Ольга Творческая',
-                    username: '@olga_artist',
-                    email: 'olga.artist@gmail.com',
-                    avatar: '🎨',
-                    isOnline: true,
-                    lastSeen: new Date().toISOString(),
-                    bio: 'Художник | Иллюстратор | Преподаю искусство',
-                    registered: new Date(Date.now() - 518400000).toISOString(),
-                    city: 'Ростов-на-Дону',
-                    age: 27,
-                    interests: ['Живопись', 'Рисование', 'Преподавание']
-                }
-            ];
-        }
-
-        // Инициализация историй
-        function initializeStories() {
-            stories = [
-                {
-                    id: 'story1',
-                    userId: 'user_real_1',
-                    type: 'text',
-                    content: '🎵 Сегодня записываю новый трек! #музыка',
-                    createdAt: new Date().toISOString(),
-                    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-                },
-                {
-                    id: 'story2',
-                    userId: 'user_real_2',
-                    type: 'text', 
-                    content: '✨ Новый дизайн проекта готов! #дизайн',
-                    createdAt: new Date().toISOString(),
-                    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-                },
-                {
-                    id: 'story3',
-                    userId: 'user_real_3',
-                    type: 'text',
-                    content: '🎮 Стрим сегодня в 20:00! Заходи! #игры',
-                    createdAt: new Date().toISOString(),
-                    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-                }
-            ];
-        }
-
-        // Инициализация стримов
-        function initializeStreams() {
-            streams = [
-                {
-                    id: 'stream1',
-                    userId: 'user_real_3',
-                    title: '🎮 Играем в Cyberpunk 2077!',
-                    viewers: 124,
-                    isLive: true,
-                    category: 'Игры',
-                    thumbnail: '🎮'
-                },
-                {
-                    id: 'stream2',
-                    userId: 'user_real_1',
-                    title: '💻 Пишем код вместе - React + Node.js',
-                    viewers: 87,
-                    isLive: true,
-                    category: 'Программирование',
-                    thumbnail: '💻'
-                },
-                {
-                    id: 'stream3',
-                    userId: 'user_real_2',
-                    title: '🎨 Дизайн интерфейса в Figma',
-                    viewers: 56,
-                    isLive: false,
-                    category: 'Дизайн',
-                    thumbnail: '🎨'
+                    id: 'user3', name: 'Дмитрий Геймеров', username: '@dima_gamer', avatar: '🎮',
+                    bio: 'Профессиональный геймер', city: 'Новосибирск', age: 22, isOnline: false,
+                    interests: ['Игры', 'Стриминг']
                 }
             ];
         }
 
         document.addEventListener('DOMContentLoaded', function() {
             initializeRealUsers();
-            initializeStories();
-            initializeStreams();
             checkAutoLogin();
+            loadTheme();
         });
+
+        // АВАТАРКИ ИЗ ГАЛЕРЕИ
+        function previewAvatar(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('avatarPreview').innerHTML = 
+                        `<img src="${e.target.result}" class="avatar-image">`;
+                }
+                reader.readAsDataURL(file);
+            }
+        }
 
         function startQuickRegistration() {
             showScreen('quickRegisterScreen');
-            generateNewCredentials();
         }
 
         function showScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(screen => screen.classList.add('hidden'));
+            document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
             document.getElementById(screenId).classList.remove('hidden');
         }
 
-        function generateNewCredentials() {
-            const name = generateUsername();
-            const password = generatePassword();
-            document.getElementById('generatedName').textContent = name;
-            document.getElementById('generatedPassword').textContent = password;
-        }
-
-        function generateUsername() {
-            const adjectives = ['Весёлый', 'Серьёзный', 'Смелый', 'Умный', 'Быстрый', 'Креативный'];
-            const nouns = ['Единорог', 'Дракон', 'Волк', 'Феникс', 'Тигр', 'Орёл'];
-            return `${randomChoice(adjectives)}${randomChoice(nouns)}${Math.floor(Math.random() * 1000)}`;
-        }
-
-        function generatePassword() {
-            return Math.random().toString(36).slice(-12);
-        }
-
-        function randomChoice(array) {
-            return array[Math.floor(Math.random() * array.length)];
-        }
-
         function quickRegister() {
-            const name = document.getElementById('generatedName').textContent;
-            const password = document.getElementById('generatedPassword').textContent;
-            const username = '@' + name.toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
-            
+            const name = document.getElementById('regName').value.trim();
+            if (!name) {
+                alert('Введите имя');
+                return;
+            }
+
+            const avatarElement = document.getElementById('avatarPreview');
+            const avatar = avatarElement.querySelector('img') ? 
+                avatarElement.innerHTML : avatarElement.textContent;
+
             currentUser = {
                 id: 'user_' + Date.now(),
                 name: name,
-                username: username,
-                email: '',
-                avatar: '😊',
-                isOnline: true,
-                lastSeen: new Date().toISOString(),
-                bio: 'Новый пользователь DLtrollex 🚀',
-                registered: new Date().toISOString(),
-                password: password,
+                username: '@' + name.toLowerCase(),
+                avatar: avatar,
+                bio: 'Новый пользователь',
                 city: 'Москва',
-                age: Math.floor(Math.random() * 20) + 18,
-                interests: ['Общение', 'Знакомства', 'Технологии']
+                age: 25,
+                isOnline: true
             };
-            
+
             allUsers.push(currentUser);
             localStorage.setItem('dlcurrentUser', JSON.stringify(currentUser));
+            localStorage.setItem('dlallUsers', JSON.stringify(allUsers));
             showMainApp();
         }
 
@@ -763,6 +576,8 @@ HTML_TEMPLATE = '''
             const savedUser = localStorage.getItem('dlcurrentUser');
             if (savedUser) {
                 currentUser = JSON.parse(savedUser);
+                const savedUsers = localStorage.getItem('dlallUsers');
+                if (savedUsers) allUsers = JSON.parse(savedUsers);
                 showMainApp();
             }
         }
@@ -776,367 +591,93 @@ HTML_TEMPLATE = '''
             document.getElementById('mainApp').innerHTML = `
                 <div class="chat-container">
                     <div class="sidebar">
-                        <div style="padding: 20px; border-bottom: 1px solid var(--border-color);">
-                            <div class="logo" style="font-size: 24px;">🎃 DLtrollex</div>
-                            <div style="color: #888; font-size: 12px;">Привет, ${currentUser.name}!</div>
+                        <div style="padding: 15px; border-bottom: 1px solid var(--border-color);">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="font-size: 24px;">${currentUser.avatar}</div>
+                                <div>
+                                    <div style="font-weight: bold;">${currentUser.name}</div>
+                                    <div style="color: #888; font-size: 12px;">Онлайн</div>
+                                </div>
+                            </div>
                         </div>
                         
-                        <div class="stories-container" id="storiesList">
-                            ${renderStories()}
+                        <div style="padding: 10px; border-bottom: 1px solid var(--border-color); display: flex; gap: 5px;">
+                            <button class="btn" onclick="showChats()" style="flex: 1;">💬 Чаты</button>
+                            <button class="btn" onclick="showFriends()" style="flex: 1;">👥 Друзья</button>
+                            <button class="btn" onclick="showSettings()" style="flex: 1;">⚙️</button>
                         </div>
                         
-                        <div class="search-box">
-                            <input type="text" class="search-input" placeholder="🔍 Поиск реальных пользователей..." oninput="searchRealUsers(this.value)">
-                        </div>
-                        
-                        <div class="chats-list" id="chatsList">
+                        <div id="contentArea" style="flex: 1; overflow-y: auto;">
                             ${renderChatsList()}
-                        </div>
-                        
-                        <div style="padding: 15px; border-top: 1px solid var(--border-color);">
-                            <button class="btn" onclick="showNewChatModal()">➕ Новый чат</button>
-                            <button class="btn btn-voice" onclick="showVoiceRecorder()">🎤 Голосовые</button>
-                            <button class="btn btn-story" onclick="showStoryCreator()">📸 Добавить историю</button>
-                            <button class="btn btn-stream" onclick="showStreams()">📡 Стримы</button>
                         </div>
                     </div>
                     
                     <div class="chat-area">
-                        <div id="chatContent">
-                            <div style="text-align: center; padding: 50px 20px;">
-                                <div style="font-size: 80px; margin-bottom: 20px;">💬</div>
-                                <h2>Начните общение!</h2>
-                                <p style="color: #888; margin: 10px 0 20px 0;">Выберите пользователя для чата</p>
-                                <button class="btn" onclick="showNewChatModal()">💬 Начать чат</button>
-                            </div>
+                        <div id="chatContent" style="flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                            <div style="font-size: 64px; margin-bottom: 20px;">💬</div>
+                            <div style="color: #888; text-align: center;">Выберите чат для общения</div>
                         </div>
                     </div>
                 </div>
             `;
         }
 
-        function renderStories() {
-            return stories.map(story => {
-                const user = allUsers.find(u => u.id === story.userId);
-                if (!user) return '';
-                
-                return `
-                    <div class="story-item" onclick="viewStory('${story.id}')">
-                        <div class="story-avatar">${user.avatar}</div>
-                        <div class="story-username">${user.name.split(' ')[0]}</div>
+        // ЧАТЫ
+        function showChats() {
+            document.getElementById('contentArea').innerHTML = `
+                <div style="padding: 10px;">
+                    <button class="btn" onclick="showNewChatModal()" style="width: 100%; margin-bottom: 10px;">
+                        ➕ Новый чат
+                    </button>
+                    <div id="chatsList">
+                        ${renderChatsList()}
                     </div>
-                `;
-            }).join('') + `
-                <div class="story-item" onclick="showStoryCreator()">
-                    <div class="story-avatar" style="background: var(--secondary-color); border: 2px dashed #888;">➕</div>
-                    <div class="story-username">Ваша история</div>
                 </div>
             `;
         }
 
         function renderChatsList() {
             if (chats.length === 0) {
-                return `
-                    <div style="text-align: center; padding: 40px 20px; color: #888;">
-                        <div>Чатов пока нет</div>
-                        <div style="font-size: 12px; margin-top: 5px;">Начните новый чат</div>
-                    </div>
-                `;
+                return '<div style="text-align: center; padding: 40px; color: #888;">Чатов пока нет</div>';
             }
             
             return chats.map(chat => {
-                const otherUserId = chat.participants.find(id => id !== currentUser.id);
-                const otherUser = allUsers.find(u => u.id === otherUserId);
-                if (!otherUser) return '';
-                
+                const otherUser = allUsers.find(u => u.id === chat.participants.find(id => id !== currentUser.id));
                 return `
                     <div class="chat-item" onclick="openChat('${chat.id}')">
-                        <div class="chat-avatar">${otherUser.avatar}</div>
-                        <div class="chat-info">
-                            <div class="chat-name">${otherUser.name}</div>
-                            <div class="chat-last-message">${chat.lastMessage?.text || 'Нет сообщений'}</div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="font-size: 24px;">${otherUser.avatar}</div>
+                            <div>
+                                <div style="font-weight: bold;">${otherUser.name}</div>
+                                <div style="color: #888; font-size: 12px;">${chat.lastMessage?.text || 'Нет сообщений'}</div>
+                            </div>
                         </div>
                     </div>
                 `;
             }).join('');
         }
 
-        function searchRealUsers(query) {
-            const filteredUsers = allUsers.filter(user => 
-                user.id !== currentUser.id && (
-                    user.name.toLowerCase().includes(query.toLowerCase()) ||
-                    user.username.toLowerCase().includes(query.toLowerCase()) ||
-                    user.bio.toLowerCase().includes(query.toLowerCase()) ||
-                    user.interests.some(interest => interest.toLowerCase().includes(query.toLowerCase()))
-                )
-            );
-            
-            let html = '';
-            if (filteredUsers.length > 0) {
-                html = filteredUsers.map(user => `
-                    <div class="chat-item" onclick="startNewChat('${user.id}')">
-                        <div class="chat-avatar">${user.avatar}</div>
-                        <div class="chat-info">
-                            <div class="chat-name">
-                                ${user.name}
-                                ${user.isOnline ? '🟢' : '⚫'}
-                            </div>
-                            <div class="chat-last-message">
-                                ${user.bio} • ${user.city}
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
-            } else {
-                html = '<div style="text-align: center; padding: 20px; color: #888;">Пользователи не найдены</div>';
-            }
-            
-            document.getElementById('chatsList').innerHTML = html;
-        }
-
-        // ГОЛОСОВЫЕ СООБЩЕНИЯ
-        function showVoiceRecorder() {
-            document.getElementById('chatContent').innerHTML = `
-                <div style="padding: 20px;">
-                    <h2>🎤 Голосовые сообщения</h2>
-                    <div style="background: var(--card-color); padding: 30px; border-radius: 15px; text-align: center; margin-top: 20px;">
-                        <div id="voiceRecorder" style="margin-bottom: 20px;">
-                            <button class="btn btn-voice" onclick="startVoiceRecording()" id="recordBtn">
-                                🎤 Начать запись
-                            </button>
-                            <div id="recordingStatus" style="margin-top: 10px; color: #888;"></div>
-                        </div>
-                        <div id="voiceMessagesList">
-                            ${renderVoiceMessages()}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        async function startVoiceRecording() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream);
-                audioChunks = [];
-                
-                mediaRecorder.ondataavailable = event => {
-                    audioChunks.push(event.data);
-                };
-                
-                mediaRecorder.onstop = () => {
-                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                    saveVoiceMessage(audioBlob);
-                };
-                
-                mediaRecorder.start();
-                isRecording = true;
-                document.getElementById('recordBtn').innerHTML = '⏹️ Остановить запись';
-                document.getElementById('recordBtn').classList.add('recording');
-                document.getElementById('recordingStatus').textContent = 'Запись...';
-                
-                document.getElementById('recordBtn').onclick = stopVoiceRecording;
-                
-            } catch (error) {
-                alert('Ошибка доступа к микрофону');
-            }
-        }
-
-        function stopVoiceRecording() {
-            if (mediaRecorder && isRecording) {
-                mediaRecorder.stop();
-                isRecording = false;
-                document.getElementById('recordBtn').innerHTML = '🎤 Начать запись';
-                document.getElementById('recordBtn').classList.remove('recording');
-                document.getElementById('recordingStatus').textContent = 'Запись сохранена!';
-                
-                document.getElementById('recordBtn').onclick = startVoiceRecording;
-            }
-        }
-
-        function saveVoiceMessage(audioBlob) {
-            const voiceMessage = {
-                id: 'voice_' + Date.now(),
-                userId: currentUser.id,
-                audioUrl: URL.createObjectURL(audioBlob),
-                duration: Math.floor(Math.random() * 30) + 5, // случайная длительность 5-35 сек
-                timestamp: new Date().toISOString()
-            };
-            
-            // Сохраняем в localStorage
-            const savedMessages = JSON.parse(localStorage.getItem('voiceMessages') || '[]');
-            savedMessages.push(voiceMessage);
-            localStorage.setItem('voiceMessages', JSON.stringify(savedMessages));
-            
-            showVoiceRecorder(); // Обновляем список
-        }
-
-        function renderVoiceMessages() {
-            const savedMessages = JSON.parse(localStorage.getItem('voiceMessages') || '[]');
-            const userMessages = savedMessages.filter(msg => msg.userId === currentUser.id);
-            
-            if (userMessages.length === 0) {
-                return '<div style="color: #888; text-align: center;">У вас пока нет голосовых сообщений</div>';
-            }
-            
-            return userMessages.map(msg => `
-                <div class="voice-message" onclick="playVoiceMessage('${msg.audioUrl}')">
-                    <div class="voice-play-btn">▶️</div>
-                    <div class="voice-waveform"></div>
-                    <div class="voice-duration">${msg.duration} сек</div>
-                </div>
-            `).join('');
-        }
-
-        function playVoiceMessage(audioUrl) {
-            const audio = new Audio(audioUrl);
-            audio.play();
-        }
-
-        // ИСТОРИИ
-        function showStoryCreator() {
-            document.getElementById('chatContent').innerHTML = `
-                <div style="padding: 20px;">
-                    <h2>📸 Создать историю</h2>
-                    <div style="background: var(--card-color); padding: 30px; border-radius: 15px; margin-top: 20px;">
-                        <textarea id="storyText" placeholder="Что у вас нового?" style="width: 100%; height: 100px; background: var(--secondary-color); border: 1px solid var(--border-color); border-radius: 10px; padding: 15px; color: white; margin-bottom: 15px;"></textarea>
-                        <button class="btn btn-story" onclick="createStory()">📸 Опубликовать историю</button>
-                    </div>
-                </div>
-            `;
-        }
-
-        function createStory() {
-            const text = document.getElementById('storyText').value.trim();
-            if (!text) {
-                alert('Введите текст истории');
-                return;
-            }
-            
-            const newStory = {
-                id: 'story_' + Date.now(),
-                userId: currentUser.id,
-                type: 'text',
-                content: text,
-                createdAt: new Date().toISOString(),
-                expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-            };
-            
-            stories.push(newStory);
-            renderMainInterface();
-            showNotification('История опубликована! 📸');
-        }
-
-        function viewStory(storyId) {
-            const story = stories.find(s => s.id === storyId);
-            const user = allUsers.find(u => u.id === story.userId);
-            
-            if (!story || !user) return;
-            
-            document.getElementById('storyViewer').style.display = 'flex';
-            document.getElementById('storyContent').innerHTML = `
-                <div style="text-align: center;">
-                    <div style="font-size: 48px; margin-bottom: 20px;">${user.avatar}</div>
-                    <div style="font-size: 24px; margin-bottom: 10px;">${user.name}</div>
-                    <div style="font-size: 18px; color: #ccc;">${story.content}</div>
-                </div>
-            `;
-            
-            // Автоматическое закрытие через 5 секунд
-            setTimeout(() => {
-                document.getElementById('storyViewer').style.display = 'none';
-            }, 5000);
-        }
-
-        // СТРИМЫ
-        function showStreams() {
-            document.getElementById('chatContent').innerHTML = `
-                <div style="padding: 20px;">
-                    <h2>📡 Прямые трансляции</h2>
-                    <div class="streams-container">
-                        ${renderStreams()}
-                    </div>
-                </div>
-            `;
-        }
-
-        function renderStreams() {
-            return streams.map(stream => {
-                const user = allUsers.find(u => u.id === stream.userId);
-                if (!user) return '';
-                
-                return `
-                    <div class="stream-card" onclick="watchStream('${stream.id}')">
-                        <div class="stream-preview">${stream.thumbnail}</div>
-                        <div class="stream-info">
-                            <div class="stream-title">${stream.title}</div>
-                            <div class="stream-stats">
-                                <span>${user.name}</span>
-                                <span>•</span>
-                                <span>👁️ ${stream.viewers}</span>
-                                ${stream.isLive ? '<span class="live-badge">LIVE</span>' : ''}
-                            </div>
-                            <div style="color: #888; font-size: 12px; margin-top: 5px;">${stream.category}</div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function watchStream(streamId) {
-            const stream = streams.find(s => s.id === streamId);
-            const user = allUsers.find(u => u.id === stream.userId);
-            
-            document.getElementById('chatContent').innerHTML = `
-                <div style="padding: 20px;">
-                    <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 20px;">
-                        <h2>📡 ${stream.title}</h2>
-                        <button class="btn" onclick="showStreams()">← Назад</button>
-                    </div>
-                    <div style="background: var(--card-color); border-radius: 15px; overflow: hidden;">
-                        <div style="background: linear-gradient(45deg, #8b5cf6, #ec4899); height: 300px; display: flex; align-items: center; justify-content: center; font-size: 64px;">
-                            ${stream.thumbnail}
-                        </div>
-                        <div style="padding: 20px;">
-                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
-                                <div style="font-size: 24px;">${user.avatar}</div>
-                                <div>
-                                    <div style="font-weight: bold;">${user.name}</div>
-                                    <div style="color: #888; font-size: 12px;">${stream.category}</div>
-                                </div>
-                            </div>
-                            <div style="color: #888; margin-bottom: 15px;">👁️ ${stream.viewers} зрителей</div>
-                            <button class="btn btn-stream">🎥 Смотреть трансляцию</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // ОСНОВНЫЕ ФУНКЦИИ ЧАТА
         function showNewChatModal() {
-            const availableUsers = allUsers.filter(user => user.id !== currentUser.id);
+            const availableUsers = allUsers.filter(u => u.id !== currentUser.id);
             
-            document.getElementById('chatContent').innerHTML = `
-                <div style="padding: 20px;">
-                    <h2>💬 Новый чат</h2>
-                    <div style="background: var(--card-color); padding: 20px; border-radius: 15px; margin-top: 20px;">
-                        <div style="max-height: 60vh; overflow-y: auto;">
-                            ${availableUsers.map(user => `
-                                <div class="chat-item" onclick="startNewChat('${user.id}')">
-                                    <div class="chat-avatar">${user.avatar}</div>
-                                    <div class="chat-info">
-                                        <div class="chat-name">
-                                            ${user.name}
-                                            ${user.isOnline ? '🟢' : '⚫'}
-                                        </div>
-                                        <div class="chat-last-message">
-                                            ${user.bio} • ${user.city} • ${user.age} лет
-                                        </div>
+            document.getElementById('contentArea').innerHTML = `
+                <div style="padding: 10px;">
+                    <h3 style="margin-bottom: 15px;">💬 Новый чат</h3>
+                    <div style="max-height: 60vh; overflow-y: auto;">
+                        ${availableUsers.map(user => `
+                            <div class="chat-item" onclick="startNewChat('${user.id}')">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div style="font-size: 24px;">${user.avatar}</div>
+                                    <div>
+                                        <div style="font-weight: bold;">${user.name}</div>
+                                        <div style="color: #888; font-size: 12px;">${user.bio}</div>
                                     </div>
+                                    <button class="add-friend" onclick="event.stopPropagation(); addFriend('${user.id}')">
+                                        ➕ Друг
+                                    </button>
                                 </div>
-                            `).join('')}
-                        </div>
+                            </div>
+                        `).join('')}
                     </div>
                 </div>
             `;
@@ -1144,23 +685,19 @@ HTML_TEMPLATE = '''
 
         function startNewChat(userId) {
             const user = allUsers.find(u => u.id === userId);
-            if (!user) return;
+            const existingChat = chats.find(c => c.participants.includes(userId));
+            
+            if (existingChat) {
+                openChat(existingChat.id);
+                return;
+            }
 
             const newChat = {
                 id: 'chat_' + Date.now(),
                 participants: [currentUser.id, userId],
-                lastMessage: {
-                    text: 'Чат начат 🚀',
-                    senderId: currentUser.id,
-                    timestamp: new Date().toISOString()
-                },
+                lastMessage: { text: 'Чат начат', senderId: currentUser.id },
                 messages: [
-                    {
-                        id: '1',
-                        text: `Привет! Я ${currentUser.name}. Рад познакомиться! 👋`,
-                        senderId: currentUser.id,
-                        timestamp: new Date().toISOString()
-                    }
+                    { id: '1', text: `Привет! Я ${currentUser.name}`, senderId: currentUser.id, timestamp: new Date().toISOString() }
                 ]
             };
 
@@ -1169,46 +706,47 @@ HTML_TEMPLATE = '''
         }
 
         function openChat(chatId) {
-            currentChat = chats.find(chat => chat.id === chatId);
-            if (!currentChat) return;
-
-            const otherUserId = currentChat.participants.find(id => id !== currentUser.id);
-            const chatUser = allUsers.find(u => u.id === otherUserId);
+            currentChat = chats.find(c => c.id === chatId);
+            const otherUser = allUsers.find(u => u.id === currentChat.participants.find(id => id !== currentUser.id));
             
             document.getElementById('chatContent').innerHTML = `
                 <div style="display: flex; flex-direction: column; height: 100%;">
-                    <div style="padding: 15px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: between;">
-                        <div style="display: flex; align-items: center;">
-                            <div class="chat-avatar">${chatUser.avatar}</div>
+                    <div style="padding: 15px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="font-size: 24px;">${otherUser.avatar}</div>
                             <div>
-                                <div style="font-weight: bold;">${chatUser.name}</div>
-                                <div style="color: #888; font-size: 12px;">${chatUser.bio}</div>
+                                <div style="font-weight: bold;">${otherUser.name}</div>
+                                <div style="color: #888; font-size: 12px;">${otherUser.bio}</div>
                             </div>
                         </div>
-                        <button class="btn" onclick="renderMainInterface()" style="padding: 8px 15px;">← Назад</button>
+                        <button class="btn" onclick="startCall('${otherUser.id}')">📞</button>
                     </div>
                     
                     <div class="messages-container" id="messagesContainer">
                         ${renderChatMessages()}
                     </div>
                     
-                    <div class="message-input-container">
-                        <input type="text" class="message-input" placeholder="💬 Введите сообщение..." id="messageInput" onkeypress="if(event.key=='Enter') sendMessage()">
-                        <button class="send-btn" onclick="sendMessage()">📤</button>
-                        <button class="btn btn-voice" onclick="showVoiceRecorder()" style="padding: 10px; margin-left: 10px;">🎤</button>
+                    <div style="padding: 15px; border-top: 1px solid var(--border-color); display: flex; gap: 10px;">
+                        <input type="text" 
+                               style="flex: 1; padding: 12px; background: var(--secondary-color); border: none; border-radius: 20px; color: white;" 
+                               placeholder="Сообщение..." 
+                               id="messageInput"
+                               onkeypress="if(event.key=='Enter') sendMessage()">
+                        <button class="btn" onclick="sendMessage()" style="padding: 12px 20px;">📤</button>
                     </div>
                 </div>
             `;
         }
 
         function renderChatMessages() {
-            if (!currentChat.messages) return '';
-            
             return currentChat.messages.map(msg => {
                 const isOwn = msg.senderId === currentUser.id;
                 return `
                     <div class="message ${isOwn ? 'own' : ''}">
                         ${msg.text}
+                        <div class="message-actions">
+                            <button class="delete-btn" onclick="deleteMessage('${msg.id}')">🗑️</button>
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -1218,9 +756,9 @@ HTML_TEMPLATE = '''
             const input = document.getElementById('messageInput');
             const text = input.value.trim();
             
-            if (text && currentChat) {
+            if (text) {
                 const newMessage = {
-                    id: Date.now().toString(),
+                    id: 'msg_' + Date.now(),
                     text: text,
                     senderId: currentUser.id,
                     timestamp: new Date().toISOString()
@@ -1233,15 +771,186 @@ HTML_TEMPLATE = '''
             }
         }
 
-        function showNotification(message) {
-            // Простое уведомление
-            alert(message);
+        function deleteMessage(messageId) {
+            currentChat.messages = currentChat.messages.filter(m => m.id !== messageId);
+            openChat(currentChat.id);
         }
 
-        // Закрытие истории при клике
-        document.getElementById('storyViewer').addEventListener('click', function() {
-            this.style.display = 'none';
-        });
+        // ДРУЗЬЯ
+        function showFriends() {
+            document.getElementById('contentArea').innerHTML = `
+                <div style="padding: 10px;">
+                    <h3 style="margin-bottom: 15px;">👥 Друзья</h3>
+                    <div id="friendsList">
+                        ${renderFriendsList()}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderFriendsList() {
+            if (friends.length === 0) {
+                return '<div style="text-align: center; padding: 40px; color: #888;">Друзей пока нет</div>';
+            }
+            
+            return friends.map(friendId => {
+                const friend = allUsers.find(u => u.id === friendId);
+                return `
+                    <div class="friend-item">
+                        <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                            <div style="font-size: 24px;">${friend.avatar}</div>
+                            <div>
+                                <div style="font-weight: bold;">${friend.name}</div>
+                                <div style="color: #888; font-size: 12px;">${friend.bio}</div>
+                            </div>
+                        </div>
+                        <div class="friend-actions">
+                            <button class="btn" onclick="startCall('${friend.id}')">📞</button>
+                            <button class="remove-friend" onclick="removeFriend('${friend.id}')">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function addFriend(userId) {
+            if (!friends.includes(userId)) {
+                friends.push(userId);
+                showNotification('Пользователь добавлен в друзья!');
+                showNewChatModal();
+            }
+        }
+
+        function removeFriend(userId) {
+            friends = friends.filter(id => id !== userId);
+            showFriends();
+        }
+
+        // ЗВОНКИ
+        function startCall(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            currentCall = { userId, type: 'outgoing' };
+            
+            document.getElementById('callContainer').style.display = 'flex';
+            document.getElementById('callAvatar').innerHTML = user.avatar;
+            document.getElementById('callUserName').textContent = user.name;
+            document.getElementById('callStatus').textContent = 'Звонок...';
+            document.getElementById('callControls').innerHTML = `
+                <div class="call-btn call-end" onclick="endCall()">📵</div>
+            `;
+        }
+
+        function simulateIncomingCall() {
+            const randomUser = allUsers.filter(u => u.id !== currentUser.id)[0];
+            currentCall = { userId: randomUser.id, type: 'incoming' };
+            
+            document.getElementById('callContainer').style.display = 'flex';
+            document.getElementById('callAvatar').innerHTML = randomUser.avatar;
+            document.getElementById('callUserName').textContent = randomUser.name;
+            document.getElementById('callStatus').textContent = 'Входящий вызов...';
+        }
+
+        function acceptCall() {
+            document.getElementById('callStatus').textContent = 'Разговор...';
+            document.getElementById('callControls').innerHTML = `
+                <div class="call-btn call-end" onclick="endCall()">📵</div>
+            `;
+        }
+
+        function declineCall() {
+            endCall();
+        }
+
+        function endCall() {
+            document.getElementById('callContainer').style.display = 'none';
+            currentCall = null;
+        }
+
+        // СЛУЧАЙНЫЕ ВХОДЯЩИЕ ЗВОНКИ
+        setInterval(() => {
+            if (!currentCall && Math.random() < 0.01) { // 1% шанс каждые X ms
+                simulateIncomingCall();
+            }
+        }, 30000);
+
+        // НАСТРОЙКИ И ТЕМЫ
+        function showSettings() {
+            document.getElementById('contentArea').innerHTML = `
+                <div style="padding: 15px;">
+                    <h3 style="margin-bottom: 20px;">⚙️ Настройки</h3>
+                    
+                    <div style="background: var(--card-color); padding: 20px; border-radius: 15px; margin-bottom: 15px;">
+                        <h4 style="margin-bottom: 15px;">🎨 Темы оформления</h4>
+                        <div class="theme-grid">
+                            <div class="theme-option theme-purple ${currentTheme === 'purple' ? 'active' : ''}" onclick="changeTheme('purple')"></div>
+                            <div class="theme-option theme-ocean ${currentTheme === 'ocean' ? 'active' : ''}" onclick="changeTheme('ocean')"></div>
+                            <div class="theme-option theme-night ${currentTheme === 'night' ? 'active' : ''}" onclick="changeTheme('night')"></div>
+                            <div class="theme-option theme-sunset ${currentTheme === 'sunset' ? 'active' : ''}" onclick="changeTheme('sunset')"></div>
+                            <div class="theme-option theme-forest ${currentTheme === 'forest' ? 'active' : ''}" onclick="changeTheme('forest')"></div>
+                            <div class="theme-option theme-midnight ${currentTheme === 'midnight' ? 'active' : ''}" onclick="changeTheme('midnight')"></div>
+                        </div>
+                    </div>
+                    
+                    <div style="background: var(--card-color); padding: 20px; border-radius: 15px; margin-bottom: 15px;">
+                        <h4 style="margin-bottom: 15px;">👤 Смена аватарки</h4>
+                        <div class="avatar-upload" onclick="document.getElementById('settingsAvatarInput').click()">
+                            <div id="settingsAvatarPreview">${currentUser.avatar}</div>
+                            <input type="file" id="settingsAvatarInput" accept="image/*" onchange="updateAvatar(event)">
+                        </div>
+                    </div>
+                    
+                    <button class="btn" onclick="logout()" style="background: #ef4444; width: 100%;">
+                        🚪 Выйти
+                    </button>
+                </div>
+            `;
+        }
+
+        function changeTheme(theme) {
+            currentTheme = theme;
+            document.body.className = 'theme-' + theme;
+            localStorage.setItem('dltheme', theme);
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('dltheme');
+            if (savedTheme) {
+                changeTheme(savedTheme);
+            }
+        }
+
+        function updateAvatar(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentUser.avatar = `<img src="${e.target.result}" class="avatar-image">`;
+                    localStorage.setItem('dlcurrentUser', JSON.stringify(currentUser));
+                    document.getElementById('settingsAvatarPreview').innerHTML = currentUser.avatar;
+                    showNotification('Аватар обновлен!');
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('dlcurrentUser');
+            location.reload();
+        }
+
+        function showNotification(message) {
+            // Простое уведомление для мобильных
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification(message);
+            } else {
+                alert(message);
+            }
+        }
+
+        // ЗАПРОС РАЗРЕШЕНИЯ НА УВЕДОМЛЕНИЯ
+        if ('Notification' in window) {
+            Notification.requestPermission();
+        }
     </script>
 </body>
 </html>
@@ -1253,6 +962,6 @@ def index():
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
-    print("🎃 DLtrollex с голосовыми сообщениями запущен!")
+    print("📱 DLtrollex Mobile запущен!")
     print(f"🔗 http://0.0.0.0:{port}")
     app.run(host='0.0.0.0', port=port, debug=False)
