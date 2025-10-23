@@ -9,13 +9,6 @@ import hashlib
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'mydltrollex2024'
 
-# База данных в памяти
-users_db = {}
-messages_db = {}
-chats_db = {}
-friends_db = {}
-calls_db = {}
-
 HTML_TEMPLATE = '''
 <!DOCTYPE html>
 <html>
@@ -30,7 +23,6 @@ HTML_TEMPLATE = '''
             padding: 0;
             box-sizing: border-box;
             font-family: 'Segoe UI', Arial, sans-serif;
-            -webkit-tap-highlight-color: transparent;
         }
         
         :root {
@@ -42,7 +34,13 @@ HTML_TEMPLATE = '''
             --border-color: #3d3d3d;
         }
         
-        /* ТЕМЫ */
+        body {
+            background: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
         body.theme-ocean {
             --bg-color: #001f3f;
             --card-color: #003366;
@@ -83,102 +81,6 @@ HTML_TEMPLATE = '''
             --secondary-color: #4a5568;
         }
         
-        body {
-            background: var(--bg-color);
-            color: var(--text-color);
-            min-height: 100vh;
-            overflow-x: hidden;
-            transition: all 0.3s ease;
-        }
-        
-        /* МОБИЛЬНАЯ ОПТИМИЗАЦИЯ */
-        @media (max-width: 768px) {
-            .chat-container {
-                flex-direction: column;
-                height: 100vh;
-            }
-            
-            .sidebar {
-                width: 100%;
-                height: 50vh;
-                border-right: none;
-                border-bottom: 1px solid var(--border-color);
-            }
-            
-            .chat-area {
-                height: 50vh;
-            }
-            
-            .auth-box {
-                margin: 10px;
-                padding: 30px 20px;
-            }
-            
-            .logo {
-                font-size: 32px;
-            }
-            
-            .btn {
-                min-height: 44px;
-                padding: 12px;
-                font-size: 14px;
-            }
-            
-            .stories-container {
-                padding: 15px;
-                gap: 10px;
-            }
-            
-            .story-avatar {
-                width: 50px;
-                height: 50px;
-                font-size: 20px;
-            }
-            
-            .message {
-                max-width: 85%;
-                font-size: 14px;
-            }
-            
-            .call-container {
-                padding: 20px;
-            }
-            
-            .call-controls {
-                bottom: 20px;
-            }
-        }
-        
-        /* СЕНСОРНЫЕ ЭЛЕМЕНТЫ */
-        .btn {
-            touch-action: manipulation;
-            user-select: none;
-            -webkit-user-select: none;
-            min-height: 44px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 12px 16px;
-            border: none;
-            border-radius: 12px;
-            background: var(--accent-color);
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            margin: 5px 0;
-        }
-        
-        .btn:active {
-            transform: scale(0.95);
-        }
-        
-        .chat-item {
-            padding: 12px 15px;
-            min-height: 60px;
-        }
-        
-        /* ОСНОВНЫЕ СТИЛИ */
         .screen {
             position: fixed;
             top: 0;
@@ -200,6 +102,7 @@ HTML_TEMPLATE = '''
             width: 100%;
             max-width: 400px;
             text-align: center;
+            border: 2px solid var(--accent-color);
         }
         
         .logo {
@@ -207,6 +110,42 @@ HTML_TEMPLATE = '''
             font-weight: bold;
             color: var(--accent-color);
             margin-bottom: 15px;
+        }
+        
+        .subtitle {
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(139, 92, 246, 0.4);
+        }
+        
+        .input-field {
+            width: 100%;
+            padding: 16px;
+            margin-bottom: 15px;
+            background: var(--secondary-color);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-color);
+            font-size: 16px;
         }
         
         .hidden {
@@ -241,20 +180,19 @@ HTML_TEMPLATE = '''
         
         .messages-container {
             flex: 1;
-            padding: 15px;
+            padding: 20px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
         }
         
         .message {
             background: var(--secondary-color);
-            padding: 10px 15px;
+            padding: 12px 15px;
             border-radius: 15px;
             max-width: 70%;
             word-wrap: break-word;
-            position: relative;
         }
         
         .message.own {
@@ -262,31 +200,18 @@ HTML_TEMPLATE = '''
             align-self: flex-end;
         }
         
-        .message-actions {
-            position: absolute;
-            top: -25px;
-            right: 0;
-            background: var(--card-color);
-            border-radius: 10px;
-            padding: 5px;
-            display: none;
-        }
-        
-        .message:hover .message-actions {
+        .chat-item {
             display: flex;
-        }
-        
-        .delete-btn {
-            background: #ef4444;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            padding: 5px 10px;
-            font-size: 12px;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
             cursor: pointer;
         }
         
-        /* ЗВОНКИ */
+        .chat-item:hover {
+            background: var(--secondary-color);
+        }
+        
         .call-container {
             position: fixed;
             top: 0;
@@ -306,14 +231,10 @@ HTML_TEMPLATE = '''
             margin-bottom: 20px;
         }
         
-        .call-info {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        
         .call-controls {
             display: flex;
             gap: 20px;
+            margin-top: 30px;
         }
         
         .call-btn {
@@ -339,43 +260,7 @@ HTML_TEMPLATE = '''
             background: #ef4444;
         }
         
-        /* ДРУЗЬЯ */
-        .friend-item {
-            display: flex;
-            align-items: center;
-            padding: 12px 15px;
-            border-bottom: 1px solid var(--border-color);
-        }
-        
-        .friend-actions {
-            margin-left: auto;
-            display: flex;
-            gap: 10px;
-        }
-        
-        .remove-friend {
-            background: #ef4444;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            padding: 5px 10px;
-            font-size: 12px;
-            cursor: pointer;
-        }
-        
-        .add-friend {
-            background: #10b981;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            padding: 5px 10px;
-            font-size: 12px;
-            cursor: pointer;
-        }
-        
-        /* АВАТАРКИ */
         .avatar-upload {
-            position: relative;
             width: 80px;
             height: 80px;
             border-radius: 50%;
@@ -393,18 +278,8 @@ HTML_TEMPLATE = '''
             width: 100%;
             height: 100%;
             object-fit: cover;
-            border-radius: 50%;
         }
         
-        .avatar-upload input {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            opacity: 0;
-            cursor: pointer;
-        }
-        
-        /* ТЕМЫ */
         .theme-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -430,6 +305,25 @@ HTML_TEMPLATE = '''
         .theme-sunset { background: linear-gradient(135deg, #e53e3e, #c53030); }
         .theme-forest { background: linear-gradient(135deg, #38a169, #2f855a); }
         .theme-midnight { background: linear-gradient(135deg, #805ad5, #6b46c1); }
+        
+        @media (max-width: 768px) {
+            .chat-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: 40vh;
+            }
+            
+            .chat-area {
+                height: 60vh;
+            }
+            
+            .auth-box {
+                padding: 30px 20px;
+            }
+        }
     </style>
 </head>
 <body class="theme-purple">
@@ -457,7 +351,7 @@ HTML_TEMPLATE = '''
             
             <div class="avatar-upload" onclick="document.getElementById('avatarInput').click()">
                 <div id="avatarPreview">😊</div>
-                <input type="file" id="avatarInput" accept="image/*" onchange="previewAvatar(event)">
+                <input type="file" id="avatarInput" accept="image/*" style="display: none;" onchange="previewAvatar(event)">
             </div>
             
             <input type="text" class="input-field" placeholder="👤 Ваше имя" id="regName">
@@ -465,20 +359,24 @@ HTML_TEMPLATE = '''
             <button class="btn" onclick="quickRegister()">
                 <span>🚀 Начать использовать</span>
             </button>
+            
+            <button class="btn" onclick="showScreen('screen1')" style="background: #666;">
+                <span>← Назад</span>
+            </button>
         </div>
     </div>
 
     <!-- ОСНОВНОЙ ИНТЕРФЕЙС -->
-    <div id="mainApp" class="app">
-        <!-- Генерируется JavaScript -->
+    <div id="mainApp" class="app hidden">
+        <!-- Будет заполнен JavaScript -->
     </div>
 
     <!-- ЗВОНОК -->
-    <div id="callContainer" class="call-container">
+    <div id="callContainer" class="call-container hidden">
         <div class="call-avatar" id="callAvatar">👤</div>
-        <div class="call-info">
-            <div id="callUserName">Пользователь</div>
-            <div id="callStatus">Входящий вызов...</div>
+        <div style="text-align: center; margin-bottom: 20px;">
+            <div style="font-size: 24px; font-weight: bold;" id="callUserName">Пользователь</div>
+            <div style="color: #888;" id="callStatus">Входящий вызов...</div>
         </div>
         <div class="call-controls">
             <div class="call-btn call-accept" onclick="acceptCall()">📞</div>
@@ -499,30 +397,71 @@ HTML_TEMPLATE = '''
         function initializeRealUsers() {
             allUsers = [
                 {
-                    id: 'user1', name: 'Алексей Кодеров', username: '@alex_coder', avatar: '👨‍💻',
-                    bio: 'Fullstack разработчик', city: 'Москва', age: 28, isOnline: true,
+                    id: 'user1', 
+                    name: 'Алексей Кодеров', 
+                    username: '@alex_coder', 
+                    avatar: '👨‍💻',
+                    bio: 'Fullstack разработчик', 
+                    city: 'Москва', 
+                    age: 28, 
+                    isOnline: true,
                     interests: ['Программирование', 'Музыка']
                 },
                 {
-                    id: 'user2', name: 'Мария Дизайнерова', username: '@maria_design', avatar: '👩‍🎨',
-                    bio: 'UI/UX дизайнер', city: 'СПб', age: 25, isOnline: true,
+                    id: 'user2', 
+                    name: 'Мария Дизайнерова', 
+                    username: '@maria_design', 
+                    avatar: '👩‍🎨',
+                    bio: 'UI/UX дизайнер', 
+                    city: 'СПб', 
+                    age: 25, 
+                    isOnline: true,
                     interests: ['Дизайн', 'Фотография']
                 },
                 {
-                    id: 'user3', name: 'Дмитрий Геймеров', username: '@dima_gamer', avatar: '🎮',
-                    bio: 'Профессиональный геймер', city: 'Новосибирск', age: 22, isOnline: false,
+                    id: 'user3', 
+                    name: 'Дмитрий Геймеров', 
+                    username: '@dima_gamer', 
+                    avatar: '🎮',
+                    bio: 'Профессиональный геймер', 
+                    city: 'Новосибирск', 
+                    age: 22, 
+                    isOnline: false,
                     interests: ['Игры', 'Стриминг']
+                },
+                {
+                    id: 'user4', 
+                    name: 'Анна Ученова', 
+                    username: '@anna_science', 
+                    avatar: '🔬',
+                    bio: 'Ученый-биолог', 
+                    city: 'Казань', 
+                    age: 30, 
+                    isOnline: true,
+                    interests: ['Наука', 'Природа']
                 }
             ];
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            console.log("DLtrollex загружается...");
             initializeRealUsers();
             checkAutoLogin();
             loadTheme();
         });
 
-        // АВАТАРКИ ИЗ ГАЛЕРЕИ
+        function startQuickRegistration() {
+            showScreen('quickRegisterScreen');
+        }
+
+        function showScreen(screenId) {
+            console.log("Показываем экран:", screenId);
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.add('hidden');
+            });
+            document.getElementById(screenId).classList.remove('hidden');
+        }
+
         function previewAvatar(event) {
             const file = event.target.files[0];
             if (file) {
@@ -535,15 +474,6 @@ HTML_TEMPLATE = '''
             }
         }
 
-        function startQuickRegistration() {
-            showScreen('quickRegisterScreen');
-        }
-
-        function showScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
-            document.getElementById(screenId).classList.remove('hidden');
-        }
-
         function quickRegister() {
             const name = document.getElementById('regName').value.trim();
             if (!name) {
@@ -553,32 +483,40 @@ HTML_TEMPLATE = '''
 
             const avatarElement = document.getElementById('avatarPreview');
             const avatar = avatarElement.querySelector('img') ? 
-                avatarElement.innerHTML : avatarElement.textContent;
+                avatarElement.innerHTML : '😊';
 
             currentUser = {
                 id: 'user_' + Date.now(),
                 name: name,
-                username: '@' + name.toLowerCase(),
+                username: '@' + name.toLowerCase().replace(/[^a-z0-9]/g, ''),
                 avatar: avatar,
-                bio: 'Новый пользователь',
+                bio: 'Новый пользователь DLtrollex 🚀',
                 city: 'Москва',
                 age: 25,
-                isOnline: true
+                isOnline: true,
+                interests: ['Общение', 'Знакомства']
             };
 
             allUsers.push(currentUser);
             localStorage.setItem('dlcurrentUser', JSON.stringify(currentUser));
             localStorage.setItem('dlallUsers', JSON.stringify(allUsers));
+            
             showMainApp();
+            showNotification('Добро пожаловать в DLtrollex! 🎉');
         }
 
         function checkAutoLogin() {
             const savedUser = localStorage.getItem('dlcurrentUser');
             if (savedUser) {
-                currentUser = JSON.parse(savedUser);
-                const savedUsers = localStorage.getItem('dlallUsers');
-                if (savedUsers) allUsers = JSON.parse(savedUsers);
-                showMainApp();
+                try {
+                    currentUser = JSON.parse(savedUser);
+                    const savedUsers = localStorage.getItem('dlallUsers');
+                    if (savedUsers) allUsers = JSON.parse(savedUsers);
+                    showMainApp();
+                } catch (e) {
+                    console.error("Ошибка автологина:", e);
+                    localStorage.removeItem('dlcurrentUser');
+                }
             }
         }
 
@@ -588,45 +526,51 @@ HTML_TEMPLATE = '''
         }
 
         function renderMainInterface() {
+            console.log("Рендерим основной интерфейс");
             document.getElementById('mainApp').innerHTML = `
                 <div class="chat-container">
                     <div class="sidebar">
-                        <div style="padding: 15px; border-bottom: 1px solid var(--border-color);">
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <div style="font-size: 24px;">${currentUser.avatar}</div>
+                        <div style="padding: 20px; border-bottom: 1px solid var(--border-color);">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <div style="font-size: 32px;">${currentUser.avatar}</div>
                                 <div>
-                                    <div style="font-weight: bold;">${currentUser.name}</div>
-                                    <div style="color: #888; font-size: 12px;">Онлайн</div>
+                                    <div style="font-weight: bold; font-size: 18px;">${currentUser.name}</div>
+                                    <div style="color: #888; font-size: 14px;">Онлайн 🟢</div>
                                 </div>
                             </div>
                         </div>
                         
-                        <div style="padding: 10px; border-bottom: 1px solid var(--border-color); display: flex; gap: 5px;">
+                        <div style="padding: 15px; border-bottom: 1px solid var(--border-color); display: flex; gap: 10px;">
                             <button class="btn" onclick="showChats()" style="flex: 1;">💬 Чаты</button>
                             <button class="btn" onclick="showFriends()" style="flex: 1;">👥 Друзья</button>
                             <button class="btn" onclick="showSettings()" style="flex: 1;">⚙️</button>
                         </div>
                         
-                        <div id="contentArea" style="flex: 1; overflow-y: auto;">
+                        <div id="contentArea" style="flex: 1; overflow-y: auto; padding: 10px;">
                             ${renderChatsList()}
                         </div>
                     </div>
                     
                     <div class="chat-area">
-                        <div id="chatContent" style="flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column;">
-                            <div style="font-size: 64px; margin-bottom: 20px;">💬</div>
-                            <div style="color: #888; text-align: center;">Выберите чат для общения</div>
+                        <div id="chatContent" style="flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 20px;">
+                            <div style="font-size: 80px; margin-bottom: 20px;">💬</div>
+                            <h2 style="margin-bottom: 10px; text-align: center;">Добро пожаловать!</h2>
+                            <p style="color: #888; text-align: center; margin-bottom: 30px;">
+                                Выберите чат для начала общения
+                            </p>
+                            <button class="btn" onclick="showNewChatModal()" style="max-width: 200px;">
+                                💬 Начать новый чат
+                            </button>
                         </div>
                     </div>
                 </div>
             `;
         }
 
-        // ЧАТЫ
         function showChats() {
             document.getElementById('contentArea').innerHTML = `
                 <div style="padding: 10px;">
-                    <button class="btn" onclick="showNewChatModal()" style="width: 100%; margin-bottom: 10px;">
+                    <button class="btn" onclick="showNewChatModal()" style="width: 100%; margin-bottom: 15px;">
                         ➕ Новый чат
                     </button>
                     <div id="chatsList">
@@ -638,19 +582,31 @@ HTML_TEMPLATE = '''
 
         function renderChatsList() {
             if (chats.length === 0) {
-                return '<div style="text-align: center; padding: 40px; color: #888;">Чатов пока нет</div>';
+                return `
+                    <div style="text-align: center; padding: 40px 20px; color: #888;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">💬</div>
+                        <div>Чатов пока нет</div>
+                        <div style="font-size: 12px; margin-top: 5px;">Начните новый чат</div>
+                    </div>
+                `;
             }
             
             return chats.map(chat => {
-                const otherUser = allUsers.find(u => u.id === chat.participants.find(id => id !== currentUser.id));
+                const otherUserId = chat.participants.find(id => id !== currentUser.id);
+                const otherUser = allUsers.find(u => u.id === otherUserId);
+                if (!otherUser) return '';
+                
                 return `
                     <div class="chat-item" onclick="openChat('${chat.id}')">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <div style="font-size: 24px;">${otherUser.avatar}</div>
-                            <div>
+                        <div style="display: flex; align-items: center; gap: 15px; width: 100%;">
+                            <div style="font-size: 28px;">${otherUser.avatar}</div>
+                            <div style="flex: 1;">
                                 <div style="font-weight: bold;">${otherUser.name}</div>
-                                <div style="color: #888; font-size: 12px;">${chat.lastMessage?.text || 'Нет сообщений'}</div>
+                                <div style="color: #888; font-size: 14px;">${chat.lastMessage?.text || 'Нет сообщений'}</div>
                             </div>
+                            <button class="btn" onclick="event.stopPropagation(); startCall('${otherUser.id}')" style="padding: 8px 12px; font-size: 14px;">
+                                📞
+                            </button>
                         </div>
                     </div>
                 `;
@@ -662,18 +618,18 @@ HTML_TEMPLATE = '''
             
             document.getElementById('contentArea').innerHTML = `
                 <div style="padding: 10px;">
-                    <h3 style="margin-bottom: 15px;">💬 Новый чат</h3>
+                    <h3 style="margin-bottom: 15px;">💬 Выберите пользователя</h3>
                     <div style="max-height: 60vh; overflow-y: auto;">
                         ${availableUsers.map(user => `
                             <div class="chat-item" onclick="startNewChat('${user.id}')">
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <div style="font-size: 24px;">${user.avatar}</div>
-                                    <div>
+                                <div style="display: flex; align-items: center; gap: 15px; width: 100%;">
+                                    <div style="font-size: 28px;">${user.avatar}</div>
+                                    <div style="flex: 1;">
                                         <div style="font-weight: bold;">${user.name}</div>
-                                        <div style="color: #888; font-size: 12px;">${user.bio}</div>
+                                        <div style="color: #888; font-size: 14px;">${user.bio}</div>
                                     </div>
-                                    <button class="add-friend" onclick="event.stopPropagation(); addFriend('${user.id}')">
-                                        ➕ Друг
+                                    <button class="btn" onclick="event.stopPropagation(); addFriend('${user.id}')" style="padding: 8px 12px; font-size: 14px; background: #10b981;">
+                                        ➕
                                     </button>
                                 </div>
                             </div>
@@ -695,14 +651,24 @@ HTML_TEMPLATE = '''
             const newChat = {
                 id: 'chat_' + Date.now(),
                 participants: [currentUser.id, userId],
-                lastMessage: { text: 'Чат начат', senderId: currentUser.id },
+                lastMessage: { 
+                    text: 'Чат начат 🚀', 
+                    senderId: currentUser.id,
+                    timestamp: new Date().toISOString()
+                },
                 messages: [
-                    { id: '1', text: `Привет! Я ${currentUser.name}`, senderId: currentUser.id, timestamp: new Date().toISOString() }
+                    { 
+                        id: '1', 
+                        text: `Привет! Я ${currentUser.name}. Рад познакомиться! 👋`, 
+                        senderId: currentUser.id, 
+                        timestamp: new Date().toISOString() 
+                    }
                 ]
             };
 
             chats.push(newChat);
             openChat(newChat.id);
+            showNotification(`Чат с ${user.name} начат! 💬`);
         }
 
         function openChat(chatId) {
@@ -710,16 +676,18 @@ HTML_TEMPLATE = '''
             const otherUser = allUsers.find(u => u.id === currentChat.participants.find(id => id !== currentUser.id));
             
             document.getElementById('chatContent').innerHTML = `
-                <div style="display: flex; flex-direction: column; height: 100%;">
-                    <div style="padding: 15px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <div style="font-size: 24px;">${otherUser.avatar}</div>
+                <div style="display: flex; flex-direction: column; height: 100%; width: 100%;">
+                    <div style="padding: 15px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <div style="font-size: 32px;">${otherUser.avatar}</div>
                             <div>
-                                <div style="font-weight: bold;">${otherUser.name}</div>
-                                <div style="color: #888; font-size: 12px;">${otherUser.bio}</div>
+                                <div style="font-weight: bold; font-size: 18px;">${otherUser.name}</div>
+                                <div style="color: #888; font-size: 14px;">${otherUser.bio}</div>
                             </div>
                         </div>
-                        <button class="btn" onclick="startCall('${otherUser.id}')">📞</button>
+                        <button class="btn" onclick="renderMainInterface()" style="padding: 10px 15px;">
+                            ← Назад
+                        </button>
                     </div>
                     
                     <div class="messages-container" id="messagesContainer">
@@ -728,24 +696,28 @@ HTML_TEMPLATE = '''
                     
                     <div style="padding: 15px; border-top: 1px solid var(--border-color); display: flex; gap: 10px;">
                         <input type="text" 
-                               style="flex: 1; padding: 12px; background: var(--secondary-color); border: none; border-radius: 20px; color: white;" 
-                               placeholder="Сообщение..." 
+                               style="flex: 1; padding: 12px 15px; background: var(--secondary-color); border: 1px solid var(--border-color); border-radius: 25px; color: white; font-size: 16px;" 
+                               placeholder="Введите сообщение..." 
                                id="messageInput"
-                               onkeypress="if(event.key=='Enter') sendMessage()">
-                        <button class="btn" onclick="sendMessage()" style="padding: 12px 20px;">📤</button>
+                               onkeypress="if(event.key === 'Enter') sendMessage()">
+                        <button class="btn" onclick="sendMessage()" style="padding: 12px 20px; min-width: 60px;">
+                            📤
+                        </button>
                     </div>
                 </div>
             `;
         }
 
         function renderChatMessages() {
+            if (!currentChat.messages) return '';
+            
             return currentChat.messages.map(msg => {
                 const isOwn = msg.senderId === currentUser.id;
                 return `
                     <div class="message ${isOwn ? 'own' : ''}">
-                        ${msg.text}
-                        <div class="message-actions">
-                            <button class="delete-btn" onclick="deleteMessage('${msg.id}')">🗑️</button>
+                        <div>${msg.text}</div>
+                        <div style="font-size: 11px; color: ${isOwn ? 'rgba(255,255,255,0.7)' : '#888'}; margin-top: 5px; text-align: ${isOwn ? 'right' : 'left'};">
+                            ${new Date(msg.timestamp).toLocaleTimeString()}
                         </div>
                     </div>
                 `;
@@ -756,7 +728,7 @@ HTML_TEMPLATE = '''
             const input = document.getElementById('messageInput');
             const text = input.value.trim();
             
-            if (text) {
+            if (text && currentChat) {
                 const newMessage = {
                     id: 'msg_' + Date.now(),
                     text: text,
@@ -771,16 +743,10 @@ HTML_TEMPLATE = '''
             }
         }
 
-        function deleteMessage(messageId) {
-            currentChat.messages = currentChat.messages.filter(m => m.id !== messageId);
-            openChat(currentChat.id);
-        }
-
-        // ДРУЗЬЯ
         function showFriends() {
             document.getElementById('contentArea').innerHTML = `
                 <div style="padding: 10px;">
-                    <h3 style="margin-bottom: 15px;">👥 Друзья</h3>
+                    <h3 style="margin-bottom: 15px;">👥 Мои друзья</h3>
                     <div id="friendsList">
                         ${renderFriendsList()}
                     </div>
@@ -790,23 +756,33 @@ HTML_TEMPLATE = '''
 
         function renderFriendsList() {
             if (friends.length === 0) {
-                return '<div style="text-align: center; padding: 40px; color: #888;">Друзей пока нет</div>';
+                return `
+                    <div style="text-align: center; padding: 40px 20px; color: #888;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">👥</div>
+                        <div>Друзей пока нет</div>
+                        <div style="font-size: 12px; margin-top: 5px;">Добавьте друзей из списка чатов</div>
+                    </div>
+                `;
             }
             
             return friends.map(friendId => {
                 const friend = allUsers.find(u => u.id === friendId);
                 return `
-                    <div class="friend-item">
-                        <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
-                            <div style="font-size: 24px;">${friend.avatar}</div>
-                            <div>
+                    <div class="chat-item">
+                        <div style="display: flex; align-items: center; gap: 15px; width: 100%;">
+                            <div style="font-size: 28px;">${friend.avatar}</div>
+                            <div style="flex: 1;">
                                 <div style="font-weight: bold;">${friend.name}</div>
-                                <div style="color: #888; font-size: 12px;">${friend.bio}</div>
+                                <div style="color: #888; font-size: 14px;">${friend.bio}</div>
                             </div>
-                        </div>
-                        <div class="friend-actions">
-                            <button class="btn" onclick="startCall('${friend.id}')">📞</button>
-                            <button class="remove-friend" onclick="removeFriend('${friend.id}')">🗑️</button>
+                            <div style="display: flex; gap: 5px;">
+                                <button class="btn" onclick="startCall('${friend.id}')" style="padding: 8px 12px; font-size: 14px;">
+                                    📞
+                                </button>
+                                <button class="btn" onclick="removeFriend('${friend.id}')" style="padding: 8px 12px; font-size: 14px; background: #ef4444;">
+                                    🗑️
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -816,43 +792,48 @@ HTML_TEMPLATE = '''
         function addFriend(userId) {
             if (!friends.includes(userId)) {
                 friends.push(userId);
-                showNotification('Пользователь добавлен в друзья!');
-                showNewChatModal();
+                showNotification('Пользователь добавлен в друзья! 👥');
             }
         }
 
         function removeFriend(userId) {
             friends = friends.filter(id => id !== userId);
             showFriends();
+            showNotification('Пользователь удален из друзей');
         }
 
-        // ЗВОНКИ
         function startCall(userId) {
             const user = allUsers.find(u => u.id === userId);
-            currentCall = { userId, type: 'outgoing' };
+            currentCall = { userId: userId, type: 'outgoing' };
             
-            document.getElementById('callContainer').style.display = 'flex';
+            document.getElementById('callContainer').classList.remove('hidden');
             document.getElementById('callAvatar').innerHTML = user.avatar;
             document.getElementById('callUserName').textContent = user.name;
             document.getElementById('callStatus').textContent = 'Звонок...';
-            document.getElementById('callControls').innerHTML = `
+            document.querySelector('.call-controls').innerHTML = `
                 <div class="call-btn call-end" onclick="endCall()">📵</div>
             `;
         }
 
         function simulateIncomingCall() {
-            const randomUser = allUsers.filter(u => u.id !== currentUser.id)[0];
+            const randomUser = allUsers.filter(u => u.id !== currentUser.id && u.isOnline)[0];
+            if (!randomUser) return;
+            
             currentCall = { userId: randomUser.id, type: 'incoming' };
             
-            document.getElementById('callContainer').style.display = 'flex';
+            document.getElementById('callContainer').classList.remove('hidden');
             document.getElementById('callAvatar').innerHTML = randomUser.avatar;
             document.getElementById('callUserName').textContent = randomUser.name;
             document.getElementById('callStatus').textContent = 'Входящий вызов...';
+            document.querySelector('.call-controls').innerHTML = `
+                <div class="call-btn call-accept" onclick="acceptCall()">📞</div>
+                <div class="call-btn call-decline" onclick="declineCall()">📵</div>
+            `;
         }
 
         function acceptCall() {
             document.getElementById('callStatus').textContent = 'Разговор...';
-            document.getElementById('callControls').innerHTML = `
+            document.querySelector('.call-controls').innerHTML = `
                 <div class="call-btn call-end" onclick="endCall()">📵</div>
             `;
         }
@@ -862,18 +843,17 @@ HTML_TEMPLATE = '''
         }
 
         function endCall() {
-            document.getElementById('callContainer').style.display = 'none';
+            document.getElementById('callContainer').classList.add('hidden');
             currentCall = null;
         }
 
         // СЛУЧАЙНЫЕ ВХОДЯЩИЕ ЗВОНКИ
         setInterval(() => {
-            if (!currentCall && Math.random() < 0.01) { // 1% шанс каждые X ms
+            if (!currentCall && Math.random() < 0.02) {
                 simulateIncomingCall();
             }
         }, 30000);
 
-        // НАСТРОЙКИ И ТЕМЫ
         function showSettings() {
             document.getElementById('contentArea').innerHTML = `
                 <div style="padding: 15px;">
@@ -895,7 +875,7 @@ HTML_TEMPLATE = '''
                         <h4 style="margin-bottom: 15px;">👤 Смена аватарки</h4>
                         <div class="avatar-upload" onclick="document.getElementById('settingsAvatarInput').click()">
                             <div id="settingsAvatarPreview">${currentUser.avatar}</div>
-                            <input type="file" id="settingsAvatarInput" accept="image/*" onchange="updateAvatar(event)">
+                            <input type="file" id="settingsAvatarInput" accept="image/*" style="display: none;" onchange="updateAvatar(event)">
                         </div>
                     </div>
                     
@@ -910,6 +890,7 @@ HTML_TEMPLATE = '''
             currentTheme = theme;
             document.body.className = 'theme-' + theme;
             localStorage.setItem('dltheme', theme);
+            showNotification('Тема изменена! 🎨');
         }
 
         function loadTheme() {
@@ -927,7 +908,8 @@ HTML_TEMPLATE = '''
                     currentUser.avatar = `<img src="${e.target.result}" class="avatar-image">`;
                     localStorage.setItem('dlcurrentUser', JSON.stringify(currentUser));
                     document.getElementById('settingsAvatarPreview').innerHTML = currentUser.avatar;
-                    showNotification('Аватар обновлен!');
+                    showNotification('Аватар обновлен! 📸');
+                    renderMainInterface();
                 }
                 reader.readAsDataURL(file);
             }
@@ -939,18 +921,36 @@ HTML_TEMPLATE = '''
         }
 
         function showNotification(message) {
-            // Простое уведомление для мобильных
-            if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification(message);
-            } else {
-                alert(message);
-            }
+            // Создаем простое уведомление
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: var(--accent-color);
+                color: white;
+                padding: 15px 20px;
+                border-radius: 10px;
+                z-index: 3000;
+                animation: slideIn 0.3s ease;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
         }
 
-        // ЗАПРОС РАЗРЕШЕНИЯ НА УВЕДОМЛЕНИЯ
-        if ('Notification' in window) {
-            Notification.requestPermission();
-        }
+        // Добавляем анимацию для уведомлений
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
     </script>
 </body>
 </html>
@@ -962,6 +962,6 @@ def index():
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
-    print("📱 DLtrollex Mobile запущен!")
+    print("🎃 DLtrollex Mobile запущен!")
     print(f"🔗 http://0.0.0.0:{port}")
     app.run(host='0.0.0.0', port=port, debug=False)
