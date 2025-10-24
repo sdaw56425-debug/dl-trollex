@@ -4,6 +4,7 @@ import datetime
 import random
 import os
 import json
+import hashlib
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'mydltrollex2024'
@@ -23,7 +24,7 @@ news_messages = [
         'id': '2', 
         'text': 'Это фиолетовый мессенджер с максимальной кастомизацией! 💜',
         'sender_name': 'Система', 
-        'timestamp': datetime.datetime.now().isoformat(),
+        timestamp': datetime.datetime.now().isoformat(),
     }
 ]
 
@@ -97,108 +98,51 @@ HTML_TEMPLATE = '''
             --secondary-color: #3a2a00;
         }
         
-        /* Анимации */
+        /* Оптимизированные анимации */
         @keyframes glow {
-            0%, 100% { text-shadow: 0 0 10px var(--accent-color); }
-            50% { text-shadow: 0 0 20px var(--accent-color), 0 0 30px var(--accent-color); }
+            0%, 100% {
+                text-shadow: 0 0 10px var(--accent-color);
+            }
+            50% {
+                text-shadow: 0 0 20px var(--accent-color);
+            }
         }
         
         @keyframes float {
-            0%, 100% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(-10px) rotate(5deg); }
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
         }
         
         @keyframes pulse {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.05); opacity: 0.8; }
-        }
-        
-        @keyframes bounce {
-            0%, 20%, 53%, 80%, 100% { transform: translate3d(0,0,0); }
-            40%, 43% { transform: translate3d(0,-15px,0); }
-            70% { transform: translate3d(0,-5px,0); }
-            90% { transform: translate3d(0,-2px,0); }
-        }
-        
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-            20%, 40%, 60%, 80% { transform: translateX(5px); }
-        }
-        
-        @keyframes slideInUp {
-            from { transform: translateY(50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        
-        @keyframes slideInRight {
-            from { transform: translateX(50px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
         }
         
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        
-        @keyframes typewriter {
-            from { width: 0; }
-            to { width: 100%; }
-        }
-        
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0; }
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         .glowing-logo {
-            animation: glow 2s ease-in-out infinite;
+            animation: glow 3s ease-in-out infinite;
+            will-change: text-shadow;
         }
         
         .floating {
             animation: float 6s ease-in-out infinite;
+            will-change: transform;
         }
         
         .pulse {
             animation: pulse 2s ease-in-out infinite;
-        }
-        
-        .bounce {
-            animation: bounce 1s ease infinite;
-        }
-        
-        .shake {
-            animation: shake 0.5s ease-in-out;
+            will-change: transform;
         }
         
         .fade-in {
-            animation: fadeIn 0.5s ease-out;
+            animation: fadeIn 0.4s ease-out;
+            will-change: opacity, transform;
         }
         
-        .slide-in-up {
-            animation: slideInUp 0.5s ease-out;
-        }
-        
-        .slide-in-right {
-            animation: slideInRight 0.5s ease-out;
-        }
-        
-        .rotate {
-            animation: rotate 2s linear infinite;
-        }
-        
-        .typewriter {
-            overflow: hidden;
-            border-right: 2px solid var(--accent-color);
-            white-space: nowrap;
-            animation: typewriter 3s steps(40) 1s both, blink 0.8s infinite;
-        }
-
         /* Базовые компоненты */
         .screen {
             position: fixed;
@@ -221,7 +165,7 @@ HTML_TEMPLATE = '''
             background: var(--card-color);
             padding: 30px 25px;
             border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             border: 2px solid var(--accent-color);
             width: 100%;
             max-width: min(450px, 90vw);
@@ -229,17 +173,6 @@ HTML_TEMPLATE = '''
             position: relative;
             overflow: hidden;
             z-index: 1001;
-        }
-        
-        .auth-box::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(139, 92, 246, 0.1), transparent);
-            animation: rotate 6s linear infinite;
         }
         
         .logo {
@@ -256,6 +189,25 @@ HTML_TEMPLATE = '''
             line-height: 1.4;
         }
         
+        .input-field {
+            width: 100%;
+            padding: 16px;
+            margin-bottom: 15px;
+            background: var(--secondary-color);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-color);
+            font-size: 16px;
+            transition: all 0.2s ease;
+            -webkit-appearance: none;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
+        }
+        
         .btn {
             width: 100%;
             padding: 16px;
@@ -267,7 +219,7 @@ HTML_TEMPLATE = '''
             font-weight: bold;
             cursor: pointer;
             margin-bottom: 12px;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             touch-action: manipulation;
             user-select: none;
             min-height: 50px;
@@ -276,26 +228,15 @@ HTML_TEMPLATE = '''
             justify-content: center;
             position: relative;
             z-index: 1002;
-            overflow: hidden;
-        }
-        
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s;
-        }
-        
-        .btn:hover::before {
-            left: 100%;
+            -webkit-user-select: none;
         }
         
         .btn:active {
-            transform: scale(0.95);
+            transform: scale(0.98);
+        }
+        
+        .btn-halloween {
+            background: linear-gradient(135deg, #ff7b25, #ff5500);
         }
         
         .btn-success {
@@ -308,10 +249,6 @@ HTML_TEMPLATE = '''
         
         .btn-warning {
             background: linear-gradient(135deg, #f59e0b, #d97706);
-        }
-        
-        .btn-halloween {
-            background: linear-gradient(135deg, #ff7b25, #ff5500);
         }
         
         .hidden {
@@ -339,11 +276,21 @@ HTML_TEMPLATE = '''
             z-index: 3000;
             animation: slideInRight 0.3s ease-out;
             max-width: 300px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            border-left: 4px solid var(--success-color);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         }
         
-        /* Чат интерфейс */
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        /* Оптимизированный чат-интерфейс */
         .chat-container {
             display: flex;
             height: 100%;
@@ -386,12 +333,6 @@ HTML_TEMPLATE = '''
             border-radius: 25px;
             color: var(--text-color);
             font-size: 14px;
-            transition: all 0.3s ease;
-        }
-        
-        .search-input:focus {
-            border-color: var(--accent-color);
-            box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
         }
         
         .chats-list {
@@ -406,20 +347,15 @@ HTML_TEMPLATE = '''
             padding: 12px 15px;
             border-bottom: 1px solid var(--border-color);
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             user-select: none;
             position: relative;
             z-index: 1002;
             min-height: 70px;
         }
         
-        .chat-item:hover {
-            background: var(--secondary-color);
-            transform: translateX(5px);
-        }
-        
         .chat-item:active {
-            transform: scale(0.98);
+            background: var(--secondary-color);
         }
         
         .chat-avatar {
@@ -433,11 +369,6 @@ HTML_TEMPLATE = '''
             font-size: 18px;
             margin-right: 12px;
             flex-shrink: 0;
-            transition: all 0.3s ease;
-        }
-        
-        .chat-avatar:hover {
-            transform: scale(1.1) rotate(10deg);
         }
         
         .chat-info {
@@ -489,13 +420,7 @@ HTML_TEMPLATE = '''
             word-wrap: break-word;
             position: relative;
             z-index: 1002;
-            animation: slideInUp 0.3s ease-out;
-            transition: all 0.3s ease;
-        }
-        
-        .message:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            animation: fadeIn 0.2s ease-out;
         }
         
         .message.own {
@@ -523,12 +448,6 @@ HTML_TEMPLATE = '''
             border-radius: 25px;
             color: var(--text-color);
             font-size: 14px;
-            transition: all 0.3s ease;
-        }
-        
-        .message-input:focus {
-            border-color: var(--accent-color);
-            box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
         }
         
         .send-btn {
@@ -545,12 +464,6 @@ HTML_TEMPLATE = '''
             position: relative;
             z-index: 1002;
             flex-shrink: 0;
-            transition: all 0.3s ease;
-        }
-        
-        .send-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 5px 15px rgba(139, 92, 246, 0.4);
         }
         
         .online-indicator {
@@ -562,7 +475,6 @@ HTML_TEMPLATE = '''
             bottom: 2px;
             right: 2px;
             border: 2px solid var(--card-color);
-            animation: pulse 2s infinite;
         }
         
         /* Мобильная оптимизация */
@@ -574,6 +486,7 @@ HTML_TEMPLATE = '''
             display: block;
         }
         
+        /* Навигация для мобильных */
         .mobile-nav {
             display: none;
             position: fixed;
@@ -596,14 +509,12 @@ HTML_TEMPLATE = '''
             text-align: center;
             font-size: 12px;
             cursor: pointer;
-            transition: all 0.3s ease;
-            border-radius: 10px;
+            transition: all 0.2s ease;
         }
         
         .nav-button.active {
             color: var(--accent-color);
-            background: var(--secondary-color);
-            transform: translateY(-5px);
+            transform: translateY(-2px);
         }
         
         /* Адаптивные стили */
@@ -685,7 +596,33 @@ HTML_TEMPLATE = '''
             }
         }
         
-        /* Дополнительные стили */
+        /* Оптимизация производительности */
+        .will-change {
+            will-change: transform, opacity;
+        }
+        
+        .no-animation {
+            animation: none !important;
+        }
+        
+        /* Улучшенный скроллбар */
+        .chats-list::-webkit-scrollbar,
+        .messages-container::-webkit-scrollbar {
+            width: 4px;
+        }
+        
+        .chats-list::-webkit-scrollbar-track,
+        .messages-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .chats-list::-webkit-scrollbar-thumb,
+        .messages-container::-webkit-scrollbar-thumb {
+            background: var(--accent-color);
+            border-radius: 2px;
+        }
+        
+        /* Предотвращение выделения текста на мобильных */
         .no-select {
             -webkit-touch-callout: none;
             -webkit-user-select: none;
@@ -695,111 +632,36 @@ HTML_TEMPLATE = '''
             user-select: none;
         }
         
-        .feature-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
-        }
-        
-        .feature-card {
-            background: var(--secondary-color);
-            padding: 20px;
-            border-radius: 12px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: 1px solid transparent;
-        }
-        
-        .feature-card:hover {
-            border-color: var(--accent-color);
-            transform: translateY(-5px) scale(1.02);
-            box-shadow: 0 10px 25px rgba(139, 92, 246, 0.3);
-        }
-        
-        .feature-icon {
-            font-size: 32px;
-            margin-bottom: 10px;
-            transition: all 0.3s ease;
-        }
-        
-        .feature-card:hover .feature-icon {
-            transform: scale(1.2) rotate(5deg);
-        }
-        
-        .credential-box {
-            background: var(--secondary-color);
-            padding: 15px;
-            border-radius: 10px;
-            margin: 15px 0;
-            border: 1px solid var(--accent-color);
-            animation: pulse 2s infinite;
-        }
-        
-        .credential-field {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 8px 0;
-            gap: 10px;
-        }
-        
-        .credential-value {
-            font-family: monospace;
+        /* Новые компоненты для функций */
+        .emoji-picker {
+            position: absolute;
+            bottom: 70px;
+            right: 15px;
             background: var(--card-color);
-            padding: 5px 10px;
-            border-radius: 5px;
-            flex: 1;
-            word-break: break-all;
-            font-size: 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 10px;
+            display: none;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 5px;
+            max-width: 250px;
+            z-index: 2000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
         
-        .copy-btn {
-            background: var(--accent-color);
+        .emoji-btn {
+            padding: 8px;
+            background: transparent;
             border: none;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
-            flex-shrink: 0;
-            transition: all 0.3s ease;
+            font-size: 18px;
+            transition: all 0.2s ease;
         }
         
-        .copy-btn:hover {
-            transform: scale(1.05);
-        }
-        
-        .copy-btn:active {
-            transform: scale(0.95);
-        }
-        
-        .decorative-emoji {
-            position: fixed;
-            font-size: 24px;
-            z-index: 99;
-            opacity: 0.1;
-            animation: float 8s ease-in-out infinite;
-            pointer-events: none;
-        }
-        
-        .error {
-            color: #ef4444;
-            margin-top: 15px;
-            padding: 10px;
-            background: rgba(239, 68, 68, 0.1);
-            border-radius: 8px;
-            border: 1px solid #ef4444;
-            animation: shake 0.5s ease-in-out;
-        }
-        
-        .success {
-            color: #10b981;
-            margin-top: 15px;
-            padding: 10px;
-            background: rgba(16, 185, 129, 0.1);
-            border-radius: 8px;
-            border: 1px solid #10b981;
+        .emoji-btn:hover, .emoji-btn:active {
+            background: var(--secondary-color);
+            transform: scale(1.1);
         }
         
         .typing-indicator {
@@ -835,6 +697,45 @@ HTML_TEMPLATE = '''
             40% { transform: scale(1); opacity: 1; }
         }
         
+        .context-menu {
+            position: fixed;
+            background: var(--card-color);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 8px 0;
+            z-index: 3000;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            display: none;
+        }
+        
+        .context-item {
+            padding: 10px 15px;
+            background: transparent;
+            border: none;
+            color: var(--text-color);
+            text-align: left;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .context-item:hover, .context-item:active {
+            background: var(--secondary-color);
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+        
+        .status-online { background: #10b981; }
+        .status-offline { background: #6b7280; }
+        .status-away { background: #f59e0b; }
+        
+        /* Стили для настроек с прокруткой */
         .settings-container {
             height: 100%;
             overflow-y: auto;
@@ -848,7 +749,6 @@ HTML_TEMPLATE = '''
             border-radius: 15px;
             margin-bottom: 15px;
             border: 1px solid var(--border-color);
-            animation: slideInUp 0.5s ease-out;
         }
         
         .settings-title {
@@ -861,68 +761,171 @@ HTML_TEMPLATE = '''
             gap: 10px;
         }
         
-        .theme-option {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            cursor: pointer;
-            border: 2px solid transparent;
-            transition: all 0.3s ease;
-        }
-        
-        .theme-option:hover {
-            transform: scale(1.1);
-        }
-        
-        .theme-option.active {
-            border-color: white;
-            transform: scale(1.1);
-        }
-        
-        .stats-grid {
+        /* Стили для новых функций */
+        .feature-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-            gap: 10px;
-            margin: 15px 0;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
         }
         
-        .stat-card {
+        .feature-card {
+            background: var(--secondary-color);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+        
+        .feature-card:hover, .feature-card:active {
+            border-color: var(--accent-color);
+            transform: translateY(-3px);
+        }
+        
+        .feature-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .credential-box {
             background: var(--secondary-color);
             padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            transition: all 0.3s ease;
+            border-radius: 10px;
+            margin: 15px 0;
+            border: 1px solid var(--accent-color);
         }
         
-        .stat-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        .credential-field {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 8px 0;
+            gap: 10px;
         }
         
-        .stat-value {
+        .credential-value {
+            font-family: monospace;
+            background: var(--card-color);
+            padding: 5px 10px;
+            border-radius: 5px;
+            flex: 1;
+            word-break: break-all;
+            font-size: 14px;
+        }
+        
+        .copy-btn {
+            background: var(--accent-color);
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+        
+        .copy-btn:active {
+            transform: scale(0.95);
+        }
+        
+        /* Стили для декоративных элементов */
+        .decorative-emoji {
+            position: fixed;
             font-size: 24px;
-            font-weight: bold;
-            color: var(--accent-color);
+            z-index: 99;
+            opacity: 0.1;
+            animation: float 8s ease-in-out infinite;
+            pointer-events: none;
         }
         
-        .stat-label {
+        /* Стили для новых функций чата */
+        .message-actions {
+            position: absolute;
+            top: -10px;
+            right: 10px;
+            display: none;
+            gap: 5px;
+        }
+        
+        .message:hover .message-actions {
+            display: flex;
+        }
+        
+        .action-btn {
+            background: var(--card-color);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
             font-size: 12px;
+        }
+        
+        .voice-message-btn {
+            background: var(--accent-color);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        
+        .voice-recording {
+            animation: pulse 1s infinite;
+            background: #ef4444 !important;
+        }
+        
+        /* Стили для групп */
+        .group-avatar {
+            background: linear-gradient(135deg, #8b5cf6, #7e22ce);
+            position: relative;
+        }
+        
+        .group-members {
+            font-size: 11px;
             color: #888;
         }
         
-        /* Анимация для нового сообщения */
-        @keyframes messageSent {
-            0% { transform: translateY(20px) scale(0.8); opacity: 0; }
-            100% { transform: translateY(0) scale(1); opacity: 1; }
+        /* Оптимизация для медленных устройств */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
         }
-        
-        .message-sent {
-            animation: messageSent 0.4s ease-out;
+
+        /* Стили для ошибок */
+        .error {
+            color: #ef4444;
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 8px;
+            border: 1px solid #ef4444;
+        }
+
+        .success {
+            color: #10b981;
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: 8px;
+            border: 1px solid #10b981;
         }
     </style>
 </head>
 <body>
-    <!-- Декоративные элементы -->
+    <!-- Декоративные элементы (только тыква, призрак и сердечко) -->
     <div class="decorative-emoji" style="top: 10%; left: 5%;">🎃</div>
     <div class="decorative-emoji" style="top: 15%; right: 8%;">👻</div>
     <div class="decorative-emoji" style="top: 85%; left: 10%;">💜</div>
@@ -932,7 +935,7 @@ HTML_TEMPLATE = '''
     <div id="screen1" class="screen">
         <div class="auth-box floating">
             <div class="logo glowing-logo">🎃 DLtrollex</div>
-            <div class="subtitle typewriter">Хеллоуин 2025 Edition! Улучшенный чат с анимациями</div>
+            <div class="subtitle">Хеллоуин 2025 Edition! Улучшенный чат с новыми функциями</div>
             
             <button class="btn pulse no-select" onclick="startQuickRegistration()">
                 <span>💬 Начать общение</span>
@@ -972,11 +975,11 @@ HTML_TEMPLATE = '''
                 <span>← Назад</span>
             </button>
             
-            <div id="loginError" class="error hidden"></div>
+            <div id="loginError" class="error hidden" style="margin-top: 15px;"></div>
         </div>
     </div>
 
-    <!-- АВТО-РЕГИСТРАЦИЯ -->
+    <!-- ВТОРАЯ СТРАНИЦА - АВТО-РЕГИСТРАЦИЯ -->
     <div id="quickRegisterScreen" class="screen hidden">
         <div class="auth-box floating">
             <div class="logo glowing-logo">🎃 DLtrollex</div>
@@ -1012,8 +1015,10 @@ HTML_TEMPLATE = '''
         </div>
     </div>
 
-    <!-- Основной интерфейс -->
-    <div id="mainApp" class="app"></div>
+    <!-- Основной интерфейс мессенджера -->
+    <div id="mainApp" class="app">
+        <!-- Интерфейс будет генерироваться JavaScript -->
+    </div>
 
     <!-- Мобильная навигация -->
     <div class="mobile-nav" id="mobileNav" style="display: none;">
@@ -1031,50 +1036,66 @@ HTML_TEMPLATE = '''
         </button>
     </div>
 
+    <!-- Emoji Picker -->
+    <div class="emoji-picker" id="emojiPicker">
+        <button class="emoji-btn" onclick="addEmoji('😊')">😊</button>
+        <button class="emoji-btn" onclick="addEmoji('😂')">😂</button>
+        <button class="emoji-btn" onclick="addEmoji('🥰')">🥰</button>
+        <button class="emoji-btn" onclick="addEmoji('😎')">😎</button>
+        <button class="emoji-btn" onclick="addEmoji('🤔')">🤔</button>
+        <button class="emoji-btn" onclick="addEmoji('🎉')">🎉</button>
+        <button class="emoji-btn" onclick="addEmoji('🚀')">🚀</button>
+        <button class="emoji-btn" onclick="addEmoji('💜')">💜</button>
+        <button class="emoji-btn" onclick="addEmoji('🎃')">🎃</button>
+        <button class="emoji-btn" onclick="addEmoji('👻')">👻</button>
+        <button class="emoji-btn" onclick="addEmoji('⭐')">⭐</button>
+        <button class="emoji-btn" onclick="addEmoji('🔥')">🔥</button>
+    </div>
+
+    <!-- Context Menu -->
+    <div class="context-menu" id="contextMenu">
+        <button class="context-item no-select" onclick="copyMessage()">📋 Копировать</button>
+        <button class="context-item no-select" onclick="deleteMessage()">🗑️ Удалить</button>
+        <button class="context-item no-select" onclick="replyToMessage()">↩️ Ответить</button>
+        <button class="context-item no-select" onclick="hideContextMenu()">✖️ Закрыть</button>
+    </div>
+
     <script>
-        // Полный JavaScript код остается БЕЗ ИЗМЕНЕНИЙ
-        // ... (весь ваш оригинальный JavaScript код)
-    </script>
-</body>
-</html>
-'''
+        let currentUser = null;
+        let currentChat = null;
+        let chats = [];
+        let allUsers = [];
+        let isHalloweenTheme = false;
+        let currentTheme = 'purple';
+        let userStats = {
+            messagesSent: 0,
+            chatsCreated: 0,
+            logins: 0,
+            timeSpent: 0,
+            voiceMessages: 0,
+            groupsCreated: 0
+        };
+        let isMobile = false;
+        let currentMobileView = 'chats';
+        let selectedMessage = null;
+        let onlineUsers = new Set();
+        let isRecording = false;
+        let mediaRecorder = null;
+        let audioChunks = [];
 
-@app.route('/')
-def index():
-    return render_template_string(HTML_TEMPLATE)
+        // Инициализация при загрузке
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("🎃 DLtrollex Хеллоуин 2025 загружен!");
+            detectDeviceType();
+            initializeApp();
+        });
 
-@app.route('/api/register', methods=['POST'])
-def api_register():
-    try:
-        data = request.get_json()
-        name = data.get('name', '').strip()
-        username = data.get('username', '').strip()
-        
-        if not name:
-            return jsonify({'success': False, 'message': 'Введите имя'})
-        
-        user_id = str(int(datetime.datetime.now().timestamp() * 1000)) + str(random.randint(1000, 9999))
-        final_username = username or f"user{random.randint(10000, 99999)}"
-        
-        user_data = {
-            'id': user_id,
-            'name': name,
-            'username': final_username,
-            'avatar': '👤',
-            'avatar_bg': '#6b21a8',
-            'registered_at': datetime.datetime.now().isoformat(),
+        function detectDeviceType() {
+            isMobile = window.innerWidth <= 768;
+            console.log(`📱 Устройство: ${isMobile ? 'Мобильное' : 'Десктоп'}`);
         }
-        
-        return jsonify({'success': True, 'user': user_data})
-        
-    except Exception as e:
-        return jsonify({'success': False, 'message': 'Ошибка сервера'})
 
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    print("🎃 DLtrollex Хеллоуин 2025 запущен!")
-    print(f"📱 Оптимизирован для мобильных и ПК")
-    print(f"🔗 Доступен по адресу: http://localhost:{port}")
-    print("✨ ИСПРАВЛЕНЫ ВСЕ БАГИ + ДОБАВЛЕНЫ АНИМАЦИИ!")
-    
-    app.run(host='0.0.0.0', port=port, debug=False)
+        function initializeApp() {
+            checkAutoLogin();
+            loadHalloweenTheme();
+           
