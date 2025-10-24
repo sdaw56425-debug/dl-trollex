@@ -243,6 +243,10 @@ HTML_TEMPLATE = '''
             background: linear-gradient(135deg, #10b981, #059669);
         }
         
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+        
         .hidden {
             display: none !important;
         }
@@ -254,6 +258,32 @@ HTML_TEMPLATE = '''
             background: var(--bg-color);
             position: relative;
             z-index: 1000;
+        }
+        
+        /* Уведомления */
+        .notification-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--accent-color);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            z-index: 3000;
+            animation: slideInRight 0.3s ease-out;
+            max-width: 300px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
         
         /* Оптимизированный чат-интерфейс */
@@ -475,10 +505,12 @@ HTML_TEMPLATE = '''
             text-align: center;
             font-size: 12px;
             cursor: pointer;
+            transition: all 0.2s ease;
         }
         
         .nav-button.active {
             color: var(--accent-color);
+            transform: translateY(-2px);
         }
         
         /* Адаптивные стили */
@@ -596,6 +628,109 @@ HTML_TEMPLATE = '''
             user-select: none;
         }
         
+        /* Новые компоненты для функций */
+        .emoji-picker {
+            position: absolute;
+            bottom: 70px;
+            right: 15px;
+            background: var(--card-color);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 10px;
+            display: none;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 5px;
+            max-width: 250px;
+            z-index: 2000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        
+        .emoji-btn {
+            padding: 8px;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.2s ease;
+        }
+        
+        .emoji-btn:hover, .emoji-btn:active {
+            background: var(--secondary-color);
+            transform: scale(1.1);
+        }
+        
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: var(--secondary-color);
+            border-radius: 15px;
+            max-width: 100px;
+            font-size: 12px;
+            color: #888;
+        }
+        
+        .typing-dots {
+            display: flex;
+            gap: 3px;
+        }
+        
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+        
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+        
+        .context-menu {
+            position: fixed;
+            background: var(--card-color);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 8px 0;
+            z-index: 3000;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            display: none;
+        }
+        
+        .context-item {
+            padding: 10px 15px;
+            background: transparent;
+            border: none;
+            color: var(--text-color);
+            text-align: left;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .context-item:hover, .context-item:active {
+            background: var(--secondary-color);
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+        
+        .status-online { background: #10b981; }
+        .status-offline { background: #6b7280; }
+        .status-away { background: #f59e0b; }
+        
         /* Оптимизация для медленных устройств */
         @media (prefers-reduced-motion: reduce) {
             * {
@@ -604,27 +739,128 @@ HTML_TEMPLATE = '''
                 transition-duration: 0.01ms !important;
             }
         }
+        
+        /* Стили для новых функций */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .feature-card {
+            background: var(--secondary-color);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+        
+        .feature-card:hover, .feature-card:active {
+            border-color: var(--accent-color);
+            transform: translateY(-3px);
+        }
+        
+        .feature-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .credential-box {
+            background: var(--secondary-color);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border: 1px solid var(--accent-color);
+        }
+        
+        .credential-field {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 8px 0;
+            gap: 10px;
+        }
+        
+        .credential-value {
+            font-family: monospace;
+            background: var(--card-color);
+            padding: 5px 10px;
+            border-radius: 5px;
+            flex: 1;
+            word-break: break-all;
+            font-size: 14px;
+        }
+        
+        .copy-btn {
+            background: var(--accent-color);
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+        
+        .copy-btn:active {
+            transform: scale(0.95);
+        }
     </style>
 </head>
 <body>
-    <!-- Анимированные декорации (упрощенные для производительности) -->
-    <div class="halloween-decoration" style="top: 10%; left: 5%;">🎃</div>
-    <div class="halloween-decoration" style="top: 20%; right: 10%;">👻</div>
-    <div class="floating-emoji" style="top: 30%; left: 15%; animation-delay: 1s;">💜</div>
+    <!-- Анимированные декорации -->
+    <div class="halloween-decoration no-select" style="top: 10%; left: 5%;">🎃</div>
+    <div class="halloween-decoration no-select" style="top: 20%; right: 10%;">👻</div>
+    <div class="floating-emoji no-select" style="top: 30%; left: 15%; animation-delay: 1s;">💜</div>
 
     <!-- ПЕРВАЯ СТРАНИЦА - НАЧАТЬ ОБЩЕНИЕ -->
     <div id="screen1" class="screen">
         <div class="auth-box floating">
             <div class="logo glowing-logo">🎃 DLtrollex</div>
-            <div class="subtitle">Хеллоуин 2025 Edition! Оптимизированный для всех устройств</div>
+            <div class="subtitle">Хеллоуин 2025 Edition! Улучшенный чат с новыми функциями</div>
             
             <button class="btn pulse no-select" onclick="startQuickRegistration()">
                 <span>💬 Начать общение</span>
             </button>
             
-            <div style="margin-top: 20px; font-size: 12px; color: #888;">
-                📱 Адаптивный дизайн • 🔒 Безопасность • 🚀 Высокая производительность
+            <div class="feature-grid">
+                <div class="feature-card no-select" onclick="startQuickRegistration()">
+                    <div class="feature-icon">🚀</div>
+                    <div>Быстрый старт</div>
+                </div>
+                <div class="feature-card no-select" onclick="showManualLogin()">
+                    <div class="feature-icon">🔐</div>
+                    <div>Ручной вход</div>
+                </div>
+                <div class="feature-card no-select" onclick="showFeatures()">
+                    <div class="feature-icon">⭐</div>
+                    <div>Возможности</div>
+                </div>
             </div>
+        </div>
+    </div>
+
+    <!-- РУЧНОЙ ВХОД -->
+    <div id="manualLoginScreen" class="screen hidden">
+        <div class="auth-box floating">
+            <div class="logo glowing-logo">🔐 Вход</div>
+            <div class="subtitle">Войдите в существующий аккаунт</div>
+            
+            <input type="text" class="input-field" id="loginUsername" placeholder="👤 Имя пользователя">
+            <input type="password" class="input-field" id="loginPassword" placeholder="🔐 Пароль">
+            
+            <button class="btn btn-success no-select" onclick="manualLogin()">
+                <span>🚀 Войти в аккаунт</span>
+            </button>
+            
+            <button class="btn no-select" onclick="showScreen('screen1')">
+                <span>← Назад</span>
+            </button>
+            
+            <div id="loginError" class="error hidden" style="margin-top: 15px;"></div>
         </div>
     </div>
 
@@ -657,6 +893,10 @@ HTML_TEMPLATE = '''
             <button class="btn no-select" onclick="generateNewCredentials()">
                 <span>🔄 Сгенерировать заново</span>
             </button>
+            
+            <button class="btn no-select" onclick="showScreen('screen1')">
+                <span>← Назад</span>
+            </button>
         </div>
     </div>
 
@@ -681,6 +921,29 @@ HTML_TEMPLATE = '''
         </button>
     </div>
 
+    <!-- Emoji Picker -->
+    <div class="emoji-picker" id="emojiPicker">
+        <button class="emoji-btn" onclick="addEmoji('😊')">😊</button>
+        <button class="emoji-btn" onclick="addEmoji('😂')">😂</button>
+        <button class="emoji-btn" onclick="addEmoji('🥰')">🥰</button>
+        <button class="emoji-btn" onclick="addEmoji('😎')">😎</button>
+        <button class="emoji-btn" onclick="addEmoji('🤔')">🤔</button>
+        <button class="emoji-btn" onclick="addEmoji('🎉')">🎉</button>
+        <button class="emoji-btn" onclick="addEmoji('🚀')">🚀</button>
+        <button class="emoji-btn" onclick="addEmoji('💜')">💜</button>
+        <button class="emoji-btn" onclick="addEmoji('🎃')">🎃</button>
+        <button class="emoji-btn" onclick="addEmoji('👻')">👻</button>
+        <button class="emoji-btn" onclick="addEmoji('⭐')">⭐</button>
+        <button class="emoji-btn" onclick="addEmoji('🔥')">🔥</button>
+    </div>
+
+    <!-- Context Menu -->
+    <div class="context-menu" id="contextMenu">
+        <button class="context-item no-select" onclick="copyMessage()">📋 Копировать</button>
+        <button class="context-item no-select" onclick="deleteMessage()">🗑️ Удалить</button>
+        <button class="context-item no-select" onclick="hideContextMenu()">✖️ Закрыть</button>
+    </div>
+
     <script>
         let currentUser = null;
         let currentChat = null;
@@ -696,6 +959,8 @@ HTML_TEMPLATE = '''
         };
         let isMobile = false;
         let currentMobileView = 'chats';
+        let selectedMessage = null;
+        let onlineUsers = new Set();
 
         // Инициализация при загрузке
         document.addEventListener('DOMContentLoaded', function() {
@@ -716,8 +981,8 @@ HTML_TEMPLATE = '''
             initializeData();
             loadUserStats();
             
-            // Оптимизация: отложенная загрузка декораций
-            setTimeout(createFloatingEmojis, 1000);
+            // Инициализация онлайн пользователей
+            updateOnlineUsers();
             
             // Обработчик изменения размера окна
             let resizeTimeout;
@@ -730,24 +995,77 @@ HTML_TEMPLATE = '''
                     }
                 }, 250);
             });
+
+            // Закрытие контекстного меню при клике вне его
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.context-menu')) {
+                    hideContextMenu();
+                }
+                if (!e.target.closest('.emoji-picker') && !e.target.closest('.emoji-btn')) {
+                    hideEmojiPicker();
+                }
+            });
         }
 
-        function createFloatingEmojis() {
-            if (isMobile) return; // На мобильных не создаем много декораций
-            
-            const emojis = ['🌟', '⚡', '💫', '🔥'];
-            const container = document.body;
-            
-            emojis.forEach((emoji, index) => {
-                const element = document.createElement('div');
-                element.className = 'floating-emoji no-select';
-                element.textContent = emoji;
-                element.style.left = Math.random() * 90 + '%';
-                element.style.top = Math.random() * 90 + '%';
-                element.style.animationDelay = (Math.random() * 3) + 's';
-                element.style.animationDuration = (8 + Math.random() * 4) + 's';
-                container.appendChild(element);
+        function updateOnlineUsers() {
+            // Симуляция онлайн пользователей
+            allUsers.forEach(user => {
+                if (Math.random() > 0.3) { // 70% шанс быть онлайн
+                    onlineUsers.add(user.id);
+                    user.isOnline = true;
+                }
             });
+        }
+
+        function showManualLogin() {
+            showScreen('manualLoginScreen');
+        }
+
+        function manualLogin() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            const errorDiv = document.getElementById('loginError');
+
+            if (!username || !password) {
+                errorDiv.textContent = 'Заполните все поля!';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            // Поиск пользователя
+            const user = allUsers.find(u => 
+                (u.username === username || u.name === username) && u.password === password
+            );
+
+            if (user) {
+                currentUser = user;
+                currentUser.isOnline = true;
+                onlineUsers.add(currentUser.id);
+                
+                localStorage.setItem('dlcurrentUser', JSON.stringify(currentUser));
+                localStorage.setItem('dlallUsers', JSON.stringify(allUsers));
+                
+                userStats.logins++;
+                saveUserStats();
+                
+                showMainApp();
+                showNotification(`С возвращением, ${currentUser.name}! 👋`, 'success');
+            } else {
+                errorDiv.textContent = 'Неверное имя пользователя или пароль!';
+                errorDiv.classList.remove('hidden');
+            }
+        }
+
+        function showFeatures() {
+            showNotification(`
+                🚀 Новые возможности DLtrollex:
+                • Emoji пикер в чате
+                • Контекстное меню сообщений  
+                • Статусы онлайн/офлайн
+                • Улучшенная мобильная версия
+                • Быстрый ручной вход
+                • Копирование сообщений
+            `, 'info');
         }
 
         function checkAutoLogin() {
@@ -755,6 +1073,9 @@ HTML_TEMPLATE = '''
             if (savedUser) {
                 try {
                     currentUser = JSON.parse(savedUser);
+                    currentUser.isOnline = true;
+                    onlineUsers.add(currentUser.id);
+                    
                     userStats.logins++;
                     saveUserStats();
                     showMainApp();
@@ -822,6 +1143,18 @@ HTML_TEMPLATE = '''
                         bio: 'Дизайнер и художник 🎨',
                         registered: new Date(Date.now() - 172800000).toISOString(),
                         password: 'test123'
+                    },
+                    {
+                        id: 'user3',
+                        name: 'Дмитрий',
+                        username: '@dmitry', 
+                        email: 'dmitry@example.com',
+                        avatar: '🤖',
+                        isOnline: false,
+                        lastSeen: new Date(Date.now() - 3600000).toISOString(),
+                        bio: 'Разработчик ИИ',
+                        registered: new Date(Date.now() - 259200000).toISOString(),
+                        password: 'test123'
                     }
                 ];
                 localStorage.setItem('dlallUsers', JSON.stringify(allUsers));
@@ -884,7 +1217,7 @@ HTML_TEMPLATE = '''
         function copyToClipboard(elementId) {
             const text = document.getElementById(elementId).textContent;
             navigator.clipboard.writeText(text).then(() => {
-                showNotification('Скопировано! 📋', 'success');
+                showNotification('Скопировано в буфер обмена! 📋', 'success');
             }).catch(() => {
                 // Fallback для старых браузеров
                 const textArea = document.createElement('textarea');
@@ -924,6 +1257,8 @@ HTML_TEMPLATE = '''
             };
             
             allUsers.push(currentUser);
+            onlineUsers.add(currentUser.id);
+            
             localStorage.setItem('dlallUsers', JSON.stringify(allUsers));
             localStorage.setItem('dlcurrentUser', JSON.stringify(currentUser));
             
@@ -978,6 +1313,9 @@ HTML_TEMPLATE = '''
                             <div style="padding: 15px; border-bottom: 1px solid var(--border-color);">
                                 <div class="logo" style="font-size: 20px; margin-bottom: 8px;">${isHalloweenTheme ? '🎃' : '💜'} DLtrollex</div>
                                 <div style="color: #888; font-size: 12px;">Привет, ${currentUser.name}!</div>
+                                <div style="color: #10b981; font-size: 11px; margin-top: 5px;">
+                                    <span class="status-dot status-online"></span>В сети
+                                </div>
                             </div>
                             
                             <div class="search-box">
@@ -1005,6 +1343,9 @@ HTML_TEMPLATE = '''
                             <div style="padding: 20px; border-bottom: 1px solid var(--border-color);">
                                 <div class="logo" style="font-size: 24px; margin-bottom: 10px;">${isHalloweenTheme ? '🎃' : '💜'} DLtrollex</div>
                                 <div style="color: #888; font-size: 12px;">Привет, ${currentUser.name}!</div>
+                                <div style="color: #10b981; font-size: 11px; margin-top: 5px;">
+                                    <span class="status-dot status-online"></span>В сети • ${onlineUsers.size} онлайн
+                                </div>
                             </div>
                             
                             <div class="search-box">
@@ -1018,6 +1359,9 @@ HTML_TEMPLATE = '''
                             <div style="padding: 15px; border-top: 1px solid var(--border-color);">
                                 <button class="btn" onclick="showContactsView()" style="margin-bottom: 10px;">👥 Найти друзей</button>
                                 <button class="btn" onclick="showSettings()">⚙️ Настройки</button>
+                                <button class="btn btn-danger no-select" onclick="showLogoutConfirm()" style="margin-top: 10px;">
+                                    🚪 Выйти
+                                </button>
                             </div>
                         </div>
                         
@@ -1044,6 +1388,7 @@ HTML_TEMPLATE = '''
                     <div style="text-align: center; padding: 40px 20px; color: #888;">
                         <div style="font-size: 48px; margin-bottom: 15px;">💬</div>
                         <div>Чатов пока нет</div>
+                        <div style="font-size: 12px; margin-top: 5px;">Начните новый чат</div>
                     </div>
                 `;
             }
@@ -1053,15 +1398,21 @@ HTML_TEMPLATE = '''
                 const otherUser = allUsers.find(u => u.id === otherUserId);
                 if (!otherUser) return '';
                 
+                const isOnline = onlineUsers.has(otherUser.id);
+                const lastMessage = chat.lastMessage?.text || 'Нет сообщений';
+                
                 return `
                     <div class="chat-item no-select" onclick="openChat('${chat.id}')">
                         <div style="position: relative;">
                             <div class="chat-avatar">${otherUser.avatar}</div>
-                            ${otherUser.isOnline ? '<div class="online-indicator"></div>' : ''}
+                            ${isOnline ? '<div class="online-indicator"></div>' : ''}
                         </div>
                         <div class="chat-info">
-                            <div class="chat-name">${otherUser.name}</div>
-                            <div class="chat-last-message">${chat.lastMessage?.text || 'Нет сообщений'}</div>
+                            <div class="chat-name">
+                                ${otherUser.name}
+                                ${isOnline ? '<span style="color: #10b981; font-size: 11px;"> ●</span>' : ''}
+                            </div>
+                            <div class="chat-last-message">${lastMessage}</div>
                         </div>
                         <div class="chat-time">${formatTime(chat.lastMessage?.timestamp)}</div>
                     </div>
@@ -1079,26 +1430,30 @@ HTML_TEMPLATE = '''
                     <div class="chat-container">
                         <div class="sidebar active">
                             <div style="padding: 15px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
-                                <h3 style="margin: 0;">👥 Все пользователи</h3>
+                                <h3 style="margin: 0;">👥 Контакты</h3>
                                 <button class="btn" onclick="renderChatsInterface()" style="padding: 8px 12px; font-size: 12px;">← Назад</button>
                             </div>
                             <div class="chats-list">
-                                ${availableUsers.map(user => `
-                                    <div class="chat-item no-select" onclick="startNewChat('${user.id}')">
-                                        <div style="position: relative;">
-                                            <div class="chat-avatar">${user.avatar}</div>
-                                            ${user.isOnline ? '<div class="online-indicator"></div>' : ''}
-                                        </div>
-                                        <div class="chat-info">
-                                            <div class="chat-name">
-                                                ${user.name}
-                                                ${user.isOnline ? '<span style="color: #10b981; font-size: 11px;"> ● онлайн</span>' : ''}
+                                ${availableUsers.map(user => {
+                                    const isOnline = onlineUsers.has(user.id);
+                                    return `
+                                        <div class="chat-item no-select" onclick="startNewChat('${user.id}')">
+                                            <div style="position: relative;">
+                                                <div class="chat-avatar">${user.avatar}</div>
+                                                ${isOnline ? '<div class="online-indicator"></div>' : ''}
                                             </div>
-                                            <div class="chat-last-message">${user.username}</div>
+                                            <div class="chat-info">
+                                                <div class="chat-name">
+                                                    ${user.name}
+                                                    ${isOnline ? '<span style="color: #10b981; font-size: 11px;"> ● онлайн</span>' : 
+                                                       '<span style="color: #6b7280; font-size: 11px;"> ● офлайн</span>'}
+                                                </div>
+                                                <div class="chat-last-message">${user.username} • ${user.bio || 'Нет описания'}</div>
+                                            </div>
+                                            <button class="btn" style="padding: 6px 12px; font-size: 11px;">💬</button>
                                         </div>
-                                        <button class="btn" style="padding: 6px 12px; font-size: 11px;">💬 Чат</button>
-                                    </div>
-                                `).join('')}
+                                    `;
+                                }).join('')}
                             </div>
                         </div>
                     </div>
@@ -1113,22 +1468,26 @@ HTML_TEMPLATE = '''
                             </div>
                             
                             <div style="display: grid; gap: 10px;">
-                                ${availableUsers.map(user => `
-                                    <div class="chat-item no-select" onclick="startNewChat('${user.id}')">
-                                        <div style="position: relative;">
-                                            <div class="chat-avatar">${user.avatar}</div>
-                                            ${user.isOnline ? '<div class="online-indicator"></div>' : ''}
-                                        </div>
-                                        <div class="chat-info">
-                                            <div class="chat-name">
-                                                ${user.name}
-                                                ${user.isOnline ? '<span style="color: #10b981; font-size: 12px;"> ● онлайн</span>' : ''}
+                                ${availableUsers.map(user => {
+                                    const isOnline = onlineUsers.has(user.id);
+                                    return `
+                                        <div class="chat-item no-select" onclick="startNewChat('${user.id}')">
+                                            <div style="position: relative;">
+                                                <div class="chat-avatar">${user.avatar}</div>
+                                                ${isOnline ? '<div class="online-indicator"></div>' : ''}
                                             </div>
-                                            <div class="chat-last-message">${user.username} • ${user.bio || 'Нет описания'}</div>
+                                            <div class="chat-info">
+                                                <div class="chat-name">
+                                                    ${user.name}
+                                                    ${isOnline ? '<span style="color: #10b981; font-size: 12px;"> ● онлайн</span>' : 
+                                                       '<span style="color: #6b7280; font-size: 12px;"> ● офлайн</span>'}
+                                                </div>
+                                                <div class="chat-last-message">${user.username} • ${user.bio || 'Нет описания'}</div>
+                                            </div>
+                                            <button class="btn" style="padding: 8px 15px; font-size: 12px;">💬 Чат</button>
                                         </div>
-                                        <button class="btn" style="padding: 8px 15px; font-size: 12px;">💬 Начать чат</button>
-                                    </div>
-                                `).join('')}
+                                    `;
+                                }).join('')}
                             </div>
                         </div>
                     </div>
@@ -1154,6 +1513,7 @@ HTML_TEMPLATE = '''
             if (existingChat) {
                 currentChat = existingChat;
                 openChat(existingChat.id);
+                showNotification(`Чат с ${user.name} уже существует!`, 'info');
                 return;
             }
 
@@ -1186,6 +1546,7 @@ HTML_TEMPLATE = '''
             saveUserStats();
             
             openChat(newChat.id);
+            showNotification(`Чат с ${user.name} начат! 💬`, 'success');
         }
 
         function openChat(chatId) {
@@ -1206,18 +1567,21 @@ HTML_TEMPLATE = '''
                                 <button class="btn no-select" onclick="renderChatsInterface()" style="padding: 8px; background: transparent; color: var(--text-color);">
                                     ←
                                 </button>
-                                <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
                                     <div style="position: relative;">
                                         <div class="chat-avatar" style="width: 35px; height: 35px; font-size: 14px;">${chatUser.avatar}</div>
-                                        ${chatUser.isOnline ? '<div class="online-indicator"></div>' : ''}
+                                        ${onlineUsers.has(chatUser.id) ? '<div class="online-indicator"></div>' : ''}
                                     </div>
-                                    <div>
+                                    <div style="flex: 1;">
                                         <div style="font-weight: bold; font-size: 14px;">${chatUser.name}</div>
                                         <div style="color: #888; font-size: 11px;">
-                                            ${chatUser.isOnline ? 'online' : `был(а) ${formatLastSeen(chatUser.lastSeen)}`}
+                                            ${onlineUsers.has(chatUser.id) ? 'online' : `был(а) ${formatLastSeen(chatUser.lastSeen)}`}
                                         </div>
                                     </div>
                                 </div>
+                                <button class="emoji-btn no-select" onclick="toggleEmojiPicker()" style="font-size: 18px; background: transparent; border: none; color: var(--text-color);">
+                                    😊
+                                </button>
                             </div>
                             
                             <div class="messages-container" id="messagesContainer">
@@ -1238,16 +1602,21 @@ HTML_TEMPLATE = '''
                             <div style="display: flex; align-items: center;">
                                 <div style="position: relative; margin-right: 15px;">
                                     <div class="chat-avatar">${chatUser.avatar}</div>
-                                    ${chatUser.isOnline ? '<div class="online-indicator"></div>' : ''}
+                                    ${onlineUsers.has(chatUser.id) ? '<div class="online-indicator"></div>' : ''}
                                 </div>
                                 <div>
                                     <div style="font-weight: bold; font-size: 16px;">${chatUser.name}</div>
                                     <div style="color: #888; font-size: 12px;">
-                                        ${chatUser.isOnline ? 'online' : `был(а) ${formatLastSeen(chatUser.lastSeen)}`}
+                                        ${onlineUsers.has(chatUser.id) ? 
+                                         '<span class="status-dot status-online"></span>online' : 
+                                         `<span class="status-dot status-offline"></span>был(а) ${formatLastSeen(chatUser.lastSeen)}`}
                                     </div>
                                 </div>
                             </div>
-                            <div>
+                            <div style="display: flex; gap: 10px;">
+                                <button class="emoji-btn no-select" onclick="toggleEmojiPicker()" style="font-size: 18px; background: transparent; border: none; color: var(--text-color); padding: 8px;">
+                                    😊
+                                </button>
                                 <button class="btn" onclick="renderChatsInterface()" style="padding: 8px 15px; font-size: 12px;">← Назад</button>
                             </div>
                         </div>
@@ -1271,7 +1640,6 @@ HTML_TEMPLATE = '''
             }
 
             scrollToBottom();
-            // Фокусировка с задержкой для мобильных
             setTimeout(() => {
                 const input = document.getElementById('messageInput');
                 if (input) input.focus();
@@ -1295,17 +1663,92 @@ HTML_TEMPLATE = '''
                 if (!sender) return '';
                 
                 return `
-                    <div class="message ${isOwn ? 'own' : ''}">
+                    <div class="message ${isOwn ? 'own' : ''} no-select" 
+                         oncontextmenu="event.preventDefault(); showContextMenu(event, '${msg.id}')"
+                         onclick="if(event.ctrlKey) showContextMenu(event, '${msg.id}')">
                         <div style="margin-bottom: 4px;">
                             ${!isOwn ? `<strong>${sender.name}:</strong> ` : ''}
                             ${msg.text}
                         </div>
                         <div style="font-size: 11px; color: ${isOwn ? 'rgba(255,255,255,0.7)' : '#888'}; text-align: ${isOwn ? 'right' : 'left'};">
                             ${formatTime(msg.timestamp)}
+                            ${isOwn ? ' ✓' : ''}
                         </div>
                     </div>
                 `;
             }).join('');
+        }
+
+        // НОВЫЕ ФУНКЦИИ
+
+        function toggleEmojiPicker() {
+            const picker = document.getElementById('emojiPicker');
+            if (picker.style.display === 'grid') {
+                picker.style.display = 'none';
+            } else {
+                picker.style.display = 'grid';
+                // Позиционирование рядом с кнопкой
+                picker.style.bottom = '70px';
+                picker.style.right = '15px';
+            }
+        }
+
+        function hideEmojiPicker() {
+            document.getElementById('emojiPicker').style.display = 'none';
+        }
+
+        function addEmoji(emoji) {
+            const input = document.getElementById('messageInput');
+            if (input) {
+                input.value += emoji;
+                input.focus();
+            }
+            hideEmojiPicker();
+        }
+
+        function showContextMenu(event, messageId) {
+            event.preventDefault();
+            selectedMessage = messageId;
+            
+            const contextMenu = document.getElementById('contextMenu');
+            contextMenu.style.display = 'block';
+            contextMenu.style.left = event.pageX + 'px';
+            contextMenu.style.top = event.pageY + 'px';
+        }
+
+        function hideContextMenu() {
+            document.getElementById('contextMenu').style.display = 'none';
+            selectedMessage = null;
+        }
+
+        function copyMessage() {
+            if (!selectedMessage) return;
+            
+            const message = currentChat.messages.find(m => m.id === selectedMessage);
+            if (message) {
+                navigator.clipboard.writeText(message.text).then(() => {
+                    showNotification('Сообщение скопировано! 📋', 'success');
+                });
+            }
+            hideContextMenu();
+        }
+
+        function deleteMessage() {
+            if (!selectedMessage) return;
+            
+            if (confirm('Удалить это сообщение?')) {
+                currentChat.messages = currentChat.messages.filter(m => m.id !== selectedMessage);
+                localStorage.setItem('dlchats', JSON.stringify(chats));
+                openChat(currentChat.id);
+                showNotification('Сообщение удалено 🗑️', 'info');
+            }
+            hideContextMenu();
+        }
+
+        function showLogoutConfirm() {
+            if (confirm('Вы уверены, что хотите выйти?')) {
+                logout();
+            }
         }
 
         function sendMessage() {
@@ -1331,11 +1774,13 @@ HTML_TEMPLATE = '''
                 const messagesContainer = document.getElementById('messagesContainer');
                 if (messagesContainer) {
                     const messageElement = document.createElement('div');
-                    messageElement.className = `message own fade-in`;
+                    messageElement.className = `message own fade-in no-select`;
+                    messageElement.setAttribute('oncontextmenu', "event.preventDefault(); showContextMenu(event, '" + newMessage.id + "')");
+                    messageElement.setAttribute('onclick', "if(event.ctrlKey) showContextMenu(event, '" + newMessage.id + "')");
                     messageElement.innerHTML = `
                         <div style="margin-bottom: 4px;">${message}</div>
                         <div style="font-size: 11px; color: rgba(255,255,255,0.7); text-align: right;">
-                            ${formatTime(newMessage.timestamp)}
+                            ${formatTime(newMessage.timestamp)} ✓
                         </div>
                     `;
                     messagesContainer.appendChild(messageElement);
@@ -1346,7 +1791,65 @@ HTML_TEMPLATE = '''
                 
                 userStats.messagesSent++;
                 saveUserStats();
+                
+                // Случайный ответ от другого пользователя
+                setTimeout(() => {
+                    if (Math.random() > 0.5) { // 50% шанс ответа
+                        sendAutoReply();
+                    }
+                }, 1000 + Math.random() * 2000);
             }
+        }
+
+        function sendAutoReply() {
+            if (!currentChat) return;
+            
+            const otherUserId = currentChat.participants.find(id => id !== currentUser.id);
+            const otherUser = allUsers.find(u => u.id === otherUserId);
+            if (!otherUser) return;
+            
+            const replies = [
+                'Привет! Как дела? 😊',
+                'Интересно... расскажи подробнее! 🤔',
+                'Отлично! Продолжаем общение 🚀',
+                'Согласен с тобой! 👍',
+                'Хм, нужно подумать над этим... 💭',
+                'У меня тоже самое! 😄',
+                'Продолжаем в том же духе! 💪',
+                'Рад нашему разговору! ✨'
+            ];
+            
+            const replyMessage = {
+                id: Date.now().toString() + '_reply',
+                text: randomChoice(replies),
+                senderId: otherUser.id,
+                timestamp: new Date().toISOString()
+            };
+            
+            currentChat.messages.push(replyMessage);
+            currentChat.lastMessage = replyMessage;
+            
+            localStorage.setItem('dlchats', JSON.stringify(chats));
+            
+            const messagesContainer = document.getElementById('messagesContainer');
+            if (messagesContainer) {
+                const messageElement = document.createElement('div');
+                messageElement.className = `message fade-in no-select`;
+                messageElement.setAttribute('oncontextmenu', "event.preventDefault(); showContextMenu(event, '" + replyMessage.id + "')");
+                messageElement.setAttribute('onclick', "if(event.ctrlKey) showContextMenu(event, '" + replyMessage.id + "')");
+                messageElement.innerHTML = `
+                    <div style="margin-bottom: 4px;">
+                        <strong>${otherUser.name}:</strong> ${replyMessage.text}
+                    </div>
+                    <div style="font-size: 11px; color: #888; text-align: left;">
+                        ${formatTime(replyMessage.timestamp)}
+                    </div>
+                `;
+                messagesContainer.appendChild(messageElement);
+                scrollToBottom();
+            }
+            
+            showNotification(`${otherUser.name} ответил(а) вам 💬`, 'info');
         }
 
         function scrollToBottom() {
@@ -1374,19 +1877,22 @@ HTML_TEMPLATE = '''
             let searchHTML = '';
             
             if (filteredUsers.length > 0) {
-                searchHTML = filteredUsers.map(user => `
-                    <div class="chat-item no-select" onclick="startNewChat('${user.id}')">
-                        <div style="position: relative;">
-                            <div class="chat-avatar">${user.avatar}</div>
-                            ${user.isOnline ? '<div class="online-indicator"></div>' : ''}
+                searchHTML = filteredUsers.map(user => {
+                    const isOnline = onlineUsers.has(user.id);
+                    return `
+                        <div class="chat-item no-select" onclick="startNewChat('${user.id}')">
+                            <div style="position: relative;">
+                                <div class="chat-avatar">${user.avatar}</div>
+                                ${isOnline ? '<div class="online-indicator"></div>' : ''}
+                            </div>
+                            <div class="chat-info">
+                                <div class="chat-name">${user.name}</div>
+                                <div class="chat-last-message">${user.username}</div>
+                            </div>
+                            <button class="btn" style="padding: 6px 12px; font-size: 11px;">💬</button>
                         </div>
-                        <div class="chat-info">
-                            <div class="chat-name">${user.name}</div>
-                            <div class="chat-last-message">${user.username}</div>
-                        </div>
-                        <button class="btn" style="padding: 6px 12px; font-size: 11px;">💬 Чат</button>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
             } else {
                 searchHTML = `
                     <div style="text-align: center; padding: 40px 20px; color: #888;">
@@ -1444,24 +1950,27 @@ HTML_TEMPLATE = '''
                     <input type="text" class="input-field" value="${currentUser.name}" placeholder="Ваше имя" id="settingsName">
                     <input type="text" class="input-field" value="${currentUser.username}" placeholder="Юзернейм" id="settingsUsername">
                     <input type="email" class="input-field" value="${currentUser.email || ''}" placeholder="📧 Email" id="settingsEmail">
-                    <button class="btn" onclick="updateProfile()">💾 Сохранить</button>
+                    <textarea class="input-field" placeholder="О себе" id="settingsBio" style="min-height: 80px; resize: vertical;">${currentUser.bio || ''}</textarea>
+                    <button class="btn" onclick="updateProfile()">💾 Сохранить профиль</button>
                 </div>
                 
                 <div style="background: var(--card-color); padding: 20px; border-radius: 15px; margin-bottom: 15px;">
                     <h3 style="margin-bottom: 15px;">🎨 Внешний вид</h3>
-                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
                         <div class="theme-option ${currentTheme === 'purple' ? 'active' : ''}" style="background: #8b5cf6;" onclick="changeTheme('purple')"></div>
                         <div class="theme-option ${currentTheme === 'blue' ? 'active' : ''}" style="background: #3b82f6;" onclick="changeTheme('blue')"></div>
                         <div class="theme-option ${currentTheme === 'green' ? 'active' : ''}" style="background: #10b981;" onclick="changeTheme('green')"></div>
+                        <div class="theme-option ${currentTheme === 'pink' ? 'active' : ''}" style="background: #ec4899;" onclick="changeTheme('pink')"></div>
+                        <div class="theme-option ${currentTheme === 'orange' ? 'active' : ''}" style="background: #f97316;" onclick="changeTheme('orange')"></div>
                     </div>
-                    <button class="btn ${isHalloweenTheme ? 'btn-halloween' : ''}" onclick="toggleHalloweenTheme()">
-                        ${isHalloweenTheme ? '👻 Выкл.Хеллоуин' : '🎃 Вкл.Хеллоуин'}
+                    <button class="btn ${isHalloweenTheme ? 'btn-halloween' : ''}" onclick="toggleHalloweenTheme()" style="margin-bottom: 10px;">
+                        ${isHalloweenTheme ? '👻 Выключить хеллоуин' : '🎃 Включить хеллоуин'}
                     </button>
                 </div>
 
-                <div style="background: var(--card-color); padding: 20px; border-radius: 15px;">
+                <div style="background: var(--card-color); padding: 20px; border-radius: 15px; margin-bottom: 15px;">
                     <h3 style="margin-bottom: 15px;">📊 Статистика</h3>
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px;">
                         <div style="background: var(--secondary-color); padding: 15px; border-radius: 8px; text-align: center;">
                             <div style="font-size: 20px; font-weight: bold; color: var(--accent-color);">${userStats.messagesSent}</div>
                             <div style="font-size: 12px; color: #888;">Сообщений</div>
@@ -1470,16 +1979,38 @@ HTML_TEMPLATE = '''
                             <div style="font-size: 20px; font-weight: bold; color: var(--accent-color);">${userStats.chatsCreated}</div>
                             <div style="font-size: 12px; color: #888;">Чатов</div>
                         </div>
+                        <div style="background: var(--secondary-color); padding: 15px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 20px; font-weight: bold; color: var(--accent-color);">${userStats.logins}</div>
+                            <div style="font-size: 12px; color: #888;">Входов</div>
+                        </div>
                     </div>
-                    <button class="btn" onclick="logout()" style="margin-top: 15px; background: #dc2626;">🚪 Выйти</button>
+                </div>
+
+                <div style="background: var(--card-color); padding: 20px; border-radius: 15px;">
+                    <h3 style="margin-bottom: 15px;">🔧 Управление</h3>
+                    <button class="btn btn-danger no-select" onclick="showLogoutConfirm()" style="margin-bottom: 10px;">
+                        🚪 Выйти из аккаунта
+                    </button>
+                    <button class="btn no-select" onclick="clearAllData()" style="background: #f59e0b;">
+                        🗑️ Очистить все данные
+                    </button>
                 </div>
             `;
+        }
+
+        function clearAllData() {
+            if (confirm('ВНИМАНИЕ! Это удалит все чаты и настройки. Продолжить?')) {
+                localStorage.clear();
+                showNotification('Все данные очищены 🔄', 'info');
+                setTimeout(() => location.reload(), 1000);
+            }
         }
 
         function updateProfile() {
             const name = document.getElementById('settingsName').value.trim();
             const username = document.getElementById('settingsUsername').value.trim();
             const email = document.getElementById('settingsEmail').value.trim();
+            const bio = document.getElementById('settingsBio').value.trim();
             
             if (!name) {
                 showNotification('Введите имя!', 'error');
@@ -1489,6 +2020,7 @@ HTML_TEMPLATE = '''
             currentUser.name = name;
             currentUser.username = username;
             currentUser.email = email;
+            currentUser.bio = bio;
             
             const userIndex = allUsers.findIndex(u => u.id === currentUser.id);
             if (userIndex !== -1) {
@@ -1530,7 +2062,7 @@ HTML_TEMPLATE = '''
             currentTheme = theme;
             localStorage.setItem('dltheme', theme);
             applyTheme(theme);
-            showNotification(`Тема изменена! 🎨`, 'success');
+            showNotification(`Тема "${theme}" применена! 🎨`, 'success');
         }
 
         function applyTheme(theme) {
@@ -1538,7 +2070,9 @@ HTML_TEMPLATE = '''
             const themes = {
                 purple: { accent: '#8b5cf6' },
                 blue: { accent: '#3b82f6' },
-                green: { accent: '#10b981' }
+                green: { accent: '#10b981' },
+                pink: { accent: '#ec4899' },
+                orange: { accent: '#f97316' }
             };
             
             if (themes[theme]) {
@@ -1553,12 +2087,49 @@ HTML_TEMPLATE = '''
         }
 
         function formatLastSeen(timestamp) {
-            return 'только что';
+            if (!timestamp) return 'давно';
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+            const minutes = Math.floor(diff / 60000);
+            
+            if (minutes < 1) return 'только что';
+            if (minutes < 60) return `${minutes} мин назад`;
+            if (minutes < 1440) return `${Math.floor(minutes / 60)} ч назад`;
+            return `${Math.floor(minutes / 1440)} д назад`;
         }
 
         function showNotification(message, type = 'info') {
-            // Упрощенное уведомление для производительности
-            console.log(`🔔 ${message}`);
+            // Создаем уведомление
+            const notification = document.createElement('div');
+            notification.className = 'notification-toast';
+            notification.style.background = type === 'error' ? '#ef4444' : 
+                                          type === 'success' ? '#10b981' : 
+                                          type === 'warning' ? '#f59e0b' : 'var(--accent-color)';
+            notification.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="font-size: 20px;">
+                        ${type === 'error' ? '❌' : 
+                          type === 'success' ? '✅' : 
+                          type === 'warning' ? '⚠️' : '💡'}
+                    </div>
+                    <div style="flex: 1;">${message}</div>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Автоматическое скрытие
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.style.animation = 'slideInRight 0.3s ease-out reverse';
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.remove();
+                        }
+                    }, 300);
+                }
+            }, 4000);
         }
 
         function startTimeTracking() {
@@ -1578,13 +2149,15 @@ HTML_TEMPLATE = '''
                 if (userIndex !== -1) {
                     allUsers[userIndex].isOnline = false;
                     allUsers[userIndex].lastSeen = new Date().toISOString();
+                    onlineUsers.delete(currentUser.id);
                     localStorage.setItem('dlallUsers', JSON.stringify(allUsers));
                 }
             }
             
             currentUser = null;
             localStorage.removeItem('dlcurrentUser');
-            setTimeout(() => location.reload(), 500);
+            showNotification('Вы вышли из системы 👋', 'info');
+            setTimeout(() => location.reload(), 1000);
         }
 
         // Обработка изменений ориентации экрана
@@ -1642,6 +2215,15 @@ if __name__ == '__main__':
     print("🎃 DLtrollex Хеллоуин 2025 запущен!")
     print(f"📱 Оптимизирован для мобильных и ПК")
     print(f"🔗 Доступен по адресу: http://0.0.0.0:{port}")
-    print("✨ Исправлены баги + улучшена производительность!")
+    print("✨ ИСПРАВЛЕНЫ БАГИ + ДОБАВЛЕНЫ НОВЫЕ ФУНКЦИИ!")
+    print("🚀 Новые возможности:")
+    print("   • Emoji пикер в чате")
+    print("   • Контекстное меню сообщений (ПКМ или Ctrl+клик)")
+    print("   • Ручной вход в аккаунт") 
+    print("   • Статусы онлайн/офлайн")
+    print("   • Авто-ответы от ботов")
+    print("   • Копирование сообщений")
+    print("   • Удаление сообщений")
+    print("   • Исправлен выход из аккаунта на ПК")
     
     app.run(host='0.0.0.0', port=port, debug=False)
