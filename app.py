@@ -4,15 +4,9 @@ import datetime
 import random
 import os
 import json
-import hashlib
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'mydltrollex2024'
-
-# База данных в памяти
-users_db = {}
-messages_db = {}
-chats_db = {}
 
 def generate_username():
     adjectives = ['Весёлый', 'Серьёзный', 'Смелый', 'Умный', 'Быстрый', 'Креативный', 'Яркий', 'Тайный', 'Фиолетовый', 'Хеллоуинский']
@@ -2142,21 +2136,16 @@ def api_register():
             'registered_at': datetime.datetime.now().isoformat(),
         }
         
-        users_db[user_id] = user_data
-        
         return jsonify({'success': True, 'user': user_data})
         
     except Exception as e:
         return jsonify({'success': False, 'message': 'Ошибка сервера'})
 
-def create_app():
-    return app
-
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 10000))
+    port = int(os.environ.get('PORT', 5000))
     print("🎃 DLtrollex Хеллоуин 2025 запущен!")
     print(f"📱 Оптимизирован для мобильных и ПК")
-    print(f"🔗 Доступен по адресу: http://0.0.0.0:{port}")
+    print(f"🔗 Доступен по адресу: http://localhost:{port}")
     print("✨ ИСПРАВЛЕНЫ ВСЕ БАГИ + ДОБАВЛЕНЫ АНИМАЦИИ!")
     print("🚀 Теперь работает:")
     print("   • Регистрация и вход")
