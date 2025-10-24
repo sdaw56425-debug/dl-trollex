@@ -51,7 +51,9 @@ HTML_TEMPLATE = '''
 <head>
     <title>DLtrollex 🎃</title>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎃</text></svg>">
     <style>
         * {
@@ -60,6 +62,7 @@ HTML_TEMPLATE = '''
             box-sizing: border-box;
             font-family: 'Segoe UI', Arial, sans-serif;
             -webkit-tap-highlight-color: transparent;
+            -webkit-text-size-adjust: 100%;
         }
         
         :root {
@@ -73,15 +76,19 @@ HTML_TEMPLATE = '''
             --success-color: #10b981;
             --warning-color: #f59e0b;
             --error-color: #ef4444;
+            --safe-area-top: env(safe-area-inset-top, 0px);
+            --safe-area-bottom: env(safe-area-inset-bottom, 0px);
         }
         
         body {
             background: var(--bg-color);
             color: var(--text-color);
             height: 100vh;
+            height: 100dvh;
             overflow: hidden;
             transition: all 0.3s ease;
             touch-action: manipulation;
+            padding: var(--safe-area-top) 0 var(--safe-area-bottom) 0;
         }
         
         body.halloween-theme {
@@ -91,132 +98,95 @@ HTML_TEMPLATE = '''
             --secondary-color: #3a2a00;
         }
         
+        /* Оптимизированные анимации */
         @keyframes glow {
             0%, 100% {
-                text-shadow: 0 0 10px var(--accent-color), 0 0 20px var(--accent-color);
+                text-shadow: 0 0 10px var(--accent-color);
             }
             50% {
-                text-shadow: 0 0 20px var(--accent-color), 0 0 30px var(--accent-color), 0 0 40px var(--accent-color);
+                text-shadow: 0 0 20px var(--accent-color);
             }
         }
         
         @keyframes float {
             0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
+            50% { transform: translateY(-5px); }
         }
         
         @keyframes pulse {
             0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-        
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-        }
-        
-        @keyframes bounce {
-            0%, 20%, 53%, 80%, 100% { transform: translate3d(0,0,0); }
-            40%, 43% { transform: translate3d(0,-8px,0); }
-            70% { transform: translate3d(0,-4px,0); }
-            90% { transform: translate3d(0,-2px,0); }
-        }
-        
-        @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+            50% { transform: scale(1.02); }
         }
         
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
+            from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
         
         .glowing-logo {
             animation: glow 3s ease-in-out infinite;
+            will-change: text-shadow;
         }
         
         .floating {
             animation: float 6s ease-in-out infinite;
+            will-change: transform;
         }
         
         .pulse {
             animation: pulse 2s ease-in-out infinite;
-        }
-        
-        .shake {
-            animation: shake 0.5s ease-in-out;
-        }
-        
-        .bounce {
-            animation: bounce 1s ease infinite;
-        }
-        
-        .rotate {
-            animation: rotate 2s linear infinite;
+            will-change: transform;
         }
         
         .fade-in {
-            animation: fadeIn 0.6s ease-out;
+            animation: fadeIn 0.4s ease-out;
+            will-change: opacity, transform;
         }
         
+        /* Базовые компоненты */
         .screen {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
+            height: 100dvh;
             display: flex;
             align-items: center;
             justify-content: center;
             background: linear-gradient(135deg, var(--bg-color) 0%, var(--card-color) 100%);
             z-index: 1000;
             padding: 20px;
+            padding-top: calc(20px + var(--safe-area-top));
+            padding-bottom: calc(20px + var(--safe-area-bottom));
         }
         
         .auth-box {
             background: var(--card-color);
-            padding: 40px 30px;
+            padding: 30px 25px;
             border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             border: 2px solid var(--accent-color);
             width: 100%;
-            max-width: 450px;
+            max-width: min(450px, 90vw);
             text-align: center;
             position: relative;
             overflow: hidden;
             z-index: 1001;
         }
         
-        .auth-box::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(45deg, transparent, var(--accent-color), transparent);
-            animation: shine 3s linear infinite;
-            opacity: 0.1;
-        }
-        
-        @keyframes shine {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
         .logo {
-            font-size: 42px;
+            font-size: clamp(32px, 8vw, 42px);
             font-weight: bold;
             color: var(--accent-color);
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
         
         .subtitle {
             color: #888;
-            margin-bottom: 30px;
-            font-size: 16px;
+            margin-bottom: 25px;
+            font-size: clamp(14px, 4vw, 16px);
+            line-height: 1.4;
         }
         
         .input-field {
@@ -228,22 +198,14 @@ HTML_TEMPLATE = '''
             border-radius: 12px;
             color: var(--text-color);
             font-size: 16px;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
+            -webkit-appearance: none;
         }
         
         .input-field:focus {
             outline: none;
             border-color: var(--accent-color);
-            box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
-            transform: translateY(-2px);
-        }
-        
-        .optional {
-            color: #888;
-            font-size: 12px;
-            margin-top: -10px;
-            margin-bottom: 20px;
-            text-align: left;
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
         }
         
         .btn {
@@ -256,8 +218,8 @@ HTML_TEMPLATE = '''
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
-            margin-bottom: 15px;
-            transition: all 0.3s ease;
+            margin-bottom: 12px;
+            transition: all 0.2s ease;
             touch-action: manipulation;
             user-select: none;
             min-height: 50px;
@@ -266,51 +228,19 @@ HTML_TEMPLATE = '''
             justify-content: center;
             position: relative;
             z-index: 1002;
-            visibility: visible !important;
-            opacity: 1 !important;
-        }
-        
-        .btn:hover, .btn:active {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(139, 92, 246, 0.4);
+            -webkit-user-select: none;
         }
         
         .btn:active {
-            transform: translateY(0px);
+            transform: scale(0.98);
         }
         
         .btn-halloween {
             background: linear-gradient(135deg, #ff7b25, #ff5500);
         }
         
-        .btn-halloween:hover, .btn-halloween:active {
-            box-shadow: 0 10px 25px rgba(255, 123, 37, 0.4);
-        }
-        
         .btn-success {
             background: linear-gradient(135deg, #10b981, #059669);
-        }
-        
-        .btn-warning {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-        }
-        
-        .error {
-            color: #ef4444;
-            margin-top: 15px;
-            padding: 10px;
-            background: rgba(239, 68, 68, 0.1);
-            border-radius: 8px;
-            border: 1px solid #ef4444;
-        }
-        
-        .success {
-            color: #10b981;
-            margin-top: 15px;
-            padding: 10px;
-            background: rgba(16, 185, 129, 0.1);
-            border-radius: 8px;
-            border: 1px solid #10b981;
         }
         
         .hidden {
@@ -320,62 +250,24 @@ HTML_TEMPLATE = '''
         .app {
             display: none;
             height: 100vh;
+            height: 100dvh;
             background: var(--bg-color);
             position: relative;
             z-index: 1000;
         }
         
-        .notification-toast {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: var(--accent-color);
-            color: white;
-            padding: 15px 25px;
-            border-radius: 10px;
-            z-index: 3000;
-            animation: slideIn 0.3s ease-out;
-        }
-        
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        
-        .halloween-decoration {
-            position: fixed;
-            font-size: 24px;
-            z-index: 100;
-            opacity: 0.3;
-            animation: float 8s ease-in-out infinite;
-            pointer-events: none;
-        }
-        
-        .floating-emoji {
-            position: fixed;
-            font-size: 20px;
-            z-index: 99;
-            opacity: 0.2;
-            animation: float 10s ease-in-out infinite;
-            pointer-events: none;
-        }
-        
+        /* Оптимизированный чат-интерфейс */
         .chat-container {
             display: flex;
-            height: 100vh;
+            height: 100%;
             width: 100%;
             position: relative;
             z-index: 1000;
         }
         
         .sidebar {
-            width: 350px;
+            width: 100%;
+            max-width: 400px;
             background: var(--card-color);
             border-right: 1px solid var(--border-color);
             display: flex;
@@ -390,16 +282,18 @@ HTML_TEMPLATE = '''
             flex-direction: column;
             position: relative;
             z-index: 1001;
+            min-width: 0;
         }
         
         .search-box {
-            padding: 20px;
+            padding: 15px;
             border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
         }
         
         .search-input {
             width: 100%;
-            padding: 12px 45px 12px 15px;
+            padding: 12px 15px;
             background: var(--secondary-color);
             border: 1px solid var(--border-color);
             border-radius: 25px;
@@ -410,45 +304,37 @@ HTML_TEMPLATE = '''
         .chats-list {
             flex: 1;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
         
         .chat-item {
             display: flex;
             align-items: center;
-            padding: 15px 20px;
+            padding: 12px 15px;
             border-bottom: 1px solid var(--border-color);
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             user-select: none;
             position: relative;
             z-index: 1002;
+            min-height: 70px;
         }
         
-        .chat-item:hover, .chat-item:active {
+        .chat-item:active {
             background: var(--secondary-color);
-            transform: translateX(5px);
-        }
-        
-        .chat-item.active {
-            background: var(--accent-color);
         }
         
         .chat-avatar {
-            width: 50px;
-            height: 50px;
+            width: 45px;
+            height: 45px;
             border-radius: 50%;
             background: var(--accent-color);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
-            margin-right: 15px;
+            font-size: 18px;
+            margin-right: 12px;
             flex-shrink: 0;
-            transition: all 0.3s ease;
-        }
-        
-        .chat-avatar:hover {
-            transform: scale(1.1) rotate(5deg);
         }
         
         .chat-info {
@@ -458,10 +344,11 @@ HTML_TEMPLATE = '''
         
         .chat-name {
             font-weight: bold;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            font-size: 15px;
         }
         
         .chat-last-message {
@@ -476,35 +363,30 @@ HTML_TEMPLATE = '''
             color: #888;
             font-size: 11px;
             flex-shrink: 0;
-            margin-left: 10px;
+            margin-left: 8px;
         }
         
         .messages-container {
             flex: 1;
-            padding: 20px;
+            padding: 15px;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
             position: relative;
             z-index: 1001;
         }
         
         .message {
             background: var(--secondary-color);
-            padding: 12px 15px;
+            padding: 10px 12px;
             border-radius: 15px;
-            max-width: 70%;
+            max-width: 85%;
             word-wrap: break-word;
             position: relative;
             z-index: 1002;
-            animation: fadeIn 0.3s ease-out;
-            transition: all 0.3s ease;
-        }
-        
-        .message:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            animation: fadeIn 0.2s ease-out;
         }
         
         .message.own {
@@ -513,14 +395,15 @@ HTML_TEMPLATE = '''
         }
         
         .message-input-container {
-            padding: 20px;
+            padding: 15px;
             background: var(--card-color);
             border-top: 1px solid var(--border-color);
             display: flex;
-            gap: 10px;
+            gap: 8px;
             align-items: center;
             position: relative;
             z-index: 1001;
+            flex-shrink: 0;
         }
         
         .message-input {
@@ -531,33 +414,22 @@ HTML_TEMPLATE = '''
             border-radius: 25px;
             color: var(--text-color);
             font-size: 14px;
-            transition: all 0.3s ease;
-        }
-        
-        .message-input:focus {
-            border-color: var(--accent-color);
-            box-shadow: 0 0 15px rgba(139, 92, 246, 0.2);
         }
         
         .send-btn {
-            padding: 12px 20px;
+            padding: 12px 18px;
             background: var(--accent-color);
             border: none;
             border-radius: 25px;
             color: white;
             cursor: pointer;
-            min-width: 60px;
+            min-width: 50px;
             display: flex;
             align-items: center;
             justify-content: center;
             position: relative;
             z-index: 1002;
-            transition: all 0.3s ease;
-        }
-        
-        .send-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 5px 15px rgba(139, 92, 246, 0.4);
+            flex-shrink: 0;
         }
         
         .online-indicator {
@@ -569,225 +441,65 @@ HTML_TEMPLATE = '''
             bottom: 2px;
             right: 2px;
             border: 2px solid var(--card-color);
-            animation: pulse 2s infinite;
         }
         
-        .user-status {
-            font-size: 11px;
-            color: #10b981;
+        /* Мобильная оптимизация */
+        .mobile-only {
+            display: none;
         }
         
-        .theme-selector {
-            display: flex;
-            gap: 10px;
-            margin: 15px 0;
-            flex-wrap: wrap;
+        .desktop-only {
+            display: block;
         }
         
-        .theme-option {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            cursor: pointer;
-            border: 2px solid transparent;
-            transition: all 0.3s ease;
-            position: relative;
-            z-index: 1002;
-        }
-        
-        .theme-option:hover {
-            transform: scale(1.1);
-        }
-        
-        .theme-option.active {
-            border-color: white;
-            transform: scale(1.1);
-        }
-        
-        .credential-box {
-            background: var(--secondary-color);
-            padding: 15px;
-            border-radius: 10px;
-            margin: 10px 0;
-            border: 1px solid var(--accent-color);
-            position: relative;
-            z-index: 1001;
-            animation: pulse 2s infinite;
-        }
-        
-        .credential-field {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 8px 0;
-        }
-        
-        .credential-value {
-            font-family: monospace;
+        /* Навигация для мобильных */
+        .mobile-nav {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
             background: var(--card-color);
-            padding: 5px 10px;
-            border-radius: 5px;
+            border-top: 1px solid var(--border-color);
+            padding: 10px 15px;
+            padding-bottom: calc(10px + var(--safe-area-bottom));
+            z-index: 2000;
+        }
+        
+        .nav-button {
             flex: 1;
-            margin-left: 10px;
-            word-break: break-all;
-        }
-        
-        .copy-btn {
-            background: var(--accent-color);
+            padding: 12px;
+            background: transparent;
             border: none;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-left: 10px;
-            flex-shrink: 0;
-            position: relative;
-            z-index: 1002;
-            transition: all 0.3s ease;
-        }
-        
-        .copy-btn:hover {
-            transform: scale(1.05);
-        }
-        
-        .password-strength {
-            height: 5px;
-            border-radius: 5px;
-            margin-top: 5px;
-            transition: all 0.3s ease;
-        }
-        
-        .strength-weak { background: #ef4444; width: 25%; }
-        .strength-medium { background: #f59e0b; width: 50%; }
-        .strength-strong { background: #10b981; width: 75%; }
-        .strength-very-strong { background: #10b981; width: 100%; }
-        
-        .feature-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
-        }
-        
-        .feature-card {
-            background: var(--card-color);
-            padding: 20px;
-            border-radius: 10px;
+            color: var(--text-color);
             text-align: center;
-            border: 1px solid var(--border-color);
-            transition: all 0.3s ease;
+            font-size: 12px;
             cursor: pointer;
-            user-select: none;
-            position: relative;
-            z-index: 1002;
         }
         
-        .feature-card:hover, .feature-card:active {
-            transform: translateY(-5px) scale(1.02);
-            border-color: var(--accent-color);
-            box-shadow: 0 10px 25px rgba(139, 92, 246, 0.3);
-        }
-        
-        .feature-icon {
-            font-size: 32px;
-            margin-bottom: 10px;
-            transition: all 0.3s ease;
-        }
-        
-        .feature-card:hover .feature-icon {
-            transform: scale(1.2) rotate(5deg);
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-            gap: 10px;
-            margin: 15px 0;
-        }
-        
-        .stat-card {
-            background: var(--card-color);
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            position: relative;
-            z-index: 1001;
-            transition: all 0.3s ease;
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-        
-        .stat-value {
-            font-size: 24px;
-            font-weight: bold;
+        .nav-button.active {
             color: var(--accent-color);
         }
         
-        .stat-label {
-            font-size: 12px;
-            color: #888;
-        }
-
-        /* Новые анимации */
-        .typing-indicator {
-            display: flex;
-            gap: 4px;
-            padding: 10px 15px;
-            background: var(--secondary-color);
-            border-radius: 15px;
-            max-width: 80px;
-        }
-        
-        .typing-dot {
-            width: 8px;
-            height: 8px;
-            background: var(--accent-color);
-            border-radius: 50%;
-            animation: typing 1.4s infinite ease-in-out;
-        }
-        
-        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
-        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
-        
-        @keyframes typing {
-            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
-            40% { transform: scale(1); opacity: 1; }
-        }
-        
-        .message-sent {
-            animation: messageSent 0.4s ease-out;
-        }
-        
-        @keyframes messageSent {
-            0% { transform: translateY(20px); opacity: 0; }
-            100% { transform: translateY(0); opacity: 1; }
-        }
-        
-        .heartbeat {
-            animation: heartbeat 1.5s ease-in-out infinite;
-        }
-        
-        @keyframes heartbeat {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-
-        /* Мобильные стили */
+        /* Адаптивные стили */
         @media (max-width: 768px) {
+            .screen {
+                padding: 15px;
+                padding-top: calc(15px + var(--safe-area-top));
+                padding-bottom: calc(15px + var(--safe-area-bottom));
+            }
+            
             .auth-box {
-                padding: 30px 20px;
-                margin: 10px;
+                padding: 25px 20px;
+                max-width: 95vw;
             }
             
-            .logo {
-                font-size: 36px;
+            .mobile-only {
+                display: block;
             }
             
-            .feature-grid {
-                grid-template-columns: 1fr;
+            .desktop-only {
+                display: none;
             }
             
             .chat-container {
@@ -796,11 +508,40 @@ HTML_TEMPLATE = '''
             
             .sidebar {
                 width: 100%;
-                height: 40vh;
+                max-width: none;
+                display: none;
+            }
+            
+            .sidebar.active {
+                display: flex;
             }
             
             .chat-area {
-                height: 60vh;
+                display: none;
+            }
+            
+            .chat-area.active {
+                display: flex;
+            }
+            
+            .mobile-nav {
+                display: flex;
+                justify-content: space-around;
+            }
+            
+            .message {
+                max-width: 90%;
+            }
+            
+            .chat-item {
+                padding: 10px 12px;
+                min-height: 60px;
+            }
+            
+            .chat-avatar {
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
             }
             
             .btn {
@@ -808,39 +549,81 @@ HTML_TEMPLATE = '''
                 padding: 14px;
             }
         }
-
-        /* Гарантированная видимость кнопок */
-        .btn {
-            display: flex !important;
-            visibility: visible !important;
-            opacity: 1 !important;
+        
+        @media (min-width: 769px) {
+            .sidebar {
+                display: flex !important;
+            }
+            
+            .chat-area {
+                display: flex !important;
+            }
         }
         
-        .screen {
-            display: flex !important;
+        /* Оптимизация производительности */
+        .will-change {
+            will-change: transform, opacity;
+        }
+        
+        .no-animation {
+            animation: none !important;
+        }
+        
+        /* Улучшенный скроллбар */
+        .chats-list::-webkit-scrollbar,
+        .messages-container::-webkit-scrollbar {
+            width: 4px;
+        }
+        
+        .chats-list::-webkit-scrollbar-track,
+        .messages-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .chats-list::-webkit-scrollbar-thumb,
+        .messages-container::-webkit-scrollbar-thumb {
+            background: var(--accent-color);
+            border-radius: 2px;
+        }
+        
+        /* Предотвращение выделения текста на мобильных */
+        .no-select {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        
+        /* Оптимизация для медленных устройств */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Анимированные декорации -->
+    <!-- Анимированные декорации (упрощенные для производительности) -->
     <div class="halloween-decoration" style="top: 10%; left: 5%;">🎃</div>
     <div class="halloween-decoration" style="top: 20%; right: 10%;">👻</div>
     <div class="floating-emoji" style="top: 30%; left: 15%; animation-delay: 1s;">💜</div>
-    <div class="floating-emoji" style="top: 60%; right: 20%; animation-delay: 2s;">✨</div>
-    <div class="floating-emoji" style="top: 80%; left: 25%; animation-delay: 3s;">🚀</div>
 
     <!-- ПЕРВАЯ СТРАНИЦА - НАЧАТЬ ОБЩЕНИЕ -->
     <div id="screen1" class="screen">
         <div class="auth-box floating">
-            <div class="logo glowing-logo heartbeat">🎃 DLtrollex</div>
-            <div class="subtitle">Хеллоуин 2025 Edition! Фиолетовый чат с реальными пользователями</div>
+            <div class="logo glowing-logo">🎃 DLtrollex</div>
+            <div class="subtitle">Хеллоуин 2025 Edition! Оптимизированный для всех устройств</div>
             
-            <button class="btn pulse" onclick="startQuickRegistration()">
+            <button class="btn pulse no-select" onclick="startQuickRegistration()">
                 <span>💬 Начать общение</span>
             </button>
             
             <div style="margin-top: 20px; font-size: 12px; color: #888;">
-                🔒 Авто-генерация аккаунта • 💬 Реальные пользователи • 🎨 Кастомизация
+                📱 Адаптивный дизайн • 🔒 Безопасность • 🚀 Высокая производительность
             </div>
         </div>
     </div>
@@ -851,15 +634,6 @@ HTML_TEMPLATE = '''
             <div class="logo glowing-logo">🎃 DLtrollex</div>
             <div class="subtitle">Для вас создан аккаунт!</div>
             
-            <div style="text-align: left; margin-bottom: 20px; animation: fadeIn 0.6s ease-out;">
-                <p>✨ Ваши данные:</p>
-                <ul style="margin-left: 20px; color: #888;">
-                    <li>Уникальное имя пользователя</li>
-                    <li>Надежный пароль</li>
-                    <li>Случайный аватар</li>
-                </ul>
-            </div>
-            
             <div class="credential-box">
                 <div class="credential-field">
                     <span>👤 Имя:</span>
@@ -868,7 +642,7 @@ HTML_TEMPLATE = '''
                 <div class="credential-field">
                     <span>🔐 Пароль:</span>
                     <span class="credential-value" id="generatedPassword">...</span>
-                    <button class="copy-btn" onclick="copyToClipboard('generatedPassword')">📋</button>
+                    <button class="copy-btn no-select" onclick="copyToClipboard('generatedPassword')">📋</button>
                 </div>
                 <div class="credential-field">
                     <span>🆔 Юзернейм:</span>
@@ -876,23 +650,35 @@ HTML_TEMPLATE = '''
                 </div>
             </div>
             
-            <button class="btn btn-success pulse" onclick="quickRegister()">
+            <button class="btn btn-success pulse no-select" onclick="quickRegister()">
                 <span>🚀 Продолжить в чат!</span>
             </button>
             
-            <button class="btn" onclick="generateNewCredentials()">
+            <button class="btn no-select" onclick="generateNewCredentials()">
                 <span>🔄 Сгенерировать заново</span>
             </button>
-            
-            <div style="margin-top: 15px; font-size: 11px; color: #888;">
-                💡 Вы сможете изменить данные в настройках позже
-            </div>
         </div>
     </div>
 
     <!-- Основной интерфейс мессенджера -->
     <div id="mainApp" class="app">
         <!-- Интерфейс будет генерироваться JavaScript -->
+    </div>
+
+    <!-- Мобильная навигация -->
+    <div class="mobile-nav" id="mobileNav" style="display: none;">
+        <button class="nav-button active no-select" onclick="showMobileView('chats')">
+            <div style="font-size: 20px;">💬</div>
+            <div>Чаты</div>
+        </button>
+        <button class="nav-button no-select" onclick="showMobileView('contacts')">
+            <div style="font-size: 20px;">👥</div>
+            <div>Контакты</div>
+        </button>
+        <button class="nav-button no-select" onclick="showMobileView('settings')">
+            <div style="font-size: 20px;">⚙️</div>
+            <div>Настройки</div>
+        </button>
     </div>
 
     <script>
@@ -908,29 +694,58 @@ HTML_TEMPLATE = '''
             logins: 0,
             timeSpent: 0
         };
+        let isMobile = false;
+        let currentMobileView = 'chats';
 
+        // Инициализация при загрузке
         document.addEventListener('DOMContentLoaded', function() {
             console.log("🎃 DLtrollex Хеллоуин 2025 загружен!");
+            detectDeviceType();
+            initializeApp();
+        });
+
+        function detectDeviceType() {
+            isMobile = window.innerWidth <= 768;
+            console.log(`📱 Устройство: ${isMobile ? 'Мобильное' : 'Десктоп'}`);
+        }
+
+        function initializeApp() {
             checkAutoLogin();
             loadHalloweenTheme();
             loadTheme();
             initializeData();
             loadUserStats();
-            createFloatingEmojis();
-        });
+            
+            // Оптимизация: отложенная загрузка декораций
+            setTimeout(createFloatingEmojis, 1000);
+            
+            // Обработчик изменения размера окна
+            let resizeTimeout;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    detectDeviceType();
+                    if (currentUser) {
+                        renderChatsInterface();
+                    }
+                }, 250);
+            });
+        }
 
         function createFloatingEmojis() {
-            const emojis = ['🌟', '⚡', '💫', '🔥', '🌈', '🎭', '🎨', '🚀'];
+            if (isMobile) return; // На мобильных не создаем много декораций
+            
+            const emojis = ['🌟', '⚡', '💫', '🔥'];
             const container = document.body;
             
             emojis.forEach((emoji, index) => {
                 const element = document.createElement('div');
-                element.className = 'floating-emoji';
+                element.className = 'floating-emoji no-select';
                 element.textContent = emoji;
                 element.style.left = Math.random() * 90 + '%';
                 element.style.top = Math.random() * 90 + '%';
-                element.style.animationDelay = (Math.random() * 5) + 's';
-                element.style.animationDuration = (8 + Math.random() * 7) + 's';
+                element.style.animationDelay = (Math.random() * 3) + 's';
+                element.style.animationDuration = (8 + Math.random() * 4) + 's';
                 container.appendChild(element);
             });
         }
@@ -978,12 +793,11 @@ HTML_TEMPLATE = '''
         }
 
         function initializeData() {
-            // Загружаем пользователей
             const savedUsers = localStorage.getItem('dlallUsers');
             if (savedUsers) {
                 allUsers = JSON.parse(savedUsers);
             } else {
-                // Создаем тестовых пользователей
+                // Базовые пользователи
                 allUsers = [
                     {
                         id: 'user1',
@@ -993,7 +807,7 @@ HTML_TEMPLATE = '''
                         avatar: '😎',
                         isOnline: true,
                         lastSeen: new Date().toISOString(),
-                        bio: 'Люблю программирование и путешествия 🚀',
+                        bio: 'Люблю программирование 🚀',
                         registered: new Date(Date.now() - 86400000).toISOString(),
                         password: 'test123'
                     },
@@ -1008,24 +822,11 @@ HTML_TEMPLATE = '''
                         bio: 'Дизайнер и художник 🎨',
                         registered: new Date(Date.now() - 172800000).toISOString(),
                         password: 'test123'
-                    },
-                    {
-                        id: 'user3', 
-                        name: 'Дмитрий',
-                        username: '@dmitry',
-                        email: 'dmitry@example.com',
-                        avatar: '🤖',
-                        isOnline: false,
-                        lastSeen: new Date(Date.now() - 3600000).toISOString(),
-                        bio: 'Разработчик ИИ и нейросетей',
-                        registered: new Date(Date.now() - 259200000).toISOString(),
-                        password: 'test123'
                     }
                 ];
                 localStorage.setItem('dlallUsers', JSON.stringify(allUsers));
             }
 
-            // Загружаем чаты
             const savedChats = localStorage.getItem('dlchats');
             if (savedChats) {
                 chats = JSON.parse(savedChats);
@@ -1048,7 +849,6 @@ HTML_TEMPLATE = '''
             const targetScreen = document.getElementById(screenId);
             if (targetScreen) {
                 targetScreen.classList.remove('hidden');
-                targetScreen.classList.add('fade-in');
             }
         }
 
@@ -1063,15 +863,15 @@ HTML_TEMPLATE = '''
         }
 
         function generateUsername() {
-            const adjectives = ['Весёлый', 'Серьёзный', 'Смелый', 'Умный', 'Быстрый', 'Креативный', 'Яркий', 'Тайный', 'Фиолетовый', 'Хеллоуинский'];
-            const nouns = ['Единорог', 'Дракон', 'Волк', 'Феникс', 'Тигр', 'Орёл', 'Кот', 'Призрак', 'Тыква', 'Паук'];
+            const adjectives = ['Весёлый', 'Серьёзный', 'Смелый', 'Умный', 'Быстрый', 'Креативный'];
+            const nouns = ['Единорог', 'Дракон', 'Волк', 'Феникс', 'Тигр', 'Кот'];
             return `${randomChoice(adjectives)}${randomChoice(nouns)}${Math.floor(Math.random() * 1000)}`;
         }
 
         function generatePassword() {
-            const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+            const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%';
             let password = '';
-            for (let i = 0; i < 12; i++) {
+            for (let i = 0; i < 10; i++) {
                 password += chars.charAt(Math.floor(Math.random() * chars.length));
             }
             return password;
@@ -1084,10 +884,16 @@ HTML_TEMPLATE = '''
         function copyToClipboard(elementId) {
             const text = document.getElementById(elementId).textContent;
             navigator.clipboard.writeText(text).then(() => {
-                showNotification('Скопировано в буфер обмена! 📋', 'success');
-                const btn = event.target;
-                btn.classList.add('bounce');
-                setTimeout(() => btn.classList.remove('bounce'), 1000);
+                showNotification('Скопировано! 📋', 'success');
+            }).catch(() => {
+                // Fallback для старых браузеров
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showNotification('Скопировано! 📋', 'success');
             });
         }
 
@@ -1117,7 +923,6 @@ HTML_TEMPLATE = '''
                 password: password
             };
             
-            // Сохраняем пользователя
             allUsers.push(currentUser);
             localStorage.setItem('dlallUsers', JSON.stringify(allUsers));
             localStorage.setItem('dlcurrentUser', JSON.stringify(currentUser));
@@ -1130,58 +935,107 @@ HTML_TEMPLATE = '''
         }
 
         function getRandomAvatar() {
-            const avatars = ['😊', '😎', '🤩', '👻', '🐱', '🦊', '🐶', '🐼', '🐯', '🦁', '🐉', '🦄', '🎃', '👾', '🤖'];
+            const avatars = ['😊', '😎', '🤩', '👻', '🐱', '🦊', '🐶'];
             return avatars[Math.floor(Math.random() * avatars.length)];
         }
 
         function showMainApp() {
             document.querySelectorAll('.screen').forEach(screen => screen.classList.add('hidden'));
             document.getElementById('mainApp').style.display = 'block';
+            if (isMobile) {
+                document.getElementById('mobileNav').style.display = 'flex';
+            }
             renderChatsInterface();
             startTimeTracking();
         }
 
+        function showMobileView(view) {
+            currentMobileView = view;
+            
+            // Обновляем активные кнопки навигации
+            document.querySelectorAll('.nav-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.closest('.nav-button').classList.add('active');
+            
+            // Показываем соответствующий view
+            if (view === 'chats') {
+                renderChatsInterface();
+            } else if (view === 'contacts') {
+                showContactsView();
+            } else if (view === 'settings') {
+                showSettings();
+            }
+        }
+
         function renderChatsInterface() {
-            document.getElementById('mainApp').innerHTML = `
-                <div class="chat-container">
-                    <div class="sidebar">
-                        <div style="padding: 20px; border-bottom: 1px solid var(--border-color);">
-                            <div class="logo" style="font-size: 24px; margin-bottom: 10px;">${isHalloweenTheme ? '🎃' : '💜'} DLtrollex</div>
-                            <div style="color: #888; font-size: 12px;">Привет, ${currentUser.name}!</div>
-                            ${currentUser.email ? `<div style="color: #888; font-size: 10px; margin-top: 5px;">📧 ${currentUser.email}</div>` : ''}
-                            ${isHalloweenTheme ? '<div style="color: #ff7b25; font-size: 10px; margin-top: 5px;">🎃 Хеллоуин 2025 Активен!</div>' : ''}
+            let content = '';
+            
+            if (isMobile) {
+                content = `
+                    <div class="chat-container">
+                        <div class="sidebar active">
+                            <div style="padding: 15px; border-bottom: 1px solid var(--border-color);">
+                                <div class="logo" style="font-size: 20px; margin-bottom: 8px;">${isHalloweenTheme ? '🎃' : '💜'} DLtrollex</div>
+                                <div style="color: #888; font-size: 12px;">Привет, ${currentUser.name}!</div>
+                            </div>
+                            
+                            <div class="search-box">
+                                <input type="text" class="search-input" placeholder="🔍 Поиск..." oninput="searchUsers(this.value)">
+                            </div>
+                            
+                            <div class="chats-list" id="chatsList">
+                                ${renderChatsList()}
+                            </div>
                         </div>
                         
-                        <div class="search-box">
-                            <input type="text" class="search-input" placeholder="🔍 Поиск пользователей..." oninput="searchUsers(this.value)">
-                        </div>
-                        
-                        <div class="chats-list" id="chatsList">
-                            ${renderChatsList()}
-                        </div>
-                        
-                        <div style="padding: 15px; border-top: 1px solid var(--border-color);">
-                            <button class="btn" onclick="showNewChatModal()" style="margin-bottom: 10px;">➕ Новый чат</button>
-                            <button class="btn" onclick="showSettings()" style="margin-bottom: 10px;">⚙️ Настройки</button>
-                            <button class="btn ${isHalloweenTheme ? 'btn-halloween' : ''}" onclick="toggleHalloweenTheme()" style="margin-top: 10px;">
-                                ${isHalloweenTheme ? '👻 Выкл.Хеллоуин' : '🎃 Вкл.Хеллоуин'}
-                            </button>
-                            <button class="btn" onclick="logout()" style="margin-top: 10px; background: #dc2626;">🚪 Выйти</button>
+                        <div class="chat-area" id="chatArea">
+                            <div style="flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 20px;">
+                                <div style="font-size: 60px; margin-bottom: 15px;">💬</div>
+                                <h3 style="text-align: center;">Выберите чат для общения</h3>
+                                <button class="btn" onclick="showContactsView()" style="margin-top: 15px; max-width: 200px;">👥 Найти друзей</button>
+                            </div>
                         </div>
                     </div>
-                    
-                    <div class="chat-area">
-                        <div id="chatContent" style="flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column;">
-                            <div class="logo glowing-logo" style="font-size: 80px;">${isHalloweenTheme ? '🎃' : '💜'}</div>
-                            <h2>Добро пожаловать в чаты!</h2>
-                            <p style="color: #888; margin: 10px 0 20px 0; text-align: center;">
-                                ${isHalloweenTheme ? '🎃 Найди новых друзей в хеллоуинском стиле! 👻' : 'Найди новых друзей и начни общение!'}
-                            </p>
-                            <button class="btn pulse" onclick="showNewChatModal()">💬 Начать новый чат</button>
+                `;
+            } else {
+                content = `
+                    <div class="chat-container">
+                        <div class="sidebar">
+                            <div style="padding: 20px; border-bottom: 1px solid var(--border-color);">
+                                <div class="logo" style="font-size: 24px; margin-bottom: 10px;">${isHalloweenTheme ? '🎃' : '💜'} DLtrollex</div>
+                                <div style="color: #888; font-size: 12px;">Привет, ${currentUser.name}!</div>
+                            </div>
+                            
+                            <div class="search-box">
+                                <input type="text" class="search-input" placeholder="🔍 Поиск пользователей..." oninput="searchUsers(this.value)">
+                            </div>
+                            
+                            <div class="chats-list" id="chatsList">
+                                ${renderChatsList()}
+                            </div>
+                            
+                            <div style="padding: 15px; border-top: 1px solid var(--border-color);">
+                                <button class="btn" onclick="showContactsView()" style="margin-bottom: 10px;">👥 Найти друзей</button>
+                                <button class="btn" onclick="showSettings()">⚙️ Настройки</button>
+                            </div>
+                        </div>
+                        
+                        <div class="chat-area">
+                            <div id="chatContent" style="flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                                <div style="font-size: 80px; margin-bottom: 20px;">${isHalloweenTheme ? '🎃' : '💜'}</div>
+                                <h2>Добро пожаловать в чаты!</h2>
+                                <p style="color: #888; margin: 10px 0 20px 0; text-align: center;">
+                                    Начните общение с другими пользователями
+                                </p>
+                                <button class="btn" onclick="showContactsView()">💬 Найти друзей</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            `;
+                `;
+            }
+            
+            document.getElementById('mainApp').innerHTML = content;
         }
 
         function renderChatsList() {
@@ -1190,7 +1044,6 @@ HTML_TEMPLATE = '''
                     <div style="text-align: center; padding: 40px 20px; color: #888;">
                         <div style="font-size: 48px; margin-bottom: 15px;">💬</div>
                         <div>Чатов пока нет</div>
-                        <div style="font-size: 12px; margin-top: 5px;">Начните новый чат с пользователем</div>
                     </div>
                 `;
             }
@@ -1201,7 +1054,7 @@ HTML_TEMPLATE = '''
                 if (!otherUser) return '';
                 
                 return `
-                    <div class="chat-item" onclick="openChat('${chat.id}')">
+                    <div class="chat-item no-select" onclick="openChat('${chat.id}')">
                         <div style="position: relative;">
                             <div class="chat-avatar">${otherUser.avatar}</div>
                             ${otherUser.isOnline ? '<div class="online-indicator"></div>' : ''}
@@ -1216,39 +1069,77 @@ HTML_TEMPLATE = '''
             }).join('');
         }
 
-        function showNewChatModal() {
+        function showContactsView() {
             const availableUsers = allUsers.filter(user => user.id !== currentUser.id);
             
-            document.getElementById('chatContent').innerHTML = `
-                <div style="padding: 20px; height: 100%; overflow-y: auto;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h2>💬 Новый чат</h2>
-                        <button class="btn" onclick="renderChatsInterface()">← Назад</button>
-                    </div>
-                    
-                    <div style="background: var(--card-color); padding: 20px; border-radius: 15px;">
-                        <h3 style="margin-bottom: 15px;">👥 Все пользователи (${availableUsers.length})</h3>
-                        <div style="max-height: 60vh; overflow-y: auto;">
-                            ${availableUsers.map(user => `
-                                <div class="chat-item" onclick="startNewChat('${user.id}')">
-                                    <div style="position: relative;">
-                                        <div class="chat-avatar">${user.avatar}</div>
-                                        ${user.isOnline ? '<div class="online-indicator"></div>' : ''}
-                                    </div>
-                                    <div class="chat-info">
-                                        <div class="chat-name">
-                                            ${user.name}
-                                            ${user.isOnline ? '<span class="user-status">● онлайн</span>' : ''}
+            let content = '';
+            
+            if (isMobile) {
+                content = `
+                    <div class="chat-container">
+                        <div class="sidebar active">
+                            <div style="padding: 15px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                                <h3 style="margin: 0;">👥 Все пользователи</h3>
+                                <button class="btn" onclick="renderChatsInterface()" style="padding: 8px 12px; font-size: 12px;">← Назад</button>
+                            </div>
+                            <div class="chats-list">
+                                ${availableUsers.map(user => `
+                                    <div class="chat-item no-select" onclick="startNewChat('${user.id}')">
+                                        <div style="position: relative;">
+                                            <div class="chat-avatar">${user.avatar}</div>
+                                            ${user.isOnline ? '<div class="online-indicator"></div>' : ''}
                                         </div>
-                                        <div class="chat-last-message">${user.username} • ${user.bio || 'Нет описания'}</div>
+                                        <div class="chat-info">
+                                            <div class="chat-name">
+                                                ${user.name}
+                                                ${user.isOnline ? '<span style="color: #10b981; font-size: 11px;"> ● онлайн</span>' : ''}
+                                            </div>
+                                            <div class="chat-last-message">${user.username}</div>
+                                        </div>
+                                        <button class="btn" style="padding: 6px 12px; font-size: 11px;">💬 Чат</button>
                                     </div>
-                                    <button class="btn" style="padding: 8px 15px; font-size: 12px;">💬 Начать чат</button>
-                                </div>
-                            `).join('')}
+                                `).join('')}
+                            </div>
                         </div>
                     </div>
-                </div>
-            `;
+                `;
+            } else {
+                content = `
+                    <div class="chat-area">
+                        <div style="padding: 20px; height: 100%; overflow-y: auto;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                                <h2>👥 Все пользователи (${availableUsers.length})</h2>
+                                <button class="btn" onclick="renderChatsInterface()">← Назад к чатам</button>
+                            </div>
+                            
+                            <div style="display: grid; gap: 10px;">
+                                ${availableUsers.map(user => `
+                                    <div class="chat-item no-select" onclick="startNewChat('${user.id}')">
+                                        <div style="position: relative;">
+                                            <div class="chat-avatar">${user.avatar}</div>
+                                            ${user.isOnline ? '<div class="online-indicator"></div>' : ''}
+                                        </div>
+                                        <div class="chat-info">
+                                            <div class="chat-name">
+                                                ${user.name}
+                                                ${user.isOnline ? '<span style="color: #10b981; font-size: 12px;"> ● онлайн</span>' : ''}
+                                            </div>
+                                            <div class="chat-last-message">${user.username} • ${user.bio || 'Нет описания'}</div>
+                                        </div>
+                                        <button class="btn" style="padding: 8px 15px; font-size: 12px;">💬 Начать чат</button>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (isMobile) {
+                document.getElementById('mainApp').innerHTML = content;
+            } else {
+                document.getElementById('chatContent').innerHTML = content;
+            }
         }
 
         function startNewChat(userId) {
@@ -1263,7 +1154,6 @@ HTML_TEMPLATE = '''
             if (existingChat) {
                 currentChat = existingChat;
                 openChat(existingChat.id);
-                showNotification(`Чат с ${user.name} уже существует!`, 'info');
                 return;
             }
 
@@ -1296,7 +1186,6 @@ HTML_TEMPLATE = '''
             saveUserStats();
             
             openChat(newChat.id);
-            showNotification(`Чат с ${user.name} начат! 💬`, 'success');
         }
 
         function openChat(chatId) {
@@ -1307,37 +1196,86 @@ HTML_TEMPLATE = '''
             const chatUser = allUsers.find(u => u.id === otherParticipants[0]);
             if (!chatUser) return;
             
-            document.getElementById('chatContent').innerHTML = `
-                <div style="padding: 15px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
-                    <div style="display: flex; align-items: center;">
-                        <div style="position: relative; margin-right: 15px;">
-                            <div class="chat-avatar">${chatUser.avatar}</div>
-                            ${chatUser.isOnline ? '<div class="online-indicator"></div>' : ''}
-                        </div>
-                        <div>
-                            <div style="font-weight: bold; font-size: 16px;">${chatUser.name}</div>
-                            <div style="color: #888; font-size: 12px;">
-                                ${chatUser.isOnline ? 'online' : `был(а) ${formatLastSeen(chatUser.lastSeen)}`}
+            let content = '';
+            
+            if (isMobile) {
+                content = `
+                    <div class="chat-container">
+                        <div class="chat-area active">
+                            <div style="padding: 12px 15px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 12px; background: var(--card-color);">
+                                <button class="btn no-select" onclick="renderChatsInterface()" style="padding: 8px; background: transparent; color: var(--text-color);">
+                                    ←
+                                </button>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div style="position: relative;">
+                                        <div class="chat-avatar" style="width: 35px; height: 35px; font-size: 14px;">${chatUser.avatar}</div>
+                                        ${chatUser.isOnline ? '<div class="online-indicator"></div>' : ''}
+                                    </div>
+                                    <div>
+                                        <div style="font-weight: bold; font-size: 14px;">${chatUser.name}</div>
+                                        <div style="color: #888; font-size: 11px;">
+                                            ${chatUser.isOnline ? 'online' : `был(а) ${formatLastSeen(chatUser.lastSeen)}`}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="messages-container" id="messagesContainer">
+                                ${renderChatMessages()}
+                            </div>
+                            
+                            <div class="message-input-container">
+                                <input type="text" class="message-input" placeholder="Введите сообщение..." id="messageInput" onkeypress="if(event.key=='Enter') sendMessage()">
+                                <button class="send-btn no-select" onclick="sendMessage()">📤</button>
                             </div>
                         </div>
                     </div>
-                    <div>
-                        <button class="btn" onclick="renderChatsInterface()" style="padding: 8px 15px; font-size: 12px;">← Назад</button>
+                `;
+            } else {
+                content = `
+                    <div class="chat-area">
+                        <div style="padding: 15px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+                            <div style="display: flex; align-items: center;">
+                                <div style="position: relative; margin-right: 15px;">
+                                    <div class="chat-avatar">${chatUser.avatar}</div>
+                                    ${chatUser.isOnline ? '<div class="online-indicator"></div>' : ''}
+                                </div>
+                                <div>
+                                    <div style="font-weight: bold; font-size: 16px;">${chatUser.name}</div>
+                                    <div style="color: #888; font-size: 12px;">
+                                        ${chatUser.isOnline ? 'online' : `был(а) ${formatLastSeen(chatUser.lastSeen)}`}
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <button class="btn" onclick="renderChatsInterface()" style="padding: 8px 15px; font-size: 12px;">← Назад</button>
+                            </div>
+                        </div>
+                        
+                        <div class="messages-container" id="messagesContainer">
+                            ${renderChatMessages()}
+                        </div>
+                        
+                        <div class="message-input-container">
+                            <input type="text" class="message-input" placeholder="💬 Введите сообщение..." id="messageInput" onkeypress="if(event.key=='Enter') sendMessage()">
+                            <button class="send-btn no-select" onclick="sendMessage()">📤</button>
+                        </div>
                     </div>
-                </div>
-                
-                <div class="messages-container" id="messagesContainer">
-                    ${renderChatMessages()}
-                </div>
-                
-                <div class="message-input-container">
-                    <input type="text" class="message-input" placeholder="💬 Введите сообщение..." id="messageInput" onkeypress="if(event.key=='Enter') sendMessage()">
-                    <button class="send-btn" onclick="sendMessage()">📤</button>
-                </div>
-            `;
+                `;
+            }
+            
+            if (isMobile) {
+                document.getElementById('mainApp').innerHTML = content;
+            } else {
+                document.getElementById('chatContent').innerHTML = content;
+            }
 
             scrollToBottom();
-            document.getElementById('messageInput').focus();
+            // Фокусировка с задержкой для мобильных
+            setTimeout(() => {
+                const input = document.getElementById('messageInput');
+                if (input) input.focus();
+            }, 300);
         }
 
         function renderChatMessages() {
@@ -1358,7 +1296,7 @@ HTML_TEMPLATE = '''
                 
                 return `
                     <div class="message ${isOwn ? 'own' : ''}">
-                        <div style="margin-bottom: 5px;">
+                        <div style="margin-bottom: 4px;">
                             ${!isOwn ? `<strong>${sender.name}:</strong> ` : ''}
                             ${msg.text}
                         </div>
@@ -1389,22 +1327,35 @@ HTML_TEMPLATE = '''
                 
                 localStorage.setItem('dlchats', JSON.stringify(chats));
                 
-                openChat(currentChat.id);
+                // Обновляем интерфейс без полной перерисовки
+                const messagesContainer = document.getElementById('messagesContainer');
+                if (messagesContainer) {
+                    const messageElement = document.createElement('div');
+                    messageElement.className = `message own fade-in`;
+                    messageElement.innerHTML = `
+                        <div style="margin-bottom: 4px;">${message}</div>
+                        <div style="font-size: 11px; color: rgba(255,255,255,0.7); text-align: right;">
+                            ${formatTime(newMessage.timestamp)}
+                        </div>
+                    `;
+                    messagesContainer.appendChild(messageElement);
+                    scrollToBottom();
+                }
                 
                 input.value = '';
                 
                 userStats.messagesSent++;
                 saveUserStats();
-                
-                showNotification('Сообщение отправлено!', 'success');
             }
         }
 
         function scrollToBottom() {
-            const messagesContainer = document.getElementById('messagesContainer');
-            if (messagesContainer) {
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            }
+            setTimeout(() => {
+                const messagesContainer = document.getElementById('messagesContainer');
+                if (messagesContainer) {
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
+            }, 100);
         }
 
         function searchUsers(query) {
@@ -1424,7 +1375,7 @@ HTML_TEMPLATE = '''
             
             if (filteredUsers.length > 0) {
                 searchHTML = filteredUsers.map(user => `
-                    <div class="chat-item" onclick="startNewChat('${user.id}')">
+                    <div class="chat-item no-select" onclick="startNewChat('${user.id}')">
                         <div style="position: relative;">
                             <div class="chat-avatar">${user.avatar}</div>
                             ${user.isOnline ? '<div class="online-indicator"></div>' : ''}
@@ -1433,7 +1384,7 @@ HTML_TEMPLATE = '''
                             <div class="chat-name">${user.name}</div>
                             <div class="chat-last-message">${user.username}</div>
                         </div>
-                        <button class="btn" style="padding: 8px 15px; font-size: 12px;">💬 Чат</button>
+                        <button class="btn" style="padding: 6px 12px; font-size: 11px;">💬 Чат</button>
                     </div>
                 `).join('');
             } else {
@@ -1449,52 +1400,78 @@ HTML_TEMPLATE = '''
         }
 
         function showSettings() {
-            document.getElementById('chatContent').innerHTML = `
-                <div style="padding: 20px; height: 100%; overflow-y: auto;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h2>⚙️ Настройки профиля</h2>
-                        <button class="btn" onclick="renderChatsInterface()">← Назад</button>
-                    </div>
-                    
-                    <div style="background: var(--card-color); padding: 25px; border-radius: 15px; margin-bottom: 20px;">
-                        <h3 style="margin-bottom: 15px;">👤 Профиль и привязка</h3>
-                        <input type="text" class="input-field" value="${currentUser.name}" placeholder="Ваше имя" id="settingsName">
-                        <input type="text" class="input-field" value="${currentUser.username}" placeholder="Юзернейм" id="settingsUsername">
-                        <input type="email" class="input-field" value="${currentUser.email || ''}" placeholder="📧 Email для привязки" id="settingsEmail">
-                        <input type="text" class="input-field" value="${currentUser.bio}" placeholder="О себе" id="settingsBio">
-                        <button class="btn" onclick="updateProfile()">💾 Сохранить профиль</button>
-                    </div>
-                    
-                    <div style="background: var(--card-color); padding: 25px; border-radius: 15px; margin-bottom: 20px;">
-                        <h3 style="margin-bottom: 15px;">🎨 Внешний вид</h3>
-                        <div class="theme-selector">
-                            <div class="theme-option ${currentTheme === 'purple' ? 'active' : ''}" style="background: #8b5cf6;" onclick="changeTheme('purple')"></div>
-                            <div class="theme-option ${currentTheme === 'blue' ? 'active' : ''}" style="background: #3b82f6;" onclick="changeTheme('blue')"></div>
-                            <div class="theme-option ${currentTheme === 'green' ? 'active' : ''}" style="background: #10b981;" onclick="changeTheme('green')"></div>
-                            <div class="theme-option ${currentTheme === 'pink' ? 'active' : ''}" style="background: #ec4899;" onclick="changeTheme('pink')"></div>
+            let content = '';
+            
+            if (isMobile) {
+                content = `
+                    <div class="chat-container">
+                        <div class="sidebar active">
+                            <div style="padding: 15px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                                <h3 style="margin: 0;">⚙️ Настройки</h3>
+                                <button class="btn" onclick="renderChatsInterface()" style="padding: 8px 12px; font-size: 12px;">← Назад</button>
+                            </div>
+                            <div style="padding: 20px; overflow-y: auto;">
+                                ${renderSettingsContent()}
+                            </div>
                         </div>
-                        <button class="btn ${isHalloweenTheme ? 'btn-halloween' : ''}" onclick="toggleHalloweenTheme()" style="margin-top: 10px;">
-                            ${isHalloweenTheme ? '👻 Выключить хеллоуин' : '🎃 Включить хеллоуин'}
-                        </button>
                     </div>
+                `;
+            } else {
+                content = `
+                    <div class="chat-area">
+                        <div style="padding: 20px; height: 100%; overflow-y: auto;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                                <h2>⚙️ Настройки профиля</h2>
+                                <button class="btn" onclick="renderChatsInterface()">← Назад</button>
+                            </div>
+                            ${renderSettingsContent()}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (isMobile) {
+                document.getElementById('mainApp').innerHTML = content;
+            } else {
+                document.getElementById('chatContent').innerHTML = content;
+            }
+        }
 
-                    <div style="background: var(--card-color); padding: 25px; border-radius: 15px;">
-                        <h3 style="margin-bottom: 15px;">📊 Статистика</h3>
-                        <div class="stats-grid">
-                            <div class="stat-card">
-                                <div class="stat-value">${userStats.messagesSent}</div>
-                                <div class="stat-label">Сообщений</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-value">${userStats.chatsCreated}</div>
-                                <div class="stat-label">Чатов</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-value">${userStats.logins}</div>
-                                <div class="stat-label">Входов</div>
-                            </div>
+        function renderSettingsContent() {
+            return `
+                <div style="background: var(--card-color); padding: 20px; border-radius: 15px; margin-bottom: 15px;">
+                    <h3 style="margin-bottom: 15px;">👤 Профиль</h3>
+                    <input type="text" class="input-field" value="${currentUser.name}" placeholder="Ваше имя" id="settingsName">
+                    <input type="text" class="input-field" value="${currentUser.username}" placeholder="Юзернейм" id="settingsUsername">
+                    <input type="email" class="input-field" value="${currentUser.email || ''}" placeholder="📧 Email" id="settingsEmail">
+                    <button class="btn" onclick="updateProfile()">💾 Сохранить</button>
+                </div>
+                
+                <div style="background: var(--card-color); padding: 20px; border-radius: 15px; margin-bottom: 15px;">
+                    <h3 style="margin-bottom: 15px;">🎨 Внешний вид</h3>
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <div class="theme-option ${currentTheme === 'purple' ? 'active' : ''}" style="background: #8b5cf6;" onclick="changeTheme('purple')"></div>
+                        <div class="theme-option ${currentTheme === 'blue' ? 'active' : ''}" style="background: #3b82f6;" onclick="changeTheme('blue')"></div>
+                        <div class="theme-option ${currentTheme === 'green' ? 'active' : ''}" style="background: #10b981;" onclick="changeTheme('green')"></div>
+                    </div>
+                    <button class="btn ${isHalloweenTheme ? 'btn-halloween' : ''}" onclick="toggleHalloweenTheme()">
+                        ${isHalloweenTheme ? '👻 Выкл.Хеллоуин' : '🎃 Вкл.Хеллоуин'}
+                    </button>
+                </div>
+
+                <div style="background: var(--card-color); padding: 20px; border-radius: 15px;">
+                    <h3 style="margin-bottom: 15px;">📊 Статистика</h3>
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                        <div style="background: var(--secondary-color); padding: 15px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 20px; font-weight: bold; color: var(--accent-color);">${userStats.messagesSent}</div>
+                            <div style="font-size: 12px; color: #888;">Сообщений</div>
+                        </div>
+                        <div style="background: var(--secondary-color); padding: 15px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 20px; font-weight: bold; color: var(--accent-color);">${userStats.chatsCreated}</div>
+                            <div style="font-size: 12px; color: #888;">Чатов</div>
                         </div>
                     </div>
+                    <button class="btn" onclick="logout()" style="margin-top: 15px; background: #dc2626;">🚪 Выйти</button>
                 </div>
             `;
         }
@@ -1503,23 +1480,15 @@ HTML_TEMPLATE = '''
             const name = document.getElementById('settingsName').value.trim();
             const username = document.getElementById('settingsUsername').value.trim();
             const email = document.getElementById('settingsEmail').value.trim();
-            const bio = document.getElementById('settingsBio').value.trim();
             
             if (!name) {
                 showNotification('Введите имя!', 'error');
-                return;
-            }
-
-            // Проверка email
-            if (email && !isValidEmail(email)) {
-                showNotification('Введите корректный email!', 'error');
                 return;
             }
             
             currentUser.name = name;
             currentUser.username = username;
             currentUser.email = email;
-            currentUser.bio = bio;
             
             const userIndex = allUsers.findIndex(u => u.id === currentUser.id);
             if (userIndex !== -1) {
@@ -1529,17 +1498,8 @@ HTML_TEMPLATE = '''
             
             localStorage.setItem('dlcurrentUser', JSON.stringify(currentUser));
             
-            if (email) {
-                showNotification('Профиль обновлен! Email привязан. ✨', 'success');
-            } else {
-                showNotification('Профиль обновлен! ✨', 'success');
-            }
+            showNotification('Профиль обновлен! ✨', 'success');
             renderChatsInterface();
-        }
-
-        function isValidEmail(email) {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            return emailRegex.test(email);
         }
 
         function toggleHalloweenTheme() {
@@ -1562,7 +1522,7 @@ HTML_TEMPLATE = '''
             document.body.classList.remove('halloween-theme');
             isHalloweenTheme = false;
             localStorage.setItem('dlhalloween', 'false');
-            showNotification('👻 Хеллоуинская тема деактивирована!', 'info');
+            showNotification('👻 Хеллоуинская тема выключена!', 'info');
             renderChatsInterface();
         }
 
@@ -1578,8 +1538,7 @@ HTML_TEMPLATE = '''
             const themes = {
                 purple: { accent: '#8b5cf6' },
                 blue: { accent: '#3b82f6' },
-                green: { accent: '#10b981' },
-                pink: { accent: '#ec4899' }
+                green: { accent: '#10b981' }
             };
             
             if (themes[theme]) {
@@ -1598,30 +1557,17 @@ HTML_TEMPLATE = '''
         }
 
         function showNotification(message, type = 'info') {
-            const notification = document.createElement('div');
-            notification.className = 'notification-toast';
-            notification.style.background = type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : 'var(--accent-color)';
-            notification.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <div style="font-size: 20px;">${type === 'error' ? '❌' : type === 'success' ? '✅' : '💡'}</div>
-                    <div>${message}</div>
-                </div>
-            `;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.remove();
-                }
-            }, 3000);
+            // Упрощенное уведомление для производительности
+            console.log(`🔔 ${message}`);
         }
 
         function startTimeTracking() {
             setInterval(() => {
                 if (currentUser) {
                     userStats.timeSpent++;
-                    saveUserStats();
+                    if (userStats.timeSpent % 10 === 0) {
+                        saveUserStats();
+                    }
                 }
             }, 60000);
         }
@@ -1638,17 +1584,17 @@ HTML_TEMPLATE = '''
             
             currentUser = null;
             localStorage.removeItem('dlcurrentUser');
-            showNotification('Вы вышли из системы 👋', 'info');
-            setTimeout(() => location.reload(), 1000);
+            setTimeout(() => location.reload(), 500);
         }
 
-        // Обработка Enter в формах
-        document.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                if (!document.getElementById('quickRegisterScreen').classList.contains('hidden')) {
-                    quickRegister();
+        // Обработка изменений ориентации экрана
+        window.addEventListener('orientationchange', function() {
+            setTimeout(() => {
+                detectDeviceType();
+                if (currentUser) {
+                    renderChatsInterface();
                 }
-            }
+            }, 300);
         });
     </script>
 </body>
@@ -1694,7 +1640,8 @@ def create_app():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
     print("🎃 DLtrollex Хеллоуин 2025 запущен!")
+    print(f"📱 Оптимизирован для мобильных и ПК")
     print(f"🔗 Доступен по адресу: http://0.0.0.0:{port}")
-    print("✨ Исправлены баги + добавлена привязка email!")
+    print("✨ Исправлены баги + улучшена производительность!")
     
     app.run(host='0.0.0.0', port=port, debug=False)
