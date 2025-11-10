@@ -31,13 +31,13 @@ class AdvancedChatManager:
 chat_manager = AdvancedChatManager()
 
 def generate_username():
-    adjectives = ['Космический', 'Фиолетовый', 'Неоновый', 'Цифровой', 'Виртуальный', 'Голографический']
-    nouns = ['Феникс', 'Единорог', 'Дракон', 'Волк', 'Тигр', 'Орёл']
+    adjectives = ['Космический', 'Фиолетовый', 'Неоновый', 'Цифровой']
+    nouns = ['Феникс', 'Единорог', 'Дракон', 'Волк']
     return f"{random.choice(adjectives)}_{random.choice(nouns)}{random.randint(1000, 9999)}"
 
 def generate_password():
     chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*'
-    return ''.join(random.choice(chars) for _ in range(16))
+    return ''.join(random.choice(chars) for _ in range(12))
 
 HTML_TEMPLATE = '''
 <!DOCTYPE html>
@@ -105,6 +105,16 @@ HTML_TEMPLATE = '''
             50% { transform: scale(1.05); opacity: 0.8; }
         }
 
+        @keyframes loadingSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
         .screen {
             position: fixed;
             top: 0;
@@ -117,6 +127,39 @@ HTML_TEMPLATE = '''
             padding: 20px;
             z-index: 1000;
             overflow-y: auto;
+        }
+
+        /* Экран загрузки */
+        .loading-screen {
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(139, 92, 246, 0.3);
+            border-top: 4px solid var(--accent-purple);
+            border-radius: 50%;
+            animation: loadingSpin 1s linear infinite;
+        }
+
+        .loading-text {
+            text-align: center;
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+        }
+
+        .loading-subtext {
+            text-align: center;
+            font-size: 1rem;
+            color: var(--accent-purple);
+            margin-top: 1rem;
+            font-weight: 600;
         }
 
         .auth-container {
@@ -332,6 +375,7 @@ HTML_TEMPLATE = '''
             z-index: 2000;
             animation: slideInUp 0.3s ease;
             box-shadow: var(--shadow-glow);
+            max-width: 300px;
         }
 
         /* Чат интерфейс */
@@ -518,14 +562,25 @@ HTML_TEMPLATE = '''
             box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
         }
 
+        /* Мобильная оптимизация */
         @media (max-width: 768px) {
             .auth-container {
                 padding: 2rem;
                 margin: 1rem;
+                border-radius: 20px;
             }
             
             .logo {
                 font-size: 2.5rem;
+            }
+            
+            .feature-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.8rem;
+            }
+            
+            .feature-card {
+                padding: 1rem;
             }
             
             .chat-container {
@@ -534,8 +589,98 @@ HTML_TEMPLATE = '''
             
             .sidebar {
                 width: 100%;
-                height: 50vh;
+                height: 40vh;
+                position: absolute;
+                z-index: 1000;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
             }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .mobile-menu-btn {
+                display: block !important;
+            }
+            
+            .messages-container {
+                padding: 1rem;
+            }
+            
+            .message {
+                max-width: 85%;
+                padding: 0.8rem 1.2rem;
+            }
+            
+            .message-input-container {
+                padding: 1rem;
+            }
+            
+            .chat-header {
+                padding: 1rem 1.5rem;
+            }
+            
+            .notification {
+                left: 10px;
+                right: 10px;
+                top: 10px;
+                max-width: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .auth-container {
+                padding: 1.5rem;
+                margin: 0.5rem;
+            }
+            
+            .logo {
+                font-size: 2rem;
+            }
+            
+            .subtitle {
+                font-size: 1rem;
+            }
+            
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .credential-field {
+                flex-direction: column;
+                gap: 0.5rem;
+                align-items: flex-start;
+            }
+            
+            .message {
+                max-width: 90%;
+            }
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .mobile-menu-btn:hover {
+            background: rgba(139, 92, 246, 0.2);
+        }
+
+        .trust-message {
+            text-align: center;
+            color: var(--accent-purple);
+            font-weight: 600;
+            margin-top: 2rem;
+            font-size: 1.1rem;
+            animation: fadeIn 1s ease;
         }
     </style>
 </head>
@@ -546,8 +691,15 @@ HTML_TEMPLATE = '''
     <div class="floating-emoji" style="top: 85%; left: 10%;">🚀</div>
     <div class="floating-emoji" style="top: 80%; right: 5%;">🌟</div>
 
+    <!-- Экран загрузки -->
+    <div id="loadingScreen" class="screen loading-screen">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Запускаем DL-TrolledX...</div>
+        <div class="loading-subtext">Спасибо, что доверяете нам! 💫</div>
+    </div>
+
     <!-- Экран приветствия -->
-    <div id="welcomeScreen" class="screen">
+    <div id="welcomeScreen" class="screen hidden">
         <div class="auth-container">
             <div class="logo">DL-TrolledX</div>
             <div class="subtitle">Ультра-современный мессенджер с AI и космическим дизайном</div>
@@ -590,6 +742,10 @@ HTML_TEMPLATE = '''
                     <div>Функции</div>
                 </div>
             </div>
+
+            <div class="trust-message">
+                Спасибо, что доверяете нам! 💫
+            </div>
         </div>
     </div>
 
@@ -630,6 +786,10 @@ HTML_TEMPLATE = '''
             <button class="btn btn-secondary" onclick="showScreen('welcomeScreen')">
                 ← Назад
             </button>
+
+            <div class="trust-message">
+                Ваши данные в безопасности 🔒
+            </div>
         </div>
     </div>
 
@@ -637,8 +797,9 @@ HTML_TEMPLATE = '''
     <div id="mainApp" class="app hidden">
         <div class="chat-container">
             <!-- Боковая панель -->
-            <div class="sidebar">
+            <div class="sidebar" id="sidebar">
                 <div class="user-header">
+                    <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
                     <div class="user-avatar" id="userAvatar">😊</div>
                     <h3 id="userName">Пользователь</h3>
                     <p id="userStatus" style="color: var(--accent-purple);">● онлайн</p>
@@ -657,6 +818,7 @@ HTML_TEMPLATE = '''
             <div class="chat-area">
                 <div class="chat-header">
                     <div style="display: flex; align-items: center; gap: 1rem;">
+                        <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
                         <div class="chat-avatar" id="currentChatAvatar">👤</div>
                         <div>
                             <h3 id="currentChatName">Выберите чат</h3>
@@ -674,6 +836,9 @@ HTML_TEMPLATE = '''
                         <div style="font-size: 4rem; margin-bottom: 1rem;">💬</div>
                         <h3>Добро пожаловать в DL-TrolledX!</h3>
                         <p>Выберите чат или создайте новый для начала общения</p>
+                        <div class="trust-message" style="margin-top: 2rem;">
+                            Спасибо, что доверяете нам! 🌟
+                        </div>
                     </div>
                 </div>
                 
@@ -699,10 +864,18 @@ HTML_TEMPLATE = '''
 
         // Инициализация
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("🚀 DL-TrolledX запущен!");
-            checkAutoLogin();
-            initializeSampleData();
+            console.log("🚀 DL-TrolledX запускается...");
+            setTimeout(() => {
+                hideLoadingScreen();
+                checkAutoLogin();
+                initializeSampleData();
+            }, 2000);
         });
+
+        function hideLoadingScreen() {
+            document.getElementById('loadingScreen').classList.add('hidden');
+            document.getElementById('welcomeScreen').classList.remove('hidden');
+        }
 
         function initializeSampleData() {
             allUsers = [
@@ -764,7 +937,10 @@ HTML_TEMPLATE = '''
                 screen.classList.add('hidden');
             });
             document.getElementById('mainApp').classList.add('hidden');
-            document.getElementById(screenId).classList.remove('hidden');
+            const targetScreen = document.getElementById(screenId);
+            if (targetScreen) {
+                targetScreen.classList.remove('hidden');
+            }
         }
 
         function startQuickRegistration() {
@@ -873,8 +1049,15 @@ HTML_TEMPLATE = '''
             userStats.logins++;
             saveUserStats();
             
-            showMainApp();
-            showNotification(`Добро пожаловать в DL-TrolledX, ${name}! 🚀`, 'success');
+            // Показываем загрузку перед переходом
+            showScreen('loadingScreen');
+            document.querySelector('.loading-text').textContent = 'Создаем ваше пространство...';
+            document.querySelector('.loading-subtext').textContent = 'Спасибо за доверие! 💫';
+            
+            setTimeout(() => {
+                showMainApp();
+                showNotification(`Добро пожаловать в DL-TrolledX, ${name}! 🚀`, 'success');
+            }, 1500);
         }
 
         function showMainApp() {
@@ -1048,6 +1231,11 @@ HTML_TEMPLATE = '''
             console.log('Поиск:', query);
         }
 
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('active');
+        }
+
         function showSettings() {
             showNotification('Настройки будут доступны в следующем обновлении! ⚙️', 'info');
         }
@@ -1110,7 +1298,7 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     print("🚀 DL-TrolledX запущен!")
     print("💫 Ультра-современный дизайн")
-    print("🎨 Фиолетовая неоновая тема") 
-    print("⚡ AI функции и анимации")
+    print("📱 Оптимизирован для мобильных")
+    print("🎯 Улучшенная навигация")
     print(f"🔗 http://localhost:{port}")
     app.run(host='0.0.0.0', port=port, debug=False)
