@@ -1,989 +1,554 @@
-# DLtrollex - УЛЬТРА КАСТОМИЗИРУЕМЫЙ ЧАТ (ХЕЛЛОУИН 2025 + РЕАЛЬНЫЕ ПОЛЬЗОВАТЕЛИ)
-from flask import Flask, render_template_string, request, jsonify
+# DLtrollex - УЛЬТРА СОВРЕМЕННЫЙ МЕССЕНДЖЕР
+from flask import Flask, render_template_string
 import datetime
 import random
 import os
-import json
-import hashlib
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'mydltrollex2024'
-
-# База данных в памяти
-users_db = {}
-messages_db = {}
-chats_db = {}
-news_messages = [
-    {
-        'id': '1',
-        'text': 'Добро пожаловать в DLtrollex! 🎉',
-        'sender_name': 'Система',
-        'timestamp': datetime.datetime.now().isoformat(),
-    },
-    {
-        'id': '2', 
-        'text': 'Это фиолетовый мессенджер с максимальной кастомизацией! 💜',
-        'sender_name': 'Система', 
-        timestamp': datetime.datetime.now().isoformat(),
-    }
-]
+app.config['SECRET_KEY'] = 'ultramodern2024'
 
 def generate_username():
-    adjectives = ['Весёлый', 'Серьёзный', 'Смелый', 'Умный', 'Быстрый', 'Креативный', 'Яркий', 'Тайный', 'Фиолетовый', 'Хеллоуинский']
-    nouns = ['Единорог', 'Дракон', 'Волк', 'Феникс', 'Тигр', 'Орёл', 'Кот', 'Призрак', 'Тыква', 'Паук']
+    adjectives = ['Космический', 'Фиолетовый', 'Неоновый', 'Цифровой', 'Виртуальный', 'Голографический']
+    nouns = ['Феникс', 'Единорог', 'Дракон', 'Волк', 'Тигр', 'Орёл']
     return f"{random.choice(adjectives)}_{random.choice(nouns)}{random.randint(100, 999)}"
 
 def generate_password():
     chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*'
     return ''.join(random.choice(chars) for _ in range(12))
 
-@app.route('/favicon.ico')
-def favicon():
-    return '', 204
-
-@app.route('/health')
-def health_check():
-    return jsonify({'status': 'healthy', 'message': 'DLtrollex is running'})
-
 HTML_TEMPLATE = '''
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <title>DLtrollex 🎃</title>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎃</text></svg>">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nebula Chat ✨</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💫</text></svg>">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Arial, sans-serif;
-            -webkit-tap-highlight-color: transparent;
-            -webkit-text-size-adjust: 100%;
+            font-family: 'Segoe UI', system-ui, sans-serif;
         }
-        
+
         :root {
-            --bg-color: #0f0f0f;
-            --card-color: #1a1a1a;
-            --accent-color: #8b5cf6;
-            --text-color: #ffffff;
-            --secondary-color: #2d2d2d;
-            --border-color: #3d3d3d;
-            --halloween-color: #ff7b25;
-            --success-color: #10b981;
-            --warning-color: #f59e0b;
-            --error-color: #ef4444;
-            --safe-area-top: env(safe-area-inset-top, 0px);
-            --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #111111;
+            --bg-card: #1a1a1a;
+            --bg-input: #222222;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --accent-purple: #8b5cf6;
+            --accent-pink: #ec4899;
+            --accent-blue: #3b82f6;
+            --gradient-primary: linear-gradient(135deg, #8b5cf6, #ec4899, #3b82f6);
+            --gradient-secondary: linear-gradient(135deg, #1a1a1a, #2d1b69);
+            --shadow-glow: 0 0 50px rgba(139, 92, 246, 0.3);
+            --border-glow: 1px solid rgba(139, 92, 246, 0.3);
         }
-        
+
         body {
-            background: var(--bg-color);
-            color: var(--text-color);
+            background: var(--bg-primary);
+            color: var(--text-primary);
             height: 100vh;
-            height: 100dvh;
             overflow: hidden;
-            transition: all 0.3s ease;
-            touch-action: manipulation;
-            padding: var(--safe-area-top) 0 var(--safe-area-bottom) 0;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(236, 72, 153, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(59, 130, 246, 0.05) 0%, transparent 50%);
         }
-        
-        body.halloween-theme {
-            --accent-color: #ff7b25;
-            --bg-color: #1a0f00;
-            --card-color: #2a1a00;
-            --secondary-color: #3a2a00;
-        }
-        
-        /* Оптимизированные анимации */
-        @keyframes glow {
-            0%, 100% {
-                text-shadow: 0 0 10px var(--accent-color);
-            }
-            50% {
-                text-shadow: 0 0 20px var(--accent-color);
-            }
-        }
-        
+
+        /* Анимации */
         @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-5px); }
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
         }
-        
+
+        @keyframes glow {
+            0%, 100% { 
+                text-shadow: 0 0 20px var(--accent-purple), 0 0 40px var(--accent-purple);
+            }
+            50% { 
+                text-shadow: 0 0 30px var(--accent-pink), 0 0 60px var(--accent-pink), 0 0 80px var(--accent-blue);
+            }
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
         @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.02); }
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
         }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+
+        @keyframes slideInUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
-        
-        .glowing-logo {
-            animation: glow 3s ease-in-out infinite;
-            will-change: text-shadow;
+
+        @keyframes typewriter {
+            from { width: 0; }
+            to { width: 100%; }
         }
-        
-        .floating {
-            animation: float 6s ease-in-out infinite;
-            will-change: transform;
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
         }
-        
-        .pulse {
-            animation: pulse 2s ease-in-out infinite;
-            will-change: transform;
-        }
-        
-        .fade-in {
-            animation: fadeIn 0.4s ease-out;
-            will-change: opacity, transform;
-        }
-        
-        /* Базовые компоненты */
+
+        /* Компоненты */
         .screen {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            height: 100dvh;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, var(--bg-color) 0%, var(--card-color) 100%);
-            z-index: 1000;
             padding: 20px;
-            padding-top: calc(20px + var(--safe-area-top));
-            padding-bottom: calc(20px + var(--safe-area-bottom));
+            z-index: 1000;
         }
-        
-        .auth-box {
-            background: var(--card-color);
-            padding: 30px 25px;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            border: 2px solid var(--accent-color);
+
+        .auth-container {
+            background: var(--bg-card);
+            border-radius: 24px;
+            padding: 40px;
             width: 100%;
-            max-width: min(450px, 90vw);
-            text-align: center;
+            max-width: 480px;
             position: relative;
             overflow: hidden;
-            z-index: 1001;
+            border: var(--border-glow);
+            box-shadow: var(--shadow-glow);
+            backdrop-filter: blur(20px);
         }
-        
+
+        .auth-container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: var(--gradient-primary);
+            animation: gradientShift 8s ease infinite;
+            opacity: 0.1;
+            z-index: -1;
+        }
+
         .logo {
-            font-size: clamp(32px, 8vw, 42px);
-            font-weight: bold;
-            color: var(--accent-color);
-            margin-bottom: 12px;
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-size: 200% 200%;
+            animation: gradientShift 3s ease infinite;
+            text-align: center;
+            margin-bottom: 1rem;
         }
-        
+
         .subtitle {
-            color: #888;
-            margin-bottom: 25px;
-            font-size: clamp(14px, 4vw, 16px);
-            line-height: 1.4;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+            line-height: 1.6;
         }
-        
-        .input-field {
-            width: 100%;
-            padding: 16px;
-            margin-bottom: 15px;
-            background: var(--secondary-color);
-            border: 2px solid var(--border-color);
-            border-radius: 12px;
-            color: var(--text-color);
-            font-size: 16px;
-            transition: all 0.2s ease;
-            -webkit-appearance: none;
-        }
-        
-        .input-field:focus {
-            outline: none;
-            border-color: var(--accent-color);
-            box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
-        }
-        
+
         .btn {
             width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, var(--accent-color), #7e22ce);
-            color: white;
+            padding: 16px 24px;
             border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: bold;
+            border-radius: 16px;
+            font-size: 1rem;
+            font-weight: 600;
             cursor: pointer;
-            margin-bottom: 12px;
-            transition: all 0.2s ease;
-            touch-action: manipulation;
-            user-select: none;
-            min-height: 50px;
-            display: flex !important;
-            align-items: center;
-            justify-content: center;
+            transition: all 0.3s ease;
             position: relative;
-            z-index: 1002;
-            -webkit-user-select: none;
-        }
-        
-        .btn:active {
-            transform: scale(0.98);
-        }
-        
-        .btn-halloween {
-            background: linear-gradient(135deg, #ff7b25, #ff5500);
-        }
-        
-        .btn-success {
-            background: linear-gradient(135deg, #10b981, #059669);
-        }
-        
-        .btn-danger {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
-        }
-        
-        .btn-warning {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-        }
-        
-        .hidden {
-            display: none !important;
-        }
-        
-        .app {
-            display: none;
-            height: 100vh;
-            height: 100dvh;
-            background: var(--bg-color);
-            position: relative;
-            z-index: 1000;
-        }
-        
-        /* Уведомления */
-        .notification-toast {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: var(--accent-color);
-            color: white;
-            padding: 15px 20px;
-            border-radius: 10px;
-            z-index: 3000;
-            animation: slideInRight 0.3s ease-out;
-            max-width: 300px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-        
-        @keyframes slideInRight {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        
-        /* Оптимизированный чат-интерфейс */
-        .chat-container {
-            display: flex;
-            height: 100%;
-            width: 100%;
-            position: relative;
-            z-index: 1000;
-        }
-        
-        .sidebar {
-            width: 100%;
-            max-width: 400px;
-            background: var(--card-color);
-            border-right: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            z-index: 1001;
-        }
-        
-        .chat-area {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            z-index: 1001;
-            min-width: 0;
-        }
-        
-        .search-box {
-            padding: 15px;
-            border-bottom: 1px solid var(--border-color);
-            flex-shrink: 0;
-        }
-        
-        .search-input {
-            width: 100%;
-            padding: 12px 15px;
-            background: var(--secondary-color);
-            border: 1px solid var(--border-color);
-            border-radius: 25px;
-            color: var(--text-color);
-            font-size: 14px;
-        }
-        
-        .chats-list {
-            flex: 1;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        
-        .chat-item {
-            display: flex;
-            align-items: center;
-            padding: 12px 15px;
-            border-bottom: 1px solid var(--border-color);
-            cursor: pointer;
-            transition: all 0.2s ease;
-            user-select: none;
-            position: relative;
-            z-index: 1002;
-            min-height: 70px;
-        }
-        
-        .chat-item:active {
-            background: var(--secondary-color);
-        }
-        
-        .chat-avatar {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            background: var(--accent-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            margin-right: 12px;
-            flex-shrink: 0;
-        }
-        
-        .chat-info {
-            flex: 1;
-            min-width: 0;
-        }
-        
-        .chat-name {
-            font-weight: bold;
-            margin-bottom: 4px;
-            white-space: nowrap;
             overflow: hidden;
-            text-overflow: ellipsis;
-            font-size: 15px;
+            margin-bottom: 1rem;
         }
-        
-        .chat-last-message {
-            color: #888;
-            font-size: 13px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
-        .chat-time {
-            color: #888;
-            font-size: 11px;
-            flex-shrink: 0;
-            margin-left: 8px;
-        }
-        
-        .messages-container {
-            flex: 1;
-            padding: 15px;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            position: relative;
-            z-index: 1001;
-        }
-        
-        .message {
-            background: var(--secondary-color);
-            padding: 10px 12px;
-            border-radius: 15px;
-            max-width: 85%;
-            word-wrap: break-word;
-            position: relative;
-            z-index: 1002;
-            animation: fadeIn 0.2s ease-out;
-        }
-        
-        .message.own {
-            background: var(--accent-color);
-            align-self: flex-end;
-        }
-        
-        .message-input-container {
-            padding: 15px;
-            background: var(--card-color);
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            position: relative;
-            z-index: 1001;
-            flex-shrink: 0;
-        }
-        
-        .message-input {
-            flex: 1;
-            padding: 12px 15px;
-            background: var(--secondary-color);
-            border: 1px solid var(--border-color);
-            border-radius: 25px;
-            color: var(--text-color);
-            font-size: 14px;
-        }
-        
-        .send-btn {
-            padding: 12px 18px;
-            background: var(--accent-color);
-            border: none;
-            border-radius: 25px;
+
+        .btn-primary {
+            background: var(--gradient-primary);
             color: white;
-            cursor: pointer;
-            min-width: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            z-index: 1002;
-            flex-shrink: 0;
+            box-shadow: 0 8px 32px rgba(139, 92, 246, 0.3);
         }
-        
-        .online-indicator {
-            width: 10px;
-            height: 10px;
-            background: #10b981;
-            border-radius: 50%;
-            position: absolute;
-            bottom: 2px;
-            right: 2px;
-            border: 2px solid var(--card-color);
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(139, 92, 246, 0.4);
         }
-        
-        /* Мобильная оптимизация */
-        .mobile-only {
-            display: none;
+
+        .btn-secondary {
+            background: var(--bg-input);
+            color: var(--text-primary);
+            border: var(--border-glow);
         }
-        
-        .desktop-only {
-            display: block;
-        }
-        
-        /* Навигация для мобильных */
-        .mobile-nav {
-            display: none;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: var(--card-color);
-            border-top: 1px solid var(--border-color);
-            padding: 10px 15px;
-            padding-bottom: calc(10px + var(--safe-area-bottom));
-            z-index: 2000;
-        }
-        
-        .nav-button {
-            flex: 1;
-            padding: 12px;
-            background: transparent;
-            border: none;
-            color: var(--text-color);
-            text-align: center;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        
-        .nav-button.active {
-            color: var(--accent-color);
+
+        .btn-secondary:hover {
+            background: rgba(139, 92, 246, 0.1);
             transform: translateY(-2px);
         }
-        
-        /* Адаптивные стили */
-        @media (max-width: 768px) {
-            .screen {
-                padding: 15px;
-                padding-top: calc(15px + var(--safe-area-top));
-                padding-bottom: calc(15px + var(--safe-area-bottom));
-            }
-            
-            .auth-box {
-                padding: 25px 20px;
-                max-width: 95vw;
-            }
-            
-            .mobile-only {
-                display: block;
-            }
-            
-            .desktop-only {
-                display: none;
-            }
-            
-            .chat-container {
-                flex-direction: column;
-            }
-            
-            .sidebar {
-                width: 100%;
-                max-width: none;
-                display: none;
-            }
-            
-            .sidebar.active {
-                display: flex;
-            }
-            
-            .chat-area {
-                display: none;
-            }
-            
-            .chat-area.active {
-                display: flex;
-            }
-            
-            .mobile-nav {
-                display: flex;
-                justify-content: space-around;
-            }
-            
-            .message {
-                max-width: 90%;
-            }
-            
-            .chat-item {
-                padding: 10px 12px;
-                min-height: 60px;
-            }
-            
-            .chat-avatar {
-                width: 40px;
-                height: 40px;
-                font-size: 16px;
-            }
-            
-            .btn {
-                min-height: 44px;
-                padding: 14px;
-            }
-        }
-        
-        @media (min-width: 769px) {
-            .sidebar {
-                display: flex !important;
-            }
-            
-            .chat-area {
-                display: flex !important;
-            }
-        }
-        
-        /* Оптимизация производительности */
-        .will-change {
-            will-change: transform, opacity;
-        }
-        
-        .no-animation {
-            animation: none !important;
-        }
-        
-        /* Улучшенный скроллбар */
-        .chats-list::-webkit-scrollbar,
-        .messages-container::-webkit-scrollbar {
-            width: 4px;
-        }
-        
-        .chats-list::-webkit-scrollbar-track,
-        .messages-container::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        
-        .chats-list::-webkit-scrollbar-thumb,
-        .messages-container::-webkit-scrollbar-thumb {
-            background: var(--accent-color);
-            border-radius: 2px;
-        }
-        
-        /* Предотвращение выделения текста на мобильных */
-        .no-select {
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            -khtml-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-        }
-        
-        /* Новые компоненты для функций */
-        .emoji-picker {
-            position: absolute;
-            bottom: 70px;
-            right: 15px;
-            background: var(--card-color);
-            border: 1px solid var(--border-color);
-            border-radius: 15px;
-            padding: 10px;
-            display: none;
-            grid-template-columns: repeat(6, 1fr);
-            gap: 5px;
-            max-width: 250px;
-            z-index: 2000;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-        
-        .emoji-btn {
-            padding: 8px;
-            background: transparent;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 18px;
-            transition: all 0.2s ease;
-        }
-        
-        .emoji-btn:hover, .emoji-btn:active {
-            background: var(--secondary-color);
-            transform: scale(1.1);
-        }
-        
-        .typing-indicator {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 12px;
-            background: var(--secondary-color);
-            border-radius: 15px;
-            max-width: 100px;
-            font-size: 12px;
-            color: #888;
-        }
-        
-        .typing-dots {
-            display: flex;
-            gap: 3px;
-        }
-        
-        .typing-dot {
-            width: 6px;
-            height: 6px;
-            background: var(--accent-color);
-            border-radius: 50%;
-            animation: typing 1.4s infinite ease-in-out;
-        }
-        
-        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
-        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
-        
-        @keyframes typing {
-            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
-            40% { transform: scale(1); opacity: 1; }
-        }
-        
-        .context-menu {
-            position: fixed;
-            background: var(--card-color);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 8px 0;
-            z-index: 3000;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-            display: none;
-        }
-        
-        .context-item {
-            padding: 10px 15px;
-            background: transparent;
-            border: none;
-            color: var(--text-color);
-            text-align: left;
-            width: 100%;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        
-        .context-item:hover, .context-item:active {
-            background: var(--secondary-color);
-        }
-        
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 6px;
-        }
-        
-        .status-online { background: #10b981; }
-        .status-offline { background: #6b7280; }
-        .status-away { background: #f59e0b; }
-        
-        /* Стили для настроек с прокруткой */
-        .settings-container {
-            height: 100%;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            padding: 20px;
-        }
-        
-        .settings-section {
-            background: var(--card-color);
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 15px;
-            border: 1px solid var(--border-color);
-        }
-        
-        .settings-title {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 15px;
-            color: var(--accent-color);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        /* Стили для новых функций */
+
         .feature-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
         }
-        
+
         .feature-card {
-            background: var(--secondary-color);
-            padding: 20px;
-            border-radius: 12px;
+            background: var(--bg-input);
+            padding: 1.5rem;
+            border-radius: 16px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
-            border: 1px solid transparent;
+            border: var(--border-glow);
         }
-        
-        .feature-card:hover, .feature-card:active {
-            border-color: var(--accent-color);
-            transform: translateY(-3px);
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            background: rgba(139, 92, 246, 0.1);
+            box-shadow: var(--shadow-glow);
         }
-        
+
         .feature-icon {
-            font-size: 32px;
-            margin-bottom: 10px;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
-        
+
         .credential-box {
-            background: var(--secondary-color);
-            padding: 15px;
-            border-radius: 10px;
-            margin: 15px 0;
-            border: 1px solid var(--accent-color);
+            background: var(--bg-input);
+            padding: 1.5rem;
+            border-radius: 16px;
+            margin: 1.5rem 0;
+            border: var(--border-glow);
+            animation: pulse 2s infinite;
         }
-        
+
         .credential-field {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin: 8px 0;
-            gap: 10px;
+            margin: 0.5rem 0;
+            padding: 0.75rem;
+            background: var(--bg-secondary);
+            border-radius: 12px;
         }
-        
+
         .credential-value {
-            font-family: monospace;
-            background: var(--card-color);
-            padding: 5px 10px;
-            border-radius: 5px;
-            flex: 1;
-            word-break: break-all;
-            font-size: 14px;
+            font-family: 'Courier New', monospace;
+            color: var(--accent-purple);
+            font-weight: 600;
         }
-        
+
         .copy-btn {
-            background: var(--accent-color);
-            border: none;
+            background: var(--accent-purple);
             color: white;
-            padding: 5px 10px;
-            border-radius: 5px;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
             cursor: pointer;
-            flex-shrink: 0;
-            transition: all 0.2s ease;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
         }
-        
-        .copy-btn:active {
-            transform: scale(0.95);
+
+        .copy-btn:hover {
+            background: var(--accent-pink);
+            transform: scale(1.05);
         }
-        
-        /* Стили для декоративных элементов */
-        .decorative-emoji {
+
+        .floating-emoji {
             position: fixed;
-            font-size: 24px;
-            z-index: 99;
+            font-size: 2rem;
+            z-index: 999;
             opacity: 0.1;
-            animation: float 8s ease-in-out infinite;
+            animation: float 6s ease-in-out infinite;
             pointer-events: none;
         }
-        
-        /* Стили для новых функций чата */
-        .message-actions {
-            position: absolute;
-            top: -10px;
-            right: 10px;
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Чат интерфейс */
+        .app {
             display: none;
-            gap: 5px;
+            height: 100vh;
+            background: var(--bg-primary);
         }
-        
-        .message:hover .message-actions {
+
+        .chat-container {
             display: flex;
+            height: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            background: var(--bg-secondary);
+            border-radius: 24px;
+            overflow: hidden;
+            margin: 20px;
+            box-shadow: var(--shadow-glow);
         }
-        
-        .action-btn {
-            background: var(--card-color);
-            border: 1px solid var(--border-color);
+
+        .sidebar {
+            width: 380px;
+            background: var(--bg-card);
+            border-right: var(--border-glow);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-header {
+            padding: 2rem;
+            background: var(--gradient-secondary);
+            border-bottom: var(--border-glow);
+        }
+
+        .user-avatar {
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
-            width: 25px;
-            height: 25px;
+            background: var(--gradient-primary);
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
-            font-size: 12px;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
         }
-        
-        .voice-message-btn {
-            background: var(--accent-color);
-            border: none;
+
+        .search-box {
+            padding: 1.5rem;
+            border-bottom: var(--border-glow);
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-input);
+            border: var(--border-glow);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .chats-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .chat-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 0.5rem;
+        }
+
+        .chat-item:hover {
+            background: rgba(139, 92, 246, 0.1);
+            transform: translateX(5px);
+        }
+
+        .chat-avatar {
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            background: var(--gradient-primary);
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
-            margin-left: 10px;
+            font-size: 1.2rem;
+            margin-right: 1rem;
         }
-        
-        .voice-recording {
-            animation: pulse 1s infinite;
-            background: #ef4444 !important;
+
+        .chat-info {
+            flex: 1;
         }
-        
-        /* Стили для групп */
-        .group-avatar {
-            background: linear-gradient(135deg, #8b5cf6, #7e22ce);
+
+        .chat-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .chat-preview {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-secondary);
+        }
+
+        .chat-header {
+            padding: 1.5rem 2rem;
+            background: var(--bg-card);
+            border-bottom: var(--border-glow);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .messages-container {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 1rem 1.5rem;
+            border-radius: 20px;
             position: relative;
+            animation: slideInUp 0.3s ease;
         }
-        
-        .group-members {
-            font-size: 11px;
-            color: #888;
+
+        .message.received {
+            background: var(--bg-input);
+            align-self: flex-start;
+            border-bottom-left-radius: 8px;
         }
-        
-        /* Оптимизация для медленных устройств */
-        @media (prefers-reduced-motion: reduce) {
-            * {
-                animation-duration: 0.01ms !important;
-                animation-iteration-count: 1 !important;
-                transition-duration: 0.01ms !important;
+
+        .message.sent {
+            background: var(--gradient-primary);
+            align-self: flex-end;
+            border-bottom-right-radius: 8px;
+        }
+
+        .message-input-container {
+            padding: 1.5rem 2rem;
+            background: var(--bg-card);
+            border-top: var(--border-glow);
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 12px 20px;
+            background: var(--bg-input);
+            border: var(--border-glow);
+            border-radius: 25px;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .send-btn {
+            padding: 12px 24px;
+            background: var(--gradient-primary);
+            border: none;
+            border-radius: 20px;
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+        }
+
+        /* Уведомления */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--gradient-primary);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 16px;
+            z-index: 2000;
+            animation: slideInUp 0.3s ease;
+            box-shadow: var(--shadow-glow);
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .chat-container {
+                flex-direction: column;
+                margin: 0;
+                border-radius: 0;
             }
-        }
-
-        /* Стили для ошибок */
-        .error {
-            color: #ef4444;
-            margin-top: 15px;
-            padding: 10px;
-            background: rgba(239, 68, 68, 0.1);
-            border-radius: 8px;
-            border: 1px solid #ef4444;
-        }
-
-        .success {
-            color: #10b981;
-            margin-top: 15px;
-            padding: 10px;
-            background: rgba(16, 185, 129, 0.1);
-            border-radius: 8px;
-            border: 1px solid #10b981;
+            
+            .sidebar {
+                width: 100%;
+                height: 50vh;
+            }
+            
+            .auth-container {
+                padding: 2rem;
+                margin: 1rem;
+            }
+            
+            .logo {
+                font-size: 2.5rem;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Декоративные элементы (только тыква, призрак и сердечко) -->
-    <div class="decorative-emoji" style="top: 10%; left: 5%;">🎃</div>
-    <div class="decorative-emoji" style="top: 15%; right: 8%;">👻</div>
-    <div class="decorative-emoji" style="top: 85%; left: 10%;">💜</div>
-    <div class="decorative-emoji" style="top: 80%; right: 5%;">🎃</div>
+    <!-- Плавающие элементы -->
+    <div class="floating-emoji" style="top: 10%; left: 5%;">💫</div>
+    <div class="floating-emoji" style="top: 15%; right: 8%;">✨</div>
+    <div class="floating-emoji" style="top: 85%; left: 10%;">🚀</div>
+    <div class="floating-emoji" style="top: 80%; right: 5%;">🌟</div>
 
-    <!-- ПЕРВАЯ СТРАНИЦА - НАЧАТЬ ОБЩЕНИЕ -->
-    <div id="screen1" class="screen">
-        <div class="auth-box floating">
-            <div class="logo glowing-logo">🎃 DLtrollex</div>
-            <div class="subtitle">Хеллоуин 2025 Edition! Улучшенный чат с новыми функциями</div>
+    <!-- Экран приветствия -->
+    <div id="welcomeScreen" class="screen">
+        <div class="auth-container">
+            <div class="logo">Nebula Chat</div>
+            <div class="subtitle">Современный мессенджер с нейросетями и шифрованием</div>
             
-            <button class="btn pulse no-select" onclick="startQuickRegistration()">
-                <span>💬 Начать общение</span>
+            <button class="btn btn-primary" onclick="startQuickRegistration()">
+                🚀 Начать путешествие
             </button>
             
             <div class="feature-grid">
-                <div class="feature-card no-select" onclick="startQuickRegistration()">
-                    <div class="feature-icon">🚀</div>
-                    <div>Быстрый старт</div>
+                <div class="feature-card" onclick="startQuickRegistration()">
+                    <div class="feature-icon">🤖</div>
+                    <div>AI Ассистент</div>
                 </div>
-                <div class="feature-card no-select" onclick="showManualLogin()">
-                    <div class="feature-icon">🔐</div>
-                    <div>Ручной вход</div>
+                <div class="feature-card" onclick="showManualLogin()">
+                    <div class="feature-icon">🔒</div>
+                    <div>Безопасность</div>
                 </div>
-                <div class="feature-card no-select" onclick="showFeatures()">
-                    <div class="feature-icon">⭐</div>
-                    <div>Возможности</div>
+                <div class="feature-card" onclick="showFeatures()">
+                    <div class="feature-icon">🎨</div>
+                    <div>Кастомизация</div>
+                </div>
+                <div class="feature-card" onclick="showFeatures()">
+                    <div class="feature-icon">⚡</div>
+                    <div>Скорость</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- РУЧНОЙ ВХОД -->
-    <div id="manualLoginScreen" class="screen hidden">
-        <div class="auth-box floating">
-            <div class="logo glowing-logo">🔐 Вход</div>
-            <div class="subtitle">Войдите в существующий аккаунт</div>
-            
-            <input type="text" class="input-field" id="loginUsername" placeholder="👤 Имя пользователя">
-            <input type="password" class="input-field" id="loginPassword" placeholder="🔐 Пароль">
-            
-            <button class="btn btn-success no-select" onclick="manualLogin()">
-                <span>🚀 Войти в аккаунт</span>
-            </button>
-            
-            <button class="btn no-select" onclick="showScreen('screen1')">
-                <span>← Назад</span>
-            </button>
-            
-            <div id="loginError" class="error hidden" style="margin-top: 15px;"></div>
-        </div>
-    </div>
-
-    <!-- ВТОРАЯ СТРАНИЦА - АВТО-РЕГИСТРАЦИЯ -->
-    <div id="quickRegisterScreen" class="screen hidden">
-        <div class="auth-box floating">
-            <div class="logo glowing-logo">🎃 DLtrollex</div>
-            <div class="subtitle">Для вас создан аккаунт!</div>
+    <!-- Регистрация -->
+    <div id="registerScreen" class="screen hidden">
+        <div class="auth-container">
+            <div class="logo">Создание аккаунта</div>
+            <div class="subtitle">Ваш цифровой пропуск в будущее общения</div>
             
             <div class="credential-box">
                 <div class="credential-field">
@@ -993,71 +558,78 @@ HTML_TEMPLATE = '''
                 <div class="credential-field">
                     <span>🔐 Пароль:</span>
                     <span class="credential-value" id="generatedPassword">...</span>
-                    <button class="copy-btn no-select" onclick="copyToClipboard('generatedPassword')">📋</button>
+                    <button class="copy-btn" onclick="copyToClipboard('generatedPassword')">📋</button>
                 </div>
                 <div class="credential-field">
-                    <span>🆔 Юзернейм:</span>
+                    <span>🆔 ID:</span>
                     <span class="credential-value" id="generatedUsername">...</span>
                 </div>
             </div>
             
-            <button class="btn btn-success pulse no-select" onclick="quickRegister()">
-                <span>🚀 Продолжить в чат!</span>
+            <button class="btn btn-primary" onclick="quickRegister()">
+                💫 Войти в Nebula
             </button>
             
-            <button class="btn no-select" onclick="generateNewCredentials()">
-                <span>🔄 Сгенерировать заново</span>
+            <button class="btn btn-secondary" onclick="generateNewCredentials()">
+                🔄 Обновить данные
             </button>
             
-            <button class="btn no-select" onclick="showScreen('screen1')">
-                <span>← Назад</span>
+            <button class="btn btn-secondary" onclick="showScreen('welcomeScreen')">
+                ← Назад
             </button>
         </div>
     </div>
 
-    <!-- Основной интерфейс мессенджера -->
-    <div id="mainApp" class="app">
-        <!-- Интерфейс будет генерироваться JavaScript -->
-    </div>
-
-    <!-- Мобильная навигация -->
-    <div class="mobile-nav" id="mobileNav" style="display: none;">
-        <button class="nav-button active no-select" onclick="showMobileView('chats')">
-            <div style="font-size: 20px;">💬</div>
-            <div>Чаты</div>
-        </button>
-        <button class="nav-button no-select" onclick="showMobileView('contacts')">
-            <div style="font-size: 20px;">👥</div>
-            <div>Контакты</div>
-        </button>
-        <button class="nav-button no-select" onclick="showMobileView('settings')">
-            <div style="font-size: 20px;">⚙️</div>
-            <div>Настройки</div>
-        </button>
-    </div>
-
-    <!-- Emoji Picker -->
-    <div class="emoji-picker" id="emojiPicker">
-        <button class="emoji-btn" onclick="addEmoji('😊')">😊</button>
-        <button class="emoji-btn" onclick="addEmoji('😂')">😂</button>
-        <button class="emoji-btn" onclick="addEmoji('🥰')">🥰</button>
-        <button class="emoji-btn" onclick="addEmoji('😎')">😎</button>
-        <button class="emoji-btn" onclick="addEmoji('🤔')">🤔</button>
-        <button class="emoji-btn" onclick="addEmoji('🎉')">🎉</button>
-        <button class="emoji-btn" onclick="addEmoji('🚀')">🚀</button>
-        <button class="emoji-btn" onclick="addEmoji('💜')">💜</button>
-        <button class="emoji-btn" onclick="addEmoji('🎃')">🎃</button>
-        <button class="emoji-btn" onclick="addEmoji('👻')">👻</button>
-        <button class="emoji-btn" onclick="addEmoji('⭐')">⭐</button>
-        <button class="emoji-btn" onclick="addEmoji('🔥')">🔥</button>
-    </div>
-
-    <!-- Context Menu -->
-    <div class="context-menu" id="contextMenu">
-        <button class="context-item no-select" onclick="copyMessage()">📋 Копировать</button>
-        <button class="context-item no-select" onclick="deleteMessage()">🗑️ Удалить</button>
-        <button class="context-item no-select" onclick="replyToMessage()">↩️ Ответить</button>
-        <button class="context-item no-select" onclick="hideContextMenu()">✖️ Закрыть</button>
+    <!-- Основное приложение -->
+    <div id="mainApp" class="app hidden">
+        <div class="chat-container">
+            <!-- Боковая панель -->
+            <div class="sidebar">
+                <div class="user-header">
+                    <div class="user-avatar" id="userAvatar">😊</div>
+                    <h3 id="userName">Пользователь</h3>
+                    <p id="userStatus" style="color: var(--accent-purple);">● онлайн</p>
+                </div>
+                
+                <div class="search-box">
+                    <input type="text" class="search-input" placeholder="🔍 Поиск чатов..." oninput="searchChats(this.value)">
+                </div>
+                
+                <div class="chats-list" id="chatsList">
+                    <!-- Список чатов будет здесь -->
+                </div>
+            </div>
+            
+            <!-- Область чата -->
+            <div class="chat-area">
+                <div class="chat-header">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div class="chat-avatar" id="currentChatAvatar">👤</div>
+                        <div>
+                            <h3 id="currentChatName">Выберите чат</h3>
+                            <p id="currentChatStatus" style="color: var(--text-secondary);">для начала общения</p>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 1rem;">
+                        <button class="btn-secondary" onclick="showSettings()">⚙️</button>
+                        <button class="btn-secondary" onclick="logout()">🚪</button>
+                    </div>
+                </div>
+                
+                <div class="messages-container" id="messagesContainer">
+                    <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+                        <div style="font-size: 4rem; margin-bottom: 1rem;">💬</div>
+                        <h3>Добро пожаловать в Nebula Chat!</h3>
+                        <p>Выберите чат или создайте новый для начала общения</p>
+                    </div>
+                </div>
+                
+                <div class="message-input-container">
+                    <input type="text" class="message-input" placeholder="Напишите сообщение..." id="messageInput" onkeypress="if(event.key=='Enter') sendMessage()">
+                    <button class="send-btn" onclick="sendMessage()">Отправить</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -1065,37 +637,402 @@ HTML_TEMPLATE = '''
         let currentChat = null;
         let chats = [];
         let allUsers = [];
-        let isHalloweenTheme = false;
-        let currentTheme = 'purple';
         let userStats = {
             messagesSent: 0,
             chatsCreated: 0,
             logins: 0,
-            timeSpent: 0,
-            voiceMessages: 0,
-            groupsCreated: 0
+            timeSpent: 0
         };
-        let isMobile = false;
-        let currentMobileView = 'chats';
-        let selectedMessage = null;
-        let onlineUsers = new Set();
-        let isRecording = false;
-        let mediaRecorder = null;
-        let audioChunks = [];
 
-        // Инициализация при загрузке
+        // Инициализация
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("🎃 DLtrollex Хеллоуин 2025 загружен!");
-            detectDeviceType();
-            initializeApp();
+            console.log("🚀 Nebula Chat запущен!");
+            checkAutoLogin();
+            initializeSampleData();
         });
 
-        function detectDeviceType() {
-            isMobile = window.innerWidth <= 768;
-            console.log(`📱 Устройство: ${isMobile ? 'Мобильное' : 'Десктоп'}`);
+        function initializeSampleData() {
+            // Тестовые пользователи
+            allUsers = [
+                {
+                    id: 'user1',
+                    name: 'Алексей',
+                    username: '@neuro_alex',
+                    avatar: '🤖',
+                    isOnline: true,
+                    bio: 'AI разработчик | Люблю нейросети'
+                },
+                {
+                    id: 'user2', 
+                    name: 'София',
+                    username: '@digital_queen',
+                    avatar: '👑',
+                    isOnline: true,
+                    bio: 'Дизайнер интерфейсов | UX/UI'
+                },
+                {
+                    id: 'user3',
+                    name: 'Максим',
+                    username: '@code_master',
+                    avatar: '💻',
+                    isOnline: false,
+                    bio: 'Full-stack разработчик'
+                }
+            ];
+
+            // Загрузка из localStorage
+            const savedChats = localStorage.getItem('nebula_chats');
+            if (savedChats) {
+                chats = JSON.parse(savedChats);
+            }
+            
+            const savedStats = localStorage.getItem('nebula_stats');
+            if (savedStats) {
+                userStats = JSON.parse(savedStats);
+            }
         }
 
-        function initializeApp() {
-            checkAutoLogin();
-            loadHalloweenTheme();
-           
+        function checkAutoLogin() {
+            const savedUser = localStorage.getItem('nebula_currentUser');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                userStats.logins++;
+                saveUserStats();
+                showMainApp();
+                showNotification(`С возвращением, ${currentUser.name}! 🌟`, 'success');
+            }
+        }
+
+        function saveUserStats() {
+            localStorage.setItem('nebula_stats', JSON.stringify(userStats));
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.add('hidden');
+            });
+            document.getElementById('mainApp').classList.add('hidden');
+            document.getElementById(screenId).classList.remove('hidden');
+        }
+
+        function startQuickRegistration() {
+            showScreen('registerScreen');
+            generateNewCredentials();
+        }
+
+        function showManualLogin() {
+            showNotification('Ручной вход будет доступен в следующем обновлении! 🔄', 'info');
+        }
+
+        function showFeatures() {
+            showNotification(`
+                🚀 Возможности Nebula Chat:
+                • AI-ассистент в чатах
+                • Сквозное шифрование
+                • Голосовые сообщения
+                • Видеозвонки
+                • Кастомизация тем
+                • Стикеры и GIF
+                • Cloud синхронизация
+            `, 'info');
+        }
+
+        function generateNewCredentials() {
+            const name = generateUsername();
+            const password = generatePassword();
+            const username = '@' + name.toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
+            
+            document.getElementById('generatedName').textContent = name;
+            document.getElementById('generatedPassword').textContent = password;
+            document.getElementById('generatedUsername').textContent = username;
+        }
+
+        function generateUsername() {
+            const adjectives = ['Космический', 'Фиолетовый', 'Неоновый', 'Цифровой', 'Виртуальный', 'Голографический'];
+            const nouns = ['Феникс', 'Единорог', 'Дракон', 'Волк', 'Тигр', 'Орёл'];
+            return `${randomChoice(adjectives)}${randomChoice(nouns)}${Math.floor(Math.random() * 1000)}`;
+        }
+
+        function generatePassword() {
+            const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+            let password = '';
+            for (let i = 0; i < 12; i++) {
+                password += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return password;
+        }
+
+        function randomChoice(array) {
+            return array[Math.floor(Math.random() * array.length)];
+        }
+
+        function copyToClipboard(elementId) {
+            const text = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                showNotification('Скопировано в буфер обмена! 📋', 'success');
+            });
+        }
+
+        function quickRegister() {
+            const name = document.getElementById('generatedName').textContent;
+            const password = document.getElementById('generatedPassword').textContent;
+            const username = document.getElementById('generatedUsername').textContent;
+            
+            if (!name || name === '...') {
+                showNotification('Сначала сгенерируйте данные!', 'error');
+                return;
+            }
+            
+            const avatars = ['😎', '🤖', '👽', '🐲', '🦄', '⚡', '🌟', '💫'];
+            
+            currentUser = {
+                id: 'user_' + Date.now(),
+                name: name,
+                username: username,
+                avatar: randomChoice(avatars),
+                isOnline: true,
+                bio: 'Исследователь цифровых миров 🌌',
+                password: password
+            };
+            
+            localStorage.setItem('nebula_currentUser', JSON.stringify(currentUser));
+            
+            userStats.logins++;
+            saveUserStats();
+            
+            showMainApp();
+            showNotification(`Добро пожаловать в Nebula, ${name}! 🚀`, 'success');
+        }
+
+        function showMainApp() {
+            document.querySelectorAll('.screen').forEach(screen => screen.classList.add('hidden'));
+            document.getElementById('mainApp').classList.remove('hidden');
+            
+            // Обновляем интерфейс
+            document.getElementById('userName').textContent = currentUser.name;
+            document.getElementById('userAvatar').textContent = currentUser.avatar;
+            
+            renderChatsList();
+            startTimeTracking();
+        }
+
+        function renderChatsList() {
+            const chatsList = document.getElementById('chatsList');
+            
+            if (chats.length === 0) {
+                chatsList.innerHTML = `
+                    <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">💬</div>
+                        <p>Чатов пока нет</p>
+                        <button class="btn-secondary" onclick="createSampleChats()" style="margin-top: 1rem;">
+                            Создать тестовые чаты
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            chatsList.innerHTML = chats.map(chat => {
+                const otherUser = allUsers.find(u => u.id === chat.participants.find(p => p !== currentUser.id));
+                if (!otherUser) return '';
+                
+                return `
+                    <div class="chat-item" onclick="openChat('${chat.id}')">
+                        <div class="chat-avatar">${otherUser.avatar}</div>
+                        <div class="chat-info">
+                            <div class="chat-name">${otherUser.name}</div>
+                            <div class="chat-preview">${chat.lastMessage?.text || 'Нет сообщений'}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function createSampleChats() {
+            allUsers.forEach(user => {
+                if (user.id !== currentUser.id) {
+                    const newChat = {
+                        id: 'chat_' + Date.now() + Math.random(),
+                        participants: [currentUser.id, user.id],
+                        lastMessage: {
+                            text: 'Привет! 👋',
+                            senderId: user.id,
+                            timestamp: new Date().toISOString()
+                        },
+                        messages: [
+                            {
+                                id: '1',
+                                text: `Привет! Я ${user.name}. Рад познакомиться!`,
+                                senderId: user.id,
+                                timestamp: new Date().toISOString()
+                            }
+                        ]
+                    };
+                    chats.push(newChat);
+                }
+            });
+            
+            localStorage.setItem('nebula_chats', JSON.stringify(chats));
+            renderChatsList();
+            showNotification('Тестовые чаты созданы! 🎉', 'success');
+        }
+
+        function openChat(chatId) {
+            currentChat = chats.find(chat => chat.id === chatId);
+            if (!currentChat) return;
+
+            const otherUser = allUsers.find(u => u.id === currentChat.participants.find(p => p !== currentUser.id));
+            if (!otherUser) return;
+            
+            // Обновляем заголовок чата
+            document.getElementById('currentChatName').textContent = otherUser.name;
+            document.getElementById('currentChatAvatar').textContent = otherUser.avatar;
+            document.getElementById('currentChatStatus').textContent = otherUser.isOnline ? '● онлайн' : '● был(а) недавно';
+            
+            // Показываем сообщения
+            const messagesContainer = document.getElementById('messagesContainer');
+            messagesContainer.innerHTML = currentChat.messages.map(msg => {
+                const isOwn = msg.senderId === currentUser.id;
+                return `
+                    <div class="message ${isOwn ? 'sent' : 'received'}">
+                        ${msg.text}
+                    </div>
+                `;
+            }).join('');
+            
+            // Прокручиваем вниз
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (message && currentChat) {
+                const newMessage = {
+                    id: Date.now().toString(),
+                    text: message,
+                    senderId: currentUser.id,
+                    timestamp: new Date().toISOString()
+                };
+                
+                currentChat.messages.push(newMessage);
+                currentChat.lastMessage = newMessage;
+                
+                localStorage.setItem('nebula_chats', JSON.stringify(chats));
+                
+                const messagesContainer = document.getElementById('messagesContainer');
+                const messageElement = document.createElement('div');
+                messageElement.className = 'message sent';
+                messageElement.textContent = message;
+                messagesContainer.appendChild(messageElement);
+                
+                input.value = '';
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                
+                userStats.messagesSent++;
+                saveUserStats();
+                
+                // Авто-ответ
+                setTimeout(() => {
+                    if (Math.random() > 0.3) {
+                        sendAutoReply();
+                    }
+                }, 1000 + Math.random() * 2000);
+            }
+        }
+
+        function sendAutoReply() {
+            if (!currentChat) return;
+            
+            const otherUser = allUsers.find(u => u.id === currentChat.participants.find(p => p !== currentUser.id));
+            if (!otherUser) return;
+            
+            const replies = [
+                'Интересно! Расскажи подробнее 🤔',
+                'Отличная мысль! 💫',
+                'Согласен с тобой! 👍',
+                'А что если попробовать по-другому? 🔄',
+                'Это напоминает мне одну идею... 💡',
+                'Продолжаем в том же духе! 🚀'
+            ];
+            
+            const replyMessage = {
+                id: Date.now().toString() + '_reply',
+                text: randomChoice(replies),
+                senderId: otherUser.id,
+                timestamp: new Date().toISOString()
+            };
+            
+            currentChat.messages.push(replyMessage);
+            currentChat.lastMessage = replyMessage;
+            
+            localStorage.setItem('nebula_chats', JSON.stringify(chats));
+            
+            const messagesContainer = document.getElementById('messagesContainer');
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message received';
+            messageElement.textContent = replyMessage.text;
+            messagesContainer.appendChild(messageElement);
+            
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function searchChats(query) {
+            // Простой поиск (можно улучшить)
+            console.log('Поиск:', query);
+        }
+
+        function showSettings() {
+            showNotification('Настройки будут доступны в следующем обновлении! ⚙️', 'info');
+        }
+
+        function logout() {
+            if (confirm('Выйти из аккаунта?')) {
+                currentUser = null;
+                localStorage.removeItem('nebula_currentUser');
+                showScreen('welcomeScreen');
+                showNotification('До скорой встречи! 👋', 'info');
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 4000);
+        }
+
+        function startTimeTracking() {
+            setInterval(() => {
+                if (currentUser) {
+                    userStats.timeSpent++;
+                    if (userStats.timeSpent % 10 === 0) {
+                        saveUserStats();
+                    }
+                }
+            }, 60000);
+        }
+    </script>
+</body>
+</html>
+'''
+
+@app.route('/')
+def index():
+    return render_template_string(HTML_TEMPLATE)
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    print("🚀 Nebula Chat запущен!")
+    print("💫 Ультра-современный дизайн")
+    print("🎨 Фиолетовая неоновая тема") 
+    print("⚡ AI функции и анимации")
+    print(f"🔗 http://localhost:{port}")
+    app.run(host='0.0.0.0', port=port, debug=False)
