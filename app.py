@@ -4,15 +4,14 @@ import datetime
 import random
 import os
 import uuid
-import re
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'trollexdl-secret-2024'
+app.config['SECRET_KEY'] = 'trollexdl-ultimate-2024'
 
-# Глобальные хранилища
-users_db = {}
-messages_db = {}
-active_calls = {}
+def get_days_until_new_year():
+    now = datetime.datetime.now()
+    new_year = datetime.datetime(now.year + 1, 1, 1)
+    return (new_year - now).days
 
 def generate_username():
     adjectives = ['Quantum', 'Neon', 'Cyber', 'Digital', 'Virtual', 'Hyper', 'Mega', 'Ultra', 'Super', 'Alpha']
@@ -21,7 +20,7 @@ def generate_username():
     return f"{random.choice(adjectives)}_{random.choice(nouns)}{numbers}"
 
 def generate_email(username):
-    domains = ['cosmic.com', 'quantum.io', 'nebula.org', 'galaxy.net', 'universe.ai']
+    domains = ['quantum.io', 'nebula.org', 'cosmic.com', 'trollex.ai', 'universe.net']
     return f"{username.lower()}@{random.choice(domains)}"
 
 def generate_user_id():
@@ -54,6 +53,7 @@ HTML_TEMPLATE = '''
             --text-secondary: #b0b0ff;
             --danger: #ff4444;
             --success: #00ff88;
+            --warning: #ffaa00;
         }
 
         body {
@@ -100,16 +100,6 @@ HTML_TEMPLATE = '''
             }
         }
 
-        @keyframes typewriter {
-            from { width: 0; }
-            to { width: 100%; }
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
-
         .screen {
             position: fixed;
             top: 0;
@@ -119,8 +109,9 @@ HTML_TEMPLATE = '''
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 15px;
             z-index: 1000;
+            overflow-y: auto;
         }
 
         .hidden {
@@ -128,71 +119,40 @@ HTML_TEMPLATE = '''
         }
 
         .cosmic-card {
-            background: rgba(26, 26, 74, 0.9);
+            background: rgba(26, 26, 74, 0.95);
             backdrop-filter: blur(20px);
             border: 2px solid var(--accent);
-            border-radius: 25px;
-            padding: 40px;
+            border-radius: 20px;
+            padding: 30px;
             width: 100%;
             max-width: 450px;
-            animation: slideUp 0.8s ease-out, glow 4s infinite;
+            animation: slideUp 0.6s ease-out, glow 4s infinite;
             position: relative;
             overflow: hidden;
         }
 
-        .cosmic-card::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(107, 43, 217, 0.1), transparent);
-            animation: shine 6s infinite;
-        }
-
-        @keyframes shine {
-            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
-        }
-
         .logo {
-            font-size: 3rem;
+            font-size: 2.5rem;
             font-weight: 900;
             text-align: center;
             margin-bottom: 20px;
             background: linear-gradient(45deg, var(--neon), var(--accent-glow), var(--accent));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
-        }
-
-        .typewriter {
-            overflow: hidden;
-            border-right: 2px solid var(--neon);
-            white-space: nowrap;
-            animation: typewriter 3s steps(40, end), blink-caret 0.75s step-end infinite;
-        }
-
-        @keyframes blink-caret {
-            from, to { border-color: transparent; }
-            50% { border-color: var(--neon); }
         }
 
         .btn {
             width: 100%;
-            padding: 18px 25px;
+            padding: 16px 20px;
             border: none;
-            border-radius: 15px;
-            font-size: 1.1rem;
+            border-radius: 12px;
+            font-size: 1rem;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.3s ease;
-            margin-bottom: 15px;
-            position: relative;
-            overflow: hidden;
+            margin-bottom: 12px;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
         }
 
         .btn-primary {
@@ -202,7 +162,7 @@ HTML_TEMPLATE = '''
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(107, 43, 217, 0.4);
+            box-shadow: 0 8px 20px rgba(107, 43, 217, 0.4);
         }
 
         .btn-secondary {
@@ -213,23 +173,23 @@ HTML_TEMPLATE = '''
 
         .user-card {
             background: rgba(255, 255, 255, 0.1);
-            padding: 25px;
-            border-radius: 20px;
-            margin: 20px 0;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 15px 0;
             border: 1px solid var(--accent);
             text-align: center;
         }
 
         .user-avatar {
-            width: 80px;
-            height: 80px;
-            border-radius: 20px;
+            width: 70px;
+            height: 70px;
+            border-radius: 15px;
             background: linear-gradient(135deg, var(--accent), var(--accent-glow));
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2rem;
-            margin: 0 auto 15px;
+            font-size: 1.8rem;
+            margin: 0 auto 12px;
         }
 
         .app {
@@ -240,7 +200,8 @@ HTML_TEMPLATE = '''
         }
 
         .sidebar {
-            width: 350px;
+            width: 100%;
+            max-width: 350px;
             background: rgba(26, 26, 74, 0.95);
             backdrop-filter: blur(10px);
             border-right: 2px solid var(--accent);
@@ -249,27 +210,40 @@ HTML_TEMPLATE = '''
         }
 
         .user-header {
-            padding: 25px;
+            padding: 20px;
             background: linear-gradient(135deg, var(--accent), var(--accent-glow));
             text-align: center;
+        }
+
+        .new-year-countdown {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            margin: 10px 15px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid var(--neon);
+            animation: glow 3s infinite;
         }
 
         .nav-tabs {
             display: flex;
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 5px;
-            margin: 15px;
+            border-radius: 12px;
+            padding: 4px;
+            margin: 12px;
+            flex-wrap: wrap;
         }
 
         .nav-tab {
             flex: 1;
-            padding: 12px;
+            padding: 10px 8px;
             text-align: center;
-            border-radius: 10px;
+            border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s ease;
             font-weight: 600;
+            font-size: 0.9rem;
+            min-width: 60px;
         }
 
         .nav-tab.active {
@@ -278,66 +252,61 @@ HTML_TEMPLATE = '''
         }
 
         .search-box {
-            padding: 15px;
+            padding: 12px;
         }
 
         .search-input {
             width: 100%;
-            padding: 15px 20px;
+            padding: 12px 15px;
             background: rgba(255, 255, 255, 0.1);
             border: 2px solid var(--accent);
-            border-radius: 15px;
+            border-radius: 12px;
             color: var(--text);
-            font-size: 1rem;
+            font-size: 0.95rem;
         }
 
         .content-list {
             flex: 1;
             overflow-y: auto;
-            padding: 10px;
+            padding: 8px;
         }
 
         .chat-item {
             display: flex;
             align-items: center;
-            padding: 18px;
-            margin-bottom: 10px;
+            padding: 15px;
+            margin-bottom: 8px;
             background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
+            border-radius: 12px;
             cursor: pointer;
             transition: all 0.3s ease;
             border: 1px solid transparent;
         }
 
-        .chat-item:hover {
+        .chat-item:hover, .chat-item.active {
             background: rgba(107, 43, 217, 0.2);
             border-color: var(--accent);
-            transform: translateX(5px);
-        }
-
-        .chat-item.active {
-            background: rgba(107, 43, 217, 0.3);
-            border-color: var(--accent);
+            transform: translateX(3px);
         }
 
         .item-avatar {
-            width: 50px;
-            height: 50px;
-            border-radius: 12px;
+            width: 45px;
+            height: 45px;
+            border-radius: 10px;
             background: linear-gradient(135deg, var(--accent), var(--accent-glow));
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-right: 15px;
-            font-size: 1.3rem;
+            margin-right: 12px;
+            font-size: 1.2rem;
         }
 
         .online-dot {
-            width: 12px;
-            height: 12px;
+            width: 10px;
+            height: 10px;
             background: var(--success);
             border-radius: 50%;
-            box-shadow: 0 0 10px var(--success);
+            box-shadow: 0 0 8px var(--success);
             margin-left: auto;
         }
 
@@ -349,27 +318,27 @@ HTML_TEMPLATE = '''
         }
 
         .chat-header {
-            padding: 20px;
+            padding: 15px;
             background: rgba(26, 26, 74, 0.9);
             border-bottom: 2px solid var(--accent);
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
         }
 
         .messages-container {
             flex: 1;
-            padding: 20px;
+            padding: 15px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 12px;
         }
 
         .message {
-            max-width: 70%;
-            padding: 15px 20px;
-            border-radius: 20px;
+            max-width: 85%;
+            padding: 12px 15px;
+            border-radius: 15px;
             position: relative;
             animation: slideUp 0.3s ease-out;
         }
@@ -388,39 +357,69 @@ HTML_TEMPLATE = '''
             color: white;
         }
 
+        .message-actions {
+            position: absolute;
+            top: -25px;
+            right: 0;
+            background: rgba(26, 26, 74, 0.9);
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            display: none;
+            gap: 5px;
+            padding: 5px;
+        }
+
+        .message:hover .message-actions {
+            display: flex;
+        }
+
+        .message-action {
+            background: none;
+            border: none;
+            color: var(--text);
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .message-action:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
         .message-time {
             font-size: 0.7rem;
             opacity: 0.7;
-            margin-top: 5px;
+            margin-top: 4px;
             text-align: right;
         }
 
         .message-input-container {
-            padding: 20px;
+            padding: 15px;
             background: rgba(26, 26, 74, 0.9);
             border-top: 2px solid var(--accent);
             display: flex;
-            gap: 15px;
+            gap: 10px;
             align-items: center;
         }
 
         .message-input {
             flex: 1;
-            padding: 15px 20px;
+            padding: 12px 15px;
             background: rgba(255, 255, 255, 0.1);
             border: 2px solid var(--accent);
-            border-radius: 25px;
+            border-radius: 20px;
             color: var(--text);
-            font-size: 1rem;
+            font-size: 0.95rem;
             outline: none;
         }
 
         .send-btn {
-            padding: 15px 25px;
+            padding: 12px 20px;
             background: linear-gradient(135deg, var(--accent), var(--accent-glow));
             color: white;
             border: none;
-            border-radius: 20px;
+            border-radius: 15px;
             cursor: pointer;
             font-weight: bold;
         }
@@ -428,15 +427,16 @@ HTML_TEMPLATE = '''
         .settings-panel {
             position: fixed;
             top: 0;
-            right: -400px;
-            width: 350px;
+            right: -100%;
+            width: 100%;
+            max-width: 400px;
             height: 100%;
-            background: rgba(26, 26, 74, 0.95);
+            background: rgba(26, 26, 74, 0.98);
             backdrop-filter: blur(20px);
             border-left: 2px solid var(--accent);
             z-index: 500;
             transition: right 0.3s ease;
-            padding: 30px;
+            padding: 25px;
             overflow-y: auto;
         }
 
@@ -445,89 +445,84 @@ HTML_TEMPLATE = '''
         }
 
         .setting-item {
-            margin-bottom: 20px;
+            margin-bottom: 18px;
         }
 
         .setting-label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             color: var(--text-secondary);
             font-weight: 600;
+            font-size: 0.95rem;
         }
 
         .setting-input {
             width: 100%;
-            padding: 12px 15px;
+            padding: 10px 12px;
             background: rgba(255, 255, 255, 0.1);
             border: 2px solid var(--accent);
-            border-radius: 10px;
+            border-radius: 8px;
             color: var(--text);
-            font-size: 1rem;
+            font-size: 0.95rem;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.2);
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: var(--accent);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
         }
 
         .notification {
             position: fixed;
-            top: 20px;
-            right: 20px;
+            top: 15px;
+            right: 15px;
             background: linear-gradient(135deg, var(--accent), var(--accent-glow));
             color: white;
-            padding: 15px 25px;
-            border-radius: 15px;
+            padding: 12px 20px;
+            border-radius: 12px;
             z-index: 4000;
             animation: slideUp 0.3s ease, glow 2s infinite;
             border: 1px solid var(--accent);
-        }
-
-        .confetti {
-            position: fixed;
-            width: 10px;
-            height: 10px;
-            background: var(--neon);
-            animation: confettiFall 5s linear forwards;
-            z-index: 10000;
-        }
-
-        @keyframes confettiFall {
-            0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
-            100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
-        }
-
-        .typing-indicator {
-            display: flex;
-            align-items: center;
-            padding: 10px 15px;
-            background: rgba(107, 43, 217, 0.2);
-            border-radius: 15px;
-            margin: 10px 20px;
-            align-self: flex-start;
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 0.6; }
-            50% { opacity: 1; }
-        }
-
-        .typing-dots {
-            display: flex;
-            margin-left: 10px;
-        }
-
-        .typing-dot {
-            width: 6px;
-            height: 6px;
-            background: var(--neon);
-            border-radius: 50%;
-            margin: 0 2px;
-            animation: typingBounce 1.4s infinite;
-        }
-
-        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
-        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
-
-        @keyframes typingBounce {
-            0%, 60%, 100% { transform: translateY(0); }
-            30% { transform: translateY(-5px); }
+            max-width: 300px;
         }
 
         .mobile-menu-btn {
@@ -535,9 +530,33 @@ HTML_TEMPLATE = '''
             background: none;
             border: none;
             color: var(--text);
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             cursor: pointer;
+            padding: 8px;
+        }
+
+        .group-creation {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 12px;
+            margin: 10px 0;
+            border: 1px solid var(--accent);
+        }
+
+        .friends-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+
+        .friend-item {
+            display: flex;
+            align-items: center;
             padding: 10px;
+            margin-bottom: 5px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            cursor: pointer;
         }
 
         @media (max-width: 768px) {
@@ -553,13 +572,58 @@ HTML_TEMPLATE = '''
                 transform: translateX(0);
             }
             
+            .settings-panel {
+                width: 100%;
+                max-width: none;
+            }
+            
             .mobile-menu-btn {
                 display: block;
             }
             
             .cosmic-card {
-                padding: 25px;
+                padding: 20px;
                 margin: 10px;
+            }
+            
+            .nav-tabs {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+            }
+            
+            .nav-tab {
+                min-width: 70px;
+                font-size: 0.85rem;
+            }
+            
+            .message {
+                max-width: 90%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .cosmic-card {
+                padding: 15px;
+            }
+            
+            .btn {
+                padding: 14px 16px;
+                font-size: 0.9rem;
+            }
+            
+            .user-avatar {
+                width: 60px;
+                height: 60px;
+                font-size: 1.5rem;
+            }
+            
+            .message-input {
+                padding: 10px 12px;
+                font-size: 0.9rem;
+            }
+            
+            .send-btn {
+                padding: 10px 16px;
             }
         }
     </style>
@@ -571,8 +635,8 @@ HTML_TEMPLATE = '''
     <div id="loadingScreen" class="screen">
         <div class="cosmic-card" style="text-align: center;">
             <div class="logo">TrollexDL</div>
-            <div class="typewriter">Initializing quantum protocol...</div>
-            <div style="margin-top: 30px; font-size: 2rem;">🚀</div>
+            <div style="margin-top: 20px; font-size: 1.8rem;">🚀</div>
+            <div style="color: var(--text-secondary); margin-top: 15px;">Loading quantum protocol...</div>
         </div>
     </div>
 
@@ -580,9 +644,9 @@ HTML_TEMPLATE = '''
     <div id="welcomeScreen" class="screen hidden">
         <div class="cosmic-card">
             <div class="logo">TrollexDL</div>
-            <div style="text-align: center; color: var(--text-secondary); margin-bottom: 30px; line-height: 1.6;">
-                Ultimate messaging experience<br>
-                with quantum encryption & neon design
+            <div style="text-align: center; color: var(--text-secondary); margin-bottom: 25px; line-height: 1.5;">
+                Ultimate messaging with quantum encryption<br>
+                and cosmic design
             </div>
             
             <button class="btn btn-primary" onclick="showRegisterScreen()">
@@ -593,11 +657,8 @@ HTML_TEMPLATE = '''
                 ⚡ QUICK START
             </button>
 
-            <div style="text-align: center; margin-top: 25px; color: var(--text-secondary); font-size: 0.9rem;">
-                • Quantum Encryption<br>
-                • HD Voice/Video Calls<br>
-                • Cosmic Design<br>
-                • Cross-Platform
+            <div class="new-year-countdown">
+                🎄 <span id="newYearCountdown">...</span> until New Year!
             </div>
         </div>
     </div>
@@ -638,21 +699,26 @@ HTML_TEMPLATE = '''
                 <p style="opacity: 0.8;">ID: <span id="userId">...</span></p>
             </div>
 
+            <div class="new-year-countdown">
+                🎄 <span id="sidebarCountdown">...</span> until New Year!
+            </div>
+
             <div class="nav-tabs">
                 <div class="nav-tab active" onclick="switchTab('chats')">💬</div>
-                <div class="nav-tab" onclick="switchTab('calls')">📞</div>
+                <div class="nav-tab" onclick="switchTab('friends')">👥</div>
+                <div class="nav-tab" onclick="switchTab('groups')">👨‍👩‍👧‍👦</div>
                 <div class="nav-tab" onclick="showSettings()">⚙️</div>
             </div>
 
             <div class="search-box">
-                <input type="text" class="search-input" placeholder="🔍 Search universe..." id="searchInput" oninput="searchItems()">
+                <input type="text" class="search-input" placeholder="🔍 Search..." id="searchInput" oninput="searchItems()">
             </div>
 
             <div class="content-list" id="contentList">
                 <!-- Динамически заполняется -->
             </div>
 
-            <div style="padding: 20px;">
+            <div style="padding: 15px;">
                 <button class="btn btn-secondary" onclick="showLogoutConfirm()" style="background: rgba(255,68,68,0.2); color: var(--danger); border-color: var(--danger);">
                     🚪 Logout
                 </button>
@@ -671,29 +737,15 @@ HTML_TEMPLATE = '''
             </div>
 
             <div class="messages-container" id="messagesContainer">
-                <div style="text-align: center; padding: 50px 20px; color: var(--text-secondary);">
-                    <div style="font-size: 4rem; margin-bottom: 20px;">🌌</div>
-                    <h3 style="margin-bottom: 15px;">Welcome to TrollexDL!</h3>
+                <div style="text-align: center; padding: 40px 15px; color: var(--text-secondary);">
+                    <div style="font-size: 3.5rem; margin-bottom: 15px;">🌌</div>
+                    <h3 style="margin-bottom: 12px;">Welcome to TrollexDL!</h3>
                     <p>Start messaging with quantum encryption</p>
-                    <div style="margin-top: 30px; font-size: 0.9rem; opacity: 0.7;">
-                        🔒 Quantum Encryption<br>
-                        📞 HD Calls<br>
-                        🚀 Ultra Fast
-                    </div>
-                </div>
-            </div>
-
-            <div class="typing-indicator hidden" id="typingIndicator">
-                <span id="typingUser">User</span> is typing
-                <div class="typing-dots">
-                    <div class="typing-dot"></div>
-                    <div class="typing-dot"></div>
-                    <div class="typing-dot"></div>
                 </div>
             </div>
 
             <div class="message-input-container">
-                <input type="text" class="message-input" placeholder="Type your quantum message..." id="messageInput" oninput="handleTyping()">
+                <input type="text" class="message-input" placeholder="Type your message..." id="messageInput">
                 <button class="send-btn" onclick="sendMessage()">🚀</button>
             </div>
         </div>
@@ -701,7 +753,10 @@ HTML_TEMPLATE = '''
 
     <!-- Панель настроек -->
     <div class="settings-panel" id="settingsPanel">
-        <h3 style="margin-bottom: 25px; text-align: center;">⚙️ Settings</h3>
+        <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 25px;">
+            <h3 style="margin: 0;">⚙️ Settings</h3>
+            <button class="mobile-menu-btn" onclick="hideSettings()" style="font-size: 1.5rem;">✕</button>
+        </div>
         
         <div class="setting-item">
             <label class="setting-label">👤 Display Name</label>
@@ -714,34 +769,40 @@ HTML_TEMPLATE = '''
         </div>
 
         <div class="setting-item">
-            <label class="setting-label">🎨 Theme</label>
-            <select class="setting-input" id="settingsTheme">
-                <option>🌌 Cosmic</option>
-                <option>🚀 Neon</option>
-                <option>⚡ Quantum</option>
-                <option>🔮 Mystic</option>
-            </select>
+            <label class="setting-label">🔔 Notifications</label>
+            <label class="toggle-switch">
+                <input type="checkbox" id="settingsNotifications" checked>
+                <span class="toggle-slider"></span>
+            </label>
         </div>
 
         <div class="setting-item">
-            <label class="setting-label">🔔 Notifications</label>
-            <div style="display: flex; gap: 10px;">
-                <button class="btn btn-secondary" style="flex: 1;" onclick="toggleSetting('notifications', true)">🔔 On</button>
-                <button class="btn btn-secondary" style="flex: 1;" onclick="toggleSetting('notifications', false)">🔕 Off</button>
-            </div>
+            <label class="setting-label">🌙 Dark Mode</label>
+            <label class="toggle-switch">
+                <input type="checkbox" id="settingsDarkMode" checked>
+                <span class="toggle-slider"></span>
+            </label>
         </div>
 
-        <div style="margin-bottom: 30px;">
-            <h4 style="margin-bottom: 15px; color: var(--text-secondary);">Profile Info</h4>
-            <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px;">
+        <div class="setting-item">
+            <label class="setting-label">💾 Auto-save Messages</label>
+            <label class="toggle-switch">
+                <input type="checkbox" id="settingsAutoSave" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+
+        <div style="margin-bottom: 25px;">
+            <h4 style="margin-bottom: 12px; color: var(--text-secondary);">Profile Info</h4>
+            <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;">
                 <div>🆔 ID: <span id="settingsUserId">-</span></div>
                 <div>📅 Registered: <span id="settingsUserRegDate">-</span></div>
                 <div>💾 Storage: <span id="settingsStorage">0</span> messages</div>
             </div>
         </div>
 
-        <button class="btn btn-primary" onclick="saveSettings()" style="margin-bottom: 15px;">💾 Save Settings</button>
-        <button class="btn btn-secondary" onclick="showLogoutConfirm()">🚪 Logout</button>
+        <button class="btn btn-primary" onclick="saveSettings()" style="margin-bottom: 12px;">💾 Save Settings</button>
+        <button class="btn btn-secondary" onclick="exportData()">📤 Export Data</button>
     </div>
 
     <!-- Подтверждение выхода -->
@@ -767,15 +828,30 @@ HTML_TEMPLATE = '''
         let currentTab = 'chats';
         let currentChat = null;
         let messages = {};
-        let typingTimer = null;
+        let friends = [];
+        let groups = [];
+        let editingMessageId = null;
 
         // Инициализация
         document.addEventListener('DOMContentLoaded', function() {
+            updateNewYearCountdown();
+            setInterval(updateNewYearCountdown, 60000); // Обновлять каждую минуту
+            
             setTimeout(() => {
                 hideLoadingScreen();
                 checkAutoLogin();
-            }, 2000);
+            }, 1500);
         });
+
+        function updateNewYearCountdown() {
+            const now = new Date();
+            const newYear = new Date(now.getFullYear() + 1, 0, 1);
+            const diff = newYear - now;
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            
+            document.getElementById('newYearCountdown').textContent = `${days} days`;
+            document.getElementById('sidebarCountdown').textContent = `${days} days`;
+        }
 
         function hideLoadingScreen() {
             document.getElementById('loadingScreen').classList.add('hidden');
@@ -840,23 +916,56 @@ HTML_TEMPLATE = '''
                 name: name,
                 avatar: avatar,
                 email: email,
-                theme: 'cosmic',
-                notifications: true,
+                settings: {
+                    notifications: true,
+                    darkMode: true,
+                    autoSave: true,
+                    theme: 'cosmic'
+                },
                 created_at: new Date().toISOString()
             };
             
             localStorage.setItem('trollexUser', JSON.stringify(currentUser));
             localStorage.setItem('userMessages', JSON.stringify(messages));
             
+            // Создаем тестовых друзей и группы
+            initializeSampleData();
+            
             showMainApp();
-            createConfetti();
             showNotification('Quantum profile created! 🎉', 'success');
+        }
+
+        function initializeSampleData() {
+            // Тестовые друзья
+            friends = [
+                {id: 'friend1', name: 'Tech_Support', avatar: '🛰️', online: true},
+                {id: 'friend2', name: 'System_Bot', avatar: '🤖', online: true},
+                {id: 'friend3', name: 'Community_Manager', avatar: '👨‍💼', online: false}
+            ];
+            
+            // Тестовые группы
+            groups = [
+                {id: 'group1', name: 'Quantum_Coders', avatar: '👨‍💻', members: 3, online: 2},
+                {id: 'group2', name: 'Cosmic_Gamers', avatar: '🎮', members: 5, online: 3},
+                {id: 'group3', name: 'AI_Researchers', avatar: '🧠', members: 8, online: 4}
+            ];
+            
+            localStorage.setItem('userFriends', JSON.stringify(friends));
+            localStorage.setItem('userGroups', JSON.stringify(groups));
         }
 
         function quickStart() {
             const savedUser = localStorage.getItem('trollexUser');
             if (savedUser) {
                 currentUser = JSON.parse(savedUser);
+                const savedMessages = localStorage.getItem('userMessages');
+                const savedFriends = localStorage.getItem('userFriends');
+                const savedGroups = localStorage.getItem('userGroups');
+                
+                if (savedMessages) messages = JSON.parse(savedMessages);
+                if (savedFriends) friends = JSON.parse(savedFriends);
+                if (savedGroups) groups = JSON.parse(savedGroups);
+                
                 showMainApp();
                 showNotification('Welcome back to TrollexDL! 🚀', 'success');
             } else {
@@ -866,13 +975,16 @@ HTML_TEMPLATE = '''
 
         function checkAutoLogin() {
             const savedUser = localStorage.getItem('trollexUser');
-            const savedMessages = localStorage.getItem('userMessages');
-            
             if (savedUser) {
                 currentUser = JSON.parse(savedUser);
-                if (savedMessages) {
-                    messages = JSON.parse(savedMessages);
-                }
+                const savedMessages = localStorage.getItem('userMessages');
+                const savedFriends = localStorage.getItem('userFriends');
+                const savedGroups = localStorage.getItem('userGroups');
+                
+                if (savedMessages) messages = JSON.parse(savedMessages);
+                if (savedFriends) friends = JSON.parse(savedFriends);
+                if (savedGroups) groups = JSON.parse(savedGroups);
+                
                 showMainApp();
             } else {
                 showWelcomeScreen();
@@ -887,14 +999,26 @@ HTML_TEMPLATE = '''
             document.getElementById('userAvatar').textContent = currentUser.avatar;
             document.getElementById('userId').textContent = currentUser.id;
             
-            // Настройки
-            document.getElementById('settingsName').value = currentUser.name;
-            document.getElementById('settingsEmail').value = currentUser.email;
-            document.getElementById('settingsUserId').textContent = currentUser.id;
-            document.getElementById('settingsUserRegDate').textContent = new Date(currentUser.created_at).toLocaleDateString();
-            document.getElementById('settingsStorage').textContent = Object.values(messages).reduce((acc, msgs) => acc + msgs.length, 0);
+            // Заполняем настройки
+            loadSettings();
             
             loadContent();
+        }
+
+        function loadSettings() {
+            document.getElementById('settingsName').value = currentUser.name;
+            document.getElementById('settingsEmail').value = currentUser.email;
+            document.getElementById('settingsNotifications').checked = currentUser.settings.notifications;
+            document.getElementById('settingsDarkMode').checked = currentUser.settings.darkMode;
+            document.getElementById('settingsAutoSave').checked = currentUser.settings.autoSave;
+            document.getElementById('settingsUserId').textContent = currentUser.id;
+            document.getElementById('settingsUserRegDate').textContent = new Date(currentUser.created_at).toLocaleDateString();
+            updateStorageInfo();
+        }
+
+        function updateStorageInfo() {
+            const totalMessages = Object.values(messages).reduce((acc, msgs) => acc + msgs.length, 0);
+            document.getElementById('settingsStorage').textContent = totalMessages;
         }
 
         function switchTab(tabName) {
@@ -916,8 +1040,10 @@ HTML_TEMPLATE = '''
             
             if (currentTab === 'chats') {
                 contentHTML = getChatsContent(searchTerm);
-            } else if (currentTab === 'calls') {
-                contentHTML = getCallsContent(searchTerm);
+            } else if (currentTab === 'friends') {
+                contentHTML = getFriendsContent(searchTerm);
+            } else if (currentTab === 'groups') {
+                contentHTML = getGroupsContent(searchTerm);
             }
             
             contentList.innerHTML = contentHTML;
@@ -925,9 +1051,9 @@ HTML_TEMPLATE = '''
 
         function getChatsContent(searchTerm) {
             const chats = [
-                {id: 'support', name: 'Trollex Support', avatar: '🛰️', lastMessage: 'How can we help?', online: true, type: 'support'},
-                {id: 'updates', name: 'System Updates', avatar: '🔧', lastMessage: 'Latest features available', online: true, type: 'updates'},
-                {id: 'community', name: 'Community Chat', avatar: '👥', lastMessage: 'Welcome to TrollexDL!', online: true, type: 'community'}
+                {id: 'support', name: 'Trollex Support', avatar: '🛰️', lastMessage: 'How can we help?', online: true},
+                {id: 'updates', name: 'System Updates', avatar: '🔧', lastMessage: 'Latest features available', online: true},
+                {id: 'community', name: 'Community Chat', avatar: '👥', lastMessage: 'Welcome to TrollexDL!', online: true}
             ];
             
             const filteredChats = chats.filter(chat => 
@@ -935,50 +1061,75 @@ HTML_TEMPLATE = '''
             );
             
             if (filteredChats.length === 0) {
-                return '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">🌌 No chats found</div>';
+                return '<div style="text-align: center; padding: 30px; color: var(--text-secondary);">💬 No chats found</div>';
             }
             
             return filteredChats.map(chat => `
                 <div class="chat-item ${currentChat?.id === chat.id ? 'active' : ''}" onclick="openChat('${chat.id}')">
                     <div class="item-avatar">${chat.avatar}</div>
                     <div style="flex: 1;">
-                        <div style="font-weight: bold; font-size: 1.1rem;">${chat.name}</div>
-                        <div style="color: var(--text-secondary); font-size: 0.9rem;">${chat.lastMessage}</div>
+                        <div style="font-weight: bold;">${chat.name}</div>
+                        <div style="color: var(--text-secondary); font-size: 0.85rem;">${chat.lastMessage}</div>
                     </div>
                     ${chat.online ? '<div class="online-dot"></div>' : ''}
                 </div>
             `).join('');
         }
 
-        function getCallsContent(searchTerm) {
-            const callHistory = [
-                {id: '1', name: 'Trollex Support', avatar: '🛰️', type: 'voice', duration: '2:30', date: 'Today', status: 'completed'},
-                {id: '2', name: 'System Bot', avatar: '🤖', type: 'video', duration: '5:15', date: 'Yesterday', status: 'completed'},
-                {id: '3', name: 'Community', avatar: '👥', type: 'voice', duration: '1:45', date: '2 days ago', status: 'missed'}
-            ];
-            
-            const filteredCalls = callHistory.filter(call => 
-                call.name.toLowerCase().includes(searchTerm)
+        function getFriendsContent(searchTerm) {
+            const filteredFriends = friends.filter(friend => 
+                friend.name.toLowerCase().includes(searchTerm)
             );
             
-            if (filteredCalls.length === 0) {
-                return '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">📞 No call history</div>';
+            if (filteredFriends.length === 0) {
+                return '<div style="text-align: center; padding: 30px; color: var(--text-secondary);">👥 No friends found</div>';
             }
             
-            return filteredCalls.map(call => `
+            return filteredFriends.map(friend => `
                 <div class="chat-item">
-                    <div class="item-avatar">${call.avatar}</div>
+                    <div class="item-avatar">${friend.avatar}</div>
                     <div style="flex: 1;">
-                        <div style="font-weight: bold; font-size: 1.1rem;">${call.name}</div>
-                        <div style="color: var(--text-secondary); font-size: 0.9rem;">
-                            ${call.type === 'video' ? '📹' : '📞'} • ${call.duration} • ${call.date}
+                        <div style="font-weight: bold;">${friend.name}</div>
+                        <div style="color: ${friend.online ? 'var(--success)' : 'var(--text-secondary)'}; font-size: 0.85rem;">
+                            ${friend.online ? '● Online' : '○ Offline'}
                         </div>
                     </div>
-                    <div style="color: ${call.status === 'completed' ? 'var(--success)' : 'var(--danger)'};">
-                        ${call.status === 'completed' ? '✅' : '❌'}
+                    <div style="display: flex; gap: 5px;">
+                        <button onclick="startChatWithFriend('${friend.id}')" style="background: var(--accent); color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; font-size: 0.8rem;">💬</button>
+                        <button onclick="removeFriend('${friend.id}')" style="background: var(--danger); color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; font-size: 0.8rem;">❌</button>
                     </div>
                 </div>
-            `).join('');
+            `).join('') + `
+                <div class="chat-item" onclick="showAddFriendDialog()" style="justify-content: center; background: rgba(0, 255, 136, 0.1); border-color: var(--success);">
+                    <div style="font-weight: bold; color: var(--success);">+ Add Friend</div>
+                </div>
+            `;
+        }
+
+        function getGroupsContent(searchTerm) {
+            const filteredGroups = groups.filter(group => 
+                group.name.toLowerCase().includes(searchTerm)
+            );
+            
+            if (filteredGroups.length === 0) {
+                return '<div style="text-align: center; padding: 30px; color: var(--text-secondary);">👨‍👩‍👧‍👦 No groups found</div>';
+            }
+            
+            return filteredGroups.map(group => `
+                <div class="chat-item" onclick="openGroup('${group.id}')">
+                    <div class="item-avatar">${group.avatar}</div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: bold;">${group.name}</div>
+                        <div style="color: var(--text-secondary); font-size: 0.85rem;">
+                            ${group.members} members • ${group.online} online
+                        </div>
+                    </div>
+                </div>
+            `).join('') + `
+                <div class="chat-item" onclick="showCreateGroupDialog()" style="justify-content: center; background: rgba(107, 43, 217, 0.2); border-color: var(--accent);">
+                    <div style="font-weight: bold; color: var(--accent);">+ Create Group</div>
+                </div>
+            `;
         }
 
         function searchItems() {
@@ -1000,7 +1151,6 @@ HTML_TEMPLATE = '''
                 document.getElementById('currentChatAvatar').textContent = chat.avatar;
                 document.getElementById('currentChatStatus').textContent = chat.status;
                 
-                // Обновляем активный чат в списке
                 loadContent();
                 showChatMessages(chatId);
             }
@@ -1008,8 +1158,6 @@ HTML_TEMPLATE = '''
 
         function showChatMessages(chatId) {
             const messagesContainer = document.getElementById('messagesContainer');
-            
-            // Загружаем сохраненные сообщения для этого чата
             const chatMessages = messages[chatId] || getDefaultMessages(chatId);
             
             if (chatMessages.length === 0) {
@@ -1018,6 +1166,11 @@ HTML_TEMPLATE = '''
                 messagesContainer.innerHTML = chatMessages.map(msg => `
                     <div class="message ${msg.sender}" data-message-id="${msg.id}">
                         ${msg.text}
+                        <div class="message-actions">
+                            <button class="message-action" onclick="editMessage('${msg.id}')">✏️</button>
+                            <button class="message-action" onclick="deleteMessage('${msg.id}')">🗑️</button>
+                            ${msg.views ? `<button class="message-action">👁️ ${msg.views}</button>` : ''}
+                        </div>
                         <div class="message-time">${msg.time}</div>
                     </div>
                 `).join('');
@@ -1029,60 +1182,21 @@ HTML_TEMPLATE = '''
         function getDefaultMessages(chatId) {
             const defaults = {
                 'support': [
-                    {id: '1', text: 'Welcome to TrollexDL Support! 🚀', sender: 'received', time: '12:00'},
-                    {id: '2', text: 'How can we assist you today?', sender: 'received', time: '12:01'}
-                ],
-                'updates': [
-                    {id: '1', text: 'System Updates Channel 📡', sender: 'received', time: '11:30'},
-                    {id: '2', text: 'Latest version: TrollexDL v2.0', sender: 'received', time: '11:31'}
-                ],
-                'community': [
-                    {id: '1', text: 'Welcome to Community Chat! 👥', sender: 'received', time: '10:15'},
-                    {id: '2', text: 'Share your experiences with TrollexDL', sender: 'received', time: '10:16'}
+                    {id: '1', text: 'Welcome to TrollexDL Support! 🚀', sender: 'received', time: '12:00', views: 1},
+                    {id: '2', text: 'How can we assist you today?', sender: 'received', time: '12:01', views: 1}
                 ]
             };
             return defaults[chatId] || [];
         }
 
         function getWelcomeMessage(chatId) {
-            const welcomeTexts = {
-                'support': 'Get help and support for TrollexDL',
-                'updates': 'Stay updated with latest features',
-                'community': 'Connect with other TrollexDL users'
-            };
-            
             return `
-                <div style="text-align: center; padding: 50px 20px; color: var(--text-secondary);">
-                    <div style="font-size: 4rem; margin-bottom: 20px;">💬</div>
-                    <h3 style="margin-bottom: 15px;">${currentChat.name}</h3>
-                    <p>${welcomeTexts[chatId]}</p>
-                    <div style="margin-top: 30px; font-size: 0.9rem; opacity: 0.7;">
-                        Start typing to begin conversation
-                    </div>
+                <div style="text-align: center; padding: 40px 15px; color: var(--text-secondary);">
+                    <div style="font-size: 3rem; margin-bottom: 15px;">💬</div>
+                    <h3 style="margin-bottom: 12px;">${currentChat.name}</h3>
+                    <p>Start conversation with quantum encryption</p>
                 </div>
             `;
-        }
-
-        function handleTyping() {
-            if (currentChat) {
-                showTypingIndicator();
-                
-                // Сбрасываем таймер при каждом вводе
-                clearTimeout(typingTimer);
-                typingTimer = setTimeout(() => {
-                    hideTypingIndicator();
-                }, 1000);
-            }
-        }
-
-        function showTypingIndicator() {
-            const indicator = document.getElementById('typingIndicator');
-            indicator.classList.remove('hidden');
-        }
-
-        function hideTypingIndicator() {
-            const indicator = document.getElementById('typingIndicator');
-            indicator.classList.add('hidden');
         }
 
         function sendMessage() {
@@ -1090,52 +1204,102 @@ HTML_TEMPLATE = '''
             const message = input.value.trim();
             
             if (message && currentChat) {
-                const messagesContainer = document.getElementById('messagesContainer');
-                const time = new Date().toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
-                const messageId = 'msg_' + Date.now();
-                
-                // Создаем элемент сообщения
-                const messageElement = document.createElement('div');
-                messageElement.className = 'message sent';
-                messageElement.setAttribute('data-message-id', messageId);
-                messageElement.innerHTML = `
-                    ${message}
-                    <div class="message-time">${time}</div>
-                `;
-                
-                // Если это первое сообщение, очищаем welcome message
-                if (!messages[currentChat.id] || messages[currentChat.id].length === 0) {
-                    messagesContainer.innerHTML = '';
+                if (editingMessageId) {
+                    editExistingMessage(editingMessageId, message);
+                } else {
+                    createNewMessage(message);
                 }
                 
-                messagesContainer.appendChild(messageElement);
                 input.value = '';
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                hideTypingIndicator();
-                
-                // Сохраняем сообщение
-                if (!messages[currentChat.id]) {
-                    messages[currentChat.id] = [];
+                editingMessageId = null;
+            }
+        }
+
+        function createNewMessage(message) {
+            const messagesContainer = document.getElementById('messagesContainer');
+            const time = new Date().toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
+            const messageId = 'msg_' + Date.now();
+            
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message sent';
+            messageElement.setAttribute('data-message-id', messageId);
+            messageElement.innerHTML = `
+                ${message}
+                <div class="message-actions">
+                    <button class="message-action" onclick="editMessage('${messageId}')">✏️</button>
+                    <button class="message-action" onclick="deleteMessage('${messageId}')">🗑️</button>
+                    <button class="message-action">👁️ 1</button>
+                </div>
+                <div class="message-time">${time}</div>
+            `;
+            
+            if (!messages[currentChat.id] || messages[currentChat.id].length === 0) {
+                messagesContainer.innerHTML = '';
+            }
+            
+            messagesContainer.appendChild(messageElement);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            // Сохраняем сообщение
+            if (!messages[currentChat.id]) {
+                messages[currentChat.id] = [];
+            }
+            messages[currentChat.id].push({
+                id: messageId,
+                text: message,
+                sender: 'sent',
+                time: time,
+                views: 1,
+                timestamp: new Date().toISOString()
+            });
+            
+            saveData();
+            showNotification('Message sent! ✨', 'success');
+            
+            // Имитация ответа
+            setTimeout(() => {
+                if (currentChat) {
+                    simulateReply();
                 }
-                messages[currentChat.id].push({
-                    id: messageId,
-                    text: message,
-                    sender: 'sent',
-                    time: time,
-                    timestamp: new Date().toISOString()
-                });
+            }, 1000 + Math.random() * 2000);
+        }
+
+        function editMessage(messageId) {
+            const message = messages[currentChat.id]?.find(m => m.id === messageId);
+            if (message && message.sender === 'sent') {
+                document.getElementById('messageInput').value = message.text;
+                document.getElementById('messageInput').focus();
+                editingMessageId = messageId;
+                showNotification('Editing message... ✏️', 'info');
+            }
+        }
+
+        function editExistingMessage(messageId, newText) {
+            const messageIndex = messages[currentChat.id]?.findIndex(m => m.id === messageId);
+            if (messageIndex > -1) {
+                messages[currentChat.id][messageIndex].text = newText;
+                messages[currentChat.id][messageIndex].edited = true;
                 
-                // Сохраняем в localStorage
-                localStorage.setItem('userMessages', JSON.stringify(messages));
+                // Обновляем отображение
+                const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+                if (messageElement) {
+                    messageElement.querySelector('div:first-child').textContent = newText + ' (edited)';
+                }
                 
-                showNotification('Message sent! ✨', 'success');
-                
-                // Имитация ответа через 1-3 секунды
-                setTimeout(() => {
-                    if (currentChat) { // Проверяем что чат все еще открыт
-                        simulateReply();
-                    }
-                }, 1000 + Math.random() * 2000);
+                saveData();
+                showNotification('Message updated! ✅', 'success');
+            }
+        }
+
+        function deleteMessage(messageId) {
+            if (confirm('Delete this message?')) {
+                messages[currentChat.id] = messages[currentChat.id]?.filter(m => m.id !== messageId) || [];
+                const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+                if (messageElement) {
+                    messageElement.remove();
+                }
+                saveData();
+                showNotification('Message deleted 🗑️', 'info');
             }
         }
 
@@ -1146,19 +1310,9 @@ HTML_TEMPLATE = '''
             
             const replies = {
                 'support': [
-                    'Thanks for your message! How can we assist you further? 🚀',
-                    'We appreciate your feedback! Is there anything specific you need help with?',
-                    'Our team will review your message shortly. Thank you! 👨‍🚀'
-                ],
-                'updates': [
-                    'New features are coming soon! Stay tuned! ⚡',
-                    'Your system is up to date with the latest version! ✅',
-                    'We are working on exciting new updates! 🌟'
-                ],
-                'community': [
-                    'Great to see you in the community! 👋',
-                    'Thanks for sharing! Other users will appreciate this! 💫',
-                    'Welcome to our growing community! 🎉'
+                    'Thanks for your message! How can we help? 🚀',
+                    'We appreciate your feedback!',
+                    'Our team will review your message shortly. 👨‍🚀'
                 ]
             };
             
@@ -1170,6 +1324,9 @@ HTML_TEMPLATE = '''
             replyElement.setAttribute('data-message-id', replyId);
             replyElement.innerHTML = `
                 ${replyText}
+                <div class="message-actions">
+                    <button class="message-action">👁️ 1</button>
+                </div>
                 <div class="message-time">${time}</div>
             `;
             
@@ -1185,10 +1342,93 @@ HTML_TEMPLATE = '''
                 text: replyText,
                 sender: 'received',
                 time: time,
+                views: 1,
                 timestamp: new Date().toISOString()
             });
             
-            localStorage.setItem('userMessages', JSON.stringify(messages));
+            saveData();
+        }
+
+        function startChatWithFriend(friendId) {
+            const friend = friends.find(f => f.id === friendId);
+            if (friend) {
+                const chatId = `friend_${friendId}`;
+                currentChat = {
+                    id: chatId,
+                    name: friend.name,
+                    avatar: friend.avatar,
+                    status: 'online',
+                    type: 'friend'
+                };
+                
+                document.getElementById('currentChatName').textContent = friend.name;
+                document.getElementById('currentChatAvatar').textContent = friend.avatar;
+                document.getElementById('currentChatStatus').textContent = 'online';
+                
+                showChatMessages(chatId);
+                showNotification(`Started chat with ${friend.name} 💬`, 'success');
+            }
+        }
+
+        function removeFriend(friendId) {
+            if (confirm('Remove this friend?')) {
+                friends = friends.filter(f => f.id !== friendId);
+                localStorage.setItem('userFriends', JSON.stringify(friends));
+                loadContent();
+                showNotification('Friend removed 👋', 'info');
+            }
+        }
+
+        function showAddFriendDialog() {
+            const friendName = prompt('Enter friend username:');
+            if (friendName && friendName.trim()) {
+                const newFriend = {
+                    id: 'friend_' + Date.now(),
+                    name: friendName.trim(),
+                    avatar: '👤',
+                    online: true
+                };
+                friends.push(newFriend);
+                localStorage.setItem('userFriends', JSON.stringify(friends));
+                loadContent();
+                showNotification('Friend added! 👥', 'success');
+            }
+        }
+
+        function openGroup(groupId) {
+            const group = groups.find(g => g.id === groupId);
+            if (group) {
+                currentChat = {
+                    id: groupId,
+                    name: group.name,
+                    avatar: group.avatar,
+                    status: `${group.online}/${group.members} online`,
+                    type: 'group'
+                };
+                
+                document.getElementById('currentChatName').textContent = group.name;
+                document.getElementById('currentChatAvatar').textContent = group.avatar;
+                document.getElementById('currentChatStatus').textContent = `${group.online}/${group.members} online`;
+                
+                showChatMessages(groupId);
+            }
+        }
+
+        function showCreateGroupDialog() {
+            const groupName = prompt('Enter group name:');
+            if (groupName && groupName.trim()) {
+                const newGroup = {
+                    id: 'group_' + Date.now(),
+                    name: groupName.trim(),
+                    avatar: '👨‍👩‍👧‍👦',
+                    members: 1,
+                    online: 1
+                };
+                groups.push(newGroup);
+                localStorage.setItem('userGroups', JSON.stringify(groups));
+                loadContent();
+                showNotification('Group created! 🎉', 'success');
+            }
         }
 
         function toggleSidebar() {
@@ -1203,11 +1443,6 @@ HTML_TEMPLATE = '''
             document.getElementById('settingsPanel').classList.remove('active');
         }
 
-        function toggleSetting(setting, value) {
-            currentUser[setting] = value;
-            showNotification(`${setting.charAt(0).toUpperCase() + setting.slice(1)} ${value ? 'enabled' : 'disabled'}!`, 'info');
-        }
-
         function saveSettings() {
             const newName = document.getElementById('settingsName').value.trim();
             const newEmail = document.getElementById('settingsEmail').value.trim();
@@ -1215,20 +1450,48 @@ HTML_TEMPLATE = '''
             if (newName && newName !== currentUser.name) {
                 currentUser.name = newName;
                 document.getElementById('userName').textContent = newName;
-                showNotification('Name updated successfully! ✅', 'success');
+                showNotification('Name updated! ✅', 'success');
             }
             
             if (newEmail && newEmail !== currentUser.email) {
                 currentUser.email = newEmail;
-                showNotification('Email updated successfully! 📧', 'success');
+                showNotification('Email updated! 📧', 'success');
             }
             
-            currentUser.theme = document.getElementById('settingsTheme').value;
+            currentUser.settings.notifications = document.getElementById('settingsNotifications').checked;
+            currentUser.settings.darkMode = document.getElementById('settingsDarkMode').checked;
+            currentUser.settings.autoSave = document.getElementById('settingsAutoSave').checked;
             
             localStorage.setItem('trollexUser', JSON.stringify(currentUser));
             hideSettings();
+            showNotification('Settings saved! ⚙️', 'success');
+        }
+
+        function exportData() {
+            const data = {
+                user: currentUser,
+                messages: messages,
+                friends: friends,
+                groups: groups,
+                exportDate: new Date().toISOString()
+            };
             
-            createConfetti();
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `trollexdl_backup_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            
+            showNotification('Data exported! 📤', 'success');
+        }
+
+        function saveData() {
+            if (currentUser.settings.autoSave) {
+                localStorage.setItem('userMessages', JSON.stringify(messages));
+                updateStorageInfo();
+            }
         }
 
         function showLogoutConfirm() {
@@ -1252,6 +1515,8 @@ HTML_TEMPLATE = '''
             
             if (type === 'error') {
                 notification.style.background = 'linear-gradient(135deg, var(--danger), #cc0000)';
+            } else if (type === 'warning') {
+                notification.style.background = 'linear-gradient(135deg, var(--warning), #ff8800)';
             }
             
             document.body.appendChild(notification);
@@ -1259,25 +1524,6 @@ HTML_TEMPLATE = '''
             setTimeout(() => {
                 notification.remove();
             }, 3000);
-        }
-
-        function createConfetti() {
-            for (let i = 0; i < 50; i++) {
-                setTimeout(() => {
-                    const confetti = document.createElement('div');
-                    confetti.className = 'confetti';
-                    confetti.style.left = Math.random() * 100 + 'vw';
-                    confetti.style.background = `hsl(${Math.random() * 360}, 100%, 50%)`;
-                    confetti.style.width = Math.random() * 10 + 5 + 'px';
-                    confetti.style.height = confetti.style.width;
-                    
-                    document.body.appendChild(confetti);
-                    
-                    setTimeout(() => {
-                        confetti.remove();
-                    }, 5000);
-                }, i * 100);
-            }
         }
 
         // Обработка Enter для отправки сообщений
@@ -1302,10 +1548,14 @@ HTML_TEMPLATE = '''
             }
         });
 
-        // Загрузка сообщений при изменении чата
-        function updateMessagesStorage() {
-            document.getElementById('settingsStorage').textContent = Object.values(messages).reduce((acc, msgs) => acc + msgs.length, 0);
+        // Адаптация для мобильных устройств
+        function handleResize() {
+            if (window.innerWidth > 768) {
+                document.getElementById('sidebar').classList.remove('active');
+            }
         }
+
+        window.addEventListener('resize', handleResize);
     </script>
 </body>
 </html>
@@ -1313,6 +1563,7 @@ HTML_TEMPLATE = '''
 
 @app.route('/')
 def index():
+    days_until_new_year = get_days_until_new_year()
     return render_template_string(HTML_TEMPLATE)
 
 @app.route('/api/send_message', methods=['POST'])
@@ -1322,7 +1573,11 @@ def api_send_message():
 
 @app.route('/health')
 def health_check():
-    return jsonify({'status': 'running', 'service': 'TrollexDL'})
+    return jsonify({
+        'status': 'running', 
+        'service': 'TrollexDL',
+        'days_until_new_year': get_days_until_new_year()
+    })
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
