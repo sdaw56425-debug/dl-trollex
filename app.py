@@ -6,7 +6,7 @@ import os
 import uuid
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'trollexdl-ultimate-2024'
+app.config['SECRET_KEY'] = 'trollexdl-pro-2024'
 
 def get_days_until_new_year():
     now = datetime.datetime.now()
@@ -100,6 +100,31 @@ HTML_TEMPLATE = '''
             }
         }
 
+        @keyframes typewriter {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+
+        @keyframes blinkCursor {
+            0%, 100% { border-color: transparent; }
+            50% { border-color: var(--neon); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+        }
+
+        @keyframes ripple {
+            0% { transform: scale(0); opacity: 1; }
+            100% { transform: scale(4); opacity: 0; }
+        }
+
         .screen {
             position: fixed;
             top: 0;
@@ -141,6 +166,16 @@ HTML_TEMPLATE = '''
             -webkit-text-fill-color: transparent;
         }
 
+        .typewriter-text {
+            overflow: hidden;
+            border-right: 2px solid var(--neon);
+            white-space: nowrap;
+            margin: 0 auto;
+            animation: typewriter 2s steps(20, end), blinkCursor 0.75s step-end infinite;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
         .btn {
             width: 100%;
             padding: 16px 20px;
@@ -153,6 +188,12 @@ HTML_TEMPLATE = '''
             margin-bottom: 12px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
         }
 
         .btn-primary {
@@ -171,6 +212,15 @@ HTML_TEMPLATE = '''
             border: 2px solid var(--accent);
         }
 
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.6);
+            transform: scale(0);
+            animation: ripple 0.6s linear;
+            pointer-events: none;
+        }
+
         .user-card {
             background: rgba(255, 255, 255, 0.1);
             padding: 20px;
@@ -178,6 +228,7 @@ HTML_TEMPLATE = '''
             margin: 15px 0;
             border: 1px solid var(--accent);
             text-align: center;
+            animation: float 3s ease-in-out infinite;
         }
 
         .user-avatar {
@@ -190,6 +241,7 @@ HTML_TEMPLATE = '''
             justify-content: center;
             font-size: 1.8rem;
             margin: 0 auto 12px;
+            animation: pulse 2s ease-in-out infinite;
         }
 
         .app {
@@ -213,6 +265,7 @@ HTML_TEMPLATE = '''
             padding: 20px;
             background: linear-gradient(135deg, var(--accent), var(--accent-glow));
             text-align: center;
+            position: relative;
         }
 
         .new-year-countdown {
@@ -263,6 +316,11 @@ HTML_TEMPLATE = '''
             border-radius: 12px;
             color: var(--text);
             font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            box-shadow: 0 0 20px rgba(107, 43, 217, 0.5);
         }
 
         .content-list {
@@ -281,6 +339,7 @@ HTML_TEMPLATE = '''
             cursor: pointer;
             transition: all 0.3s ease;
             border: 1px solid transparent;
+            animation: slideUp 0.5s ease-out;
         }
 
         .chat-item:hover, .chat-item.active {
@@ -412,6 +471,11 @@ HTML_TEMPLATE = '''
             color: var(--text);
             font-size: 0.95rem;
             outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .message-input:focus {
+            box-shadow: 0 0 20px rgba(107, 43, 217, 0.5);
         }
 
         .send-btn {
@@ -422,6 +486,11 @@ HTML_TEMPLATE = '''
             border-radius: 15px;
             cursor: pointer;
             font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .send-btn:active {
+            transform: scale(0.95);
         }
 
         .settings-panel {
@@ -535,28 +604,37 @@ HTML_TEMPLATE = '''
             padding: 8px;
         }
 
-        .group-creation {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 15px;
-            border-radius: 12px;
-            margin: 10px 0;
-            border: 1px solid var(--accent);
-        }
-
-        .friends-list {
-            max-height: 200px;
-            overflow-y: auto;
-            margin: 10px 0;
-        }
-
-        .friend-item {
+        .typing-indicator {
             display: flex;
             align-items: center;
-            padding: 10px;
-            margin-bottom: 5px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            cursor: pointer;
+            padding: 8px 12px;
+            background: rgba(107, 43, 217, 0.2);
+            border-radius: 12px;
+            margin: 5px 15px;
+            align-self: flex-start;
+            animation: pulse 1.5s infinite;
+        }
+
+        .typing-dots {
+            display: flex;
+            margin-left: 8px;
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--neon);
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: typingBounce 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typingBounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-5px); }
         }
 
         @media (max-width: 768px) {
@@ -635,8 +713,11 @@ HTML_TEMPLATE = '''
     <div id="loadingScreen" class="screen">
         <div class="cosmic-card" style="text-align: center;">
             <div class="logo">TrollexDL</div>
-            <div style="margin-top: 20px; font-size: 1.8rem;">🚀</div>
-            <div style="color: var(--text-secondary); margin-top: 15px;">Loading quantum protocol...</div>
+            <div class="typewriter-text">Initializing Quantum Protocol...</div>
+            <div style="margin-top: 30px; font-size: 2rem; animation: float 2s ease-in-out infinite;">🚀</div>
+            <div style="color: var(--text-secondary); margin-top: 20px; animation: slideUp 1s ease-out;">
+                Secure • Fast • Cosmic
+            </div>
         </div>
     </div>
 
@@ -705,13 +786,13 @@ HTML_TEMPLATE = '''
 
             <div class="nav-tabs">
                 <div class="nav-tab active" onclick="switchTab('chats')">💬</div>
-                <div class="nav-tab" onclick="switchTab('friends')">👥</div>
+                <div class="nav-tab" onclick="switchTab('users')">👥</div>
                 <div class="nav-tab" onclick="switchTab('groups')">👨‍👩‍👧‍👦</div>
                 <div class="nav-tab" onclick="showSettings()">⚙️</div>
             </div>
 
             <div class="search-box">
-                <input type="text" class="search-input" placeholder="🔍 Search..." id="searchInput" oninput="searchItems()">
+                <input type="text" class="search-input" placeholder="🔍 Search users..." id="searchInput" oninput="searchUsers()">
             </div>
 
             <div class="content-list" id="contentList">
@@ -738,14 +819,23 @@ HTML_TEMPLATE = '''
 
             <div class="messages-container" id="messagesContainer">
                 <div style="text-align: center; padding: 40px 15px; color: var(--text-secondary);">
-                    <div style="font-size: 3.5rem; margin-bottom: 15px;">🌌</div>
+                    <div style="font-size: 3.5rem; margin-bottom: 15px; animation: float 3s ease-in-out infinite;">🌌</div>
                     <h3 style="margin-bottom: 12px;">Welcome to TrollexDL!</h3>
                     <p>Start messaging with quantum encryption</p>
                 </div>
             </div>
 
+            <div class="typing-indicator hidden" id="typingIndicator">
+                <span id="typingUser">User</span> is typing
+                <div class="typing-dots">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            </div>
+
             <div class="message-input-container">
-                <input type="text" class="message-input" placeholder="Type your message..." id="messageInput">
+                <input type="text" class="message-input" placeholder="Type your message..." id="messageInput" oninput="handleTyping()">
                 <button class="send-btn" onclick="sendMessage()">🚀</button>
             </div>
         </div>
@@ -753,7 +843,7 @@ HTML_TEMPLATE = '''
 
     <!-- Панель настроек -->
     <div class="settings-panel" id="settingsPanel">
-        <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 25px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
             <h3 style="margin: 0;">⚙️ Settings</h3>
             <button class="mobile-menu-btn" onclick="hideSettings()" style="font-size: 1.5rem;">✕</button>
         </div>
@@ -771,7 +861,7 @@ HTML_TEMPLATE = '''
         <div class="setting-item">
             <label class="setting-label">🔔 Notifications</label>
             <label class="toggle-switch">
-                <input type="checkbox" id="settingsNotifications" checked>
+                <input type="checkbox" id="settingsNotifications">
                 <span class="toggle-slider"></span>
             </label>
         </div>
@@ -785,7 +875,7 @@ HTML_TEMPLATE = '''
         </div>
 
         <div class="setting-item">
-            <label class="setting-label">💾 Auto-save Messages</label>
+            <label class="setting-label">💾 Auto-save</label>
             <label class="toggle-switch">
                 <input type="checkbox" id="settingsAutoSave" checked>
                 <span class="toggle-slider"></span>
@@ -828,19 +918,21 @@ HTML_TEMPLATE = '''
         let currentTab = 'chats';
         let currentChat = null;
         let messages = {};
+        let allUsers = [];
         let friends = [];
         let groups = [];
         let editingMessageId = null;
+        let typingTimer = null;
 
         // Инициализация
         document.addEventListener('DOMContentLoaded', function() {
             updateNewYearCountdown();
-            setInterval(updateNewYearCountdown, 60000); // Обновлять каждую минуту
+            setInterval(updateNewYearCountdown, 60000);
             
             setTimeout(() => {
                 hideLoadingScreen();
                 checkAutoLogin();
-            }, 1500);
+            }, 3000);
         });
 
         function updateNewYearCountdown() {
@@ -928,29 +1020,44 @@ HTML_TEMPLATE = '''
             localStorage.setItem('trollexUser', JSON.stringify(currentUser));
             localStorage.setItem('userMessages', JSON.stringify(messages));
             
-            // Создаем тестовых друзей и группы
-            initializeSampleData();
+            // Создаем тестовых пользователей
+            initializeSampleUsers();
             
             showMainApp();
-            showNotification('Quantum profile created! 🎉', 'success');
+            showNotification('Profile created successfully! 🎉', 'success');
         }
 
-        function initializeSampleData() {
-            // Тестовые друзья
-            friends = [
-                {id: 'friend1', name: 'Tech_Support', avatar: '🛰️', online: true},
-                {id: 'friend2', name: 'System_Bot', avatar: '🤖', online: true},
-                {id: 'friend3', name: 'Community_Manager', avatar: '👨‍💼', online: false}
+        function initializeSampleUsers() {
+            // Создаем разнообразных тестовых пользователей
+            allUsers = [
+                {id: 'user1', name: 'Alex_Quantum', avatar: '👨‍💻', online: true, username: 'alex_quantum'},
+                {id: 'user2', name: 'Sarah_Cyber', avatar: '👩‍🎨', online: true, username: 'sarah_cyber'},
+                {id: 'user3', name: 'Mike_Neon', avatar: '👨‍🚀', online: false, username: 'mike_neon'},
+                {id: 'user4', name: 'Emma_Digital', avatar: '👩‍💼', online: true, username: 'emma_digital'},
+                {id: 'user5', name: 'Tom_Hyper', avatar: '🧑‍🔬', online: false, username: 'tom_hyper'},
+                {id: 'user6', name: 'Lisa_Virtual', avatar: '👩‍🔧', online: true, username: 'lisa_virtual'},
+                {id: 'user7', name: 'John_Alpha', avatar: '👨‍🎓', online: true, username: 'john_alpha'},
+                {id: 'user8', name: 'Anna_Mega', avatar: '👩‍🍳', online: false, username: 'anna_mega'}
             ];
             
-            // Тестовые группы
+            // Добавляем текущего пользователя в список
+            allUsers.push({
+                id: currentUser.id,
+                name: currentUser.name,
+                avatar: currentUser.avatar,
+                online: true,
+                username: currentUser.name.toLowerCase().replace(' ', '_')
+            });
+            
+            localStorage.setItem('allUsers', JSON.stringify(allUsers));
+            
+            // Создаем тестовые группы
             groups = [
-                {id: 'group1', name: 'Quantum_Coders', avatar: '👨‍💻', members: 3, online: 2},
-                {id: 'group2', name: 'Cosmic_Gamers', avatar: '🎮', members: 5, online: 3},
-                {id: 'group3', name: 'AI_Researchers', avatar: '🧠', members: 8, online: 4}
+                {id: 'group1', name: 'Quantum_Coders', avatar: '👨‍💻', members: 12, online: 8},
+                {id: 'group2', name: 'Cosmic_Designers', avatar: '🎨', members: 7, online: 3},
+                {id: 'group3', name: 'AI_Researchers', avatar: '🧠', members: 15, online: 5}
             ];
             
-            localStorage.setItem('userFriends', JSON.stringify(friends));
             localStorage.setItem('userGroups', JSON.stringify(groups));
         }
 
@@ -959,11 +1066,11 @@ HTML_TEMPLATE = '''
             if (savedUser) {
                 currentUser = JSON.parse(savedUser);
                 const savedMessages = localStorage.getItem('userMessages');
-                const savedFriends = localStorage.getItem('userFriends');
+                const savedAllUsers = localStorage.getItem('allUsers');
                 const savedGroups = localStorage.getItem('userGroups');
                 
                 if (savedMessages) messages = JSON.parse(savedMessages);
-                if (savedFriends) friends = JSON.parse(savedFriends);
+                if (savedAllUsers) allUsers = JSON.parse(savedAllUsers);
                 if (savedGroups) groups = JSON.parse(savedGroups);
                 
                 showMainApp();
@@ -978,11 +1085,11 @@ HTML_TEMPLATE = '''
             if (savedUser) {
                 currentUser = JSON.parse(savedUser);
                 const savedMessages = localStorage.getItem('userMessages');
-                const savedFriends = localStorage.getItem('userFriends');
+                const savedAllUsers = localStorage.getItem('allUsers');
                 const savedGroups = localStorage.getItem('userGroups');
                 
                 if (savedMessages) messages = JSON.parse(savedMessages);
-                if (savedFriends) friends = JSON.parse(savedFriends);
+                if (savedAllUsers) allUsers = JSON.parse(savedAllUsers);
                 if (savedGroups) groups = JSON.parse(savedGroups);
                 
                 showMainApp();
@@ -1006,11 +1113,13 @@ HTML_TEMPLATE = '''
         }
 
         function loadSettings() {
-            document.getElementById('settingsName').value = currentUser.name;
-            document.getElementById('settingsEmail').value = currentUser.email;
-            document.getElementById('settingsNotifications').checked = currentUser.settings.notifications;
-            document.getElementById('settingsDarkMode').checked = currentUser.settings.darkMode;
-            document.getElementById('settingsAutoSave').checked = currentUser.settings.autoSave;
+            if (currentUser.settings) {
+                document.getElementById('settingsName').value = currentUser.name;
+                document.getElementById('settingsEmail').value = currentUser.email;
+                document.getElementById('settingsNotifications').checked = currentUser.settings.notifications;
+                document.getElementById('settingsDarkMode').checked = currentUser.settings.darkMode;
+                document.getElementById('settingsAutoSave').checked = currentUser.settings.autoSave;
+            }
             document.getElementById('settingsUserId').textContent = currentUser.id;
             document.getElementById('settingsUserRegDate').textContent = new Date(currentUser.created_at).toLocaleDateString();
             updateStorageInfo();
@@ -1029,6 +1138,16 @@ HTML_TEMPLATE = '''
             });
             event.target.classList.add('active');
             
+            // Меняем placeholder поиска в зависимости от вкладки
+            const searchInput = document.getElementById('searchInput');
+            if (tabName === 'users') {
+                searchInput.placeholder = '🔍 Search users by name or username...';
+            } else if (tabName === 'groups') {
+                searchInput.placeholder = '🔍 Search groups...';
+            } else {
+                searchInput.placeholder = '🔍 Search chats...';
+            }
+            
             loadContent();
         }
 
@@ -1040,13 +1159,17 @@ HTML_TEMPLATE = '''
             
             if (currentTab === 'chats') {
                 contentHTML = getChatsContent(searchTerm);
-            } else if (currentTab === 'friends') {
-                contentHTML = getFriendsContent(searchTerm);
+            } else if (currentTab === 'users') {
+                contentHTML = getUsersContent(searchTerm);
             } else if (currentTab === 'groups') {
                 contentHTML = getGroupsContent(searchTerm);
             }
             
             contentList.innerHTML = contentHTML;
+        }
+
+        function searchUsers() {
+            loadContent();
         }
 
         function getChatsContent(searchTerm) {
@@ -1076,34 +1199,39 @@ HTML_TEMPLATE = '''
             `).join('');
         }
 
-        function getFriendsContent(searchTerm) {
-            const filteredFriends = friends.filter(friend => 
-                friend.name.toLowerCase().includes(searchTerm)
+        function getUsersContent(searchTerm) {
+            // Фильтруем пользователей по имени и username, исключая текущего пользователя
+            const filteredUsers = allUsers.filter(user => 
+                user.id !== currentUser.id && 
+                (user.name.toLowerCase().includes(searchTerm) || 
+                 (user.username && user.username.toLowerCase().includes(searchTerm)))
             );
             
-            if (filteredFriends.length === 0) {
-                return '<div style="text-align: center; padding: 30px; color: var(--text-secondary);">👥 No friends found</div>';
+            if (filteredUsers.length === 0) {
+                return '<div style="text-align: center; padding: 30px; color: var(--text-secondary);">👥 No users found</div>';
             }
             
-            return filteredFriends.map(friend => `
-                <div class="chat-item">
-                    <div class="item-avatar">${friend.avatar}</div>
-                    <div style="flex: 1;">
-                        <div style="font-weight: bold;">${friend.name}</div>
-                        <div style="color: ${friend.online ? 'var(--success)' : 'var(--text-secondary)'}; font-size: 0.85rem;">
-                            ${friend.online ? '● Online' : '○ Offline'}
+            return filteredUsers.map(user => {
+                const isFriend = friends.some(f => f.id === user.id);
+                return `
+                    <div class="chat-item">
+                        <div class="item-avatar">${user.avatar}</div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: bold;">${user.name}</div>
+                            <div style="color: ${user.online ? 'var(--success)' : 'var(--text-secondary)'}; font-size: 0.85rem;">
+                                @${user.username} • ${user.online ? '● Online' : '○ Offline'}
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 5px;">
+                            <button onclick="startChatWithUser('${user.id}')" style="background: var(--accent); color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; font-size: 0.8rem;">💬</button>
+                            <button onclick="${isFriend ? `removeFriend('${user.id}')` : `addFriend('${user.id}')`}" 
+                                    style="background: ${isFriend ? 'var(--danger)' : 'var(--success)'}; color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; font-size: 0.8rem;">
+                                ${isFriend ? '❌' : '➕'}
+                            </button>
                         </div>
                     </div>
-                    <div style="display: flex; gap: 5px;">
-                        <button onclick="startChatWithFriend('${friend.id}')" style="background: var(--accent); color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; font-size: 0.8rem;">💬</button>
-                        <button onclick="removeFriend('${friend.id}')" style="background: var(--danger); color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; font-size: 0.8rem;">❌</button>
-                    </div>
-                </div>
-            `).join('') + `
-                <div class="chat-item" onclick="showAddFriendDialog()" style="justify-content: center; background: rgba(0, 255, 136, 0.1); border-color: var(--success);">
-                    <div style="font-weight: bold; color: var(--success);">+ Add Friend</div>
-                </div>
-            `;
+                `;
+            }).join('');
         }
 
         function getGroupsContent(searchTerm) {
@@ -1132,10 +1260,6 @@ HTML_TEMPLATE = '''
             `;
         }
 
-        function searchItems() {
-            loadContent();
-        }
-
         function openChat(chatId) {
             const chats = {
                 'support': {name: 'Trollex Support', avatar: '🛰️', status: 'online'},
@@ -1156,6 +1280,85 @@ HTML_TEMPLATE = '''
             }
         }
 
+        function startChatWithUser(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (user) {
+                const chatId = `user_${userId}`;
+                currentChat = {
+                    id: chatId,
+                    name: user.name,
+                    avatar: user.avatar,
+                    status: user.online ? 'online' : 'offline',
+                    type: 'user'
+                };
+                
+                document.getElementById('currentChatName').textContent = user.name;
+                document.getElementById('currentChatAvatar').textContent = user.avatar;
+                document.getElementById('currentChatStatus').textContent = user.online ? 'online' : 'offline';
+                
+                showChatMessages(chatId);
+                showNotification(`Started chat with ${user.name} 💬`, 'success');
+            }
+        }
+
+        function addFriend(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (user && !friends.some(f => f.id === userId)) {
+                friends.push(user);
+                localStorage.setItem('userFriends', JSON.stringify(friends));
+                loadContent();
+                showNotification(`Added ${user.name} as friend! 👥`, 'success');
+                
+                // Анимация добавления
+                createRippleEffect(event);
+            }
+        }
+
+        function removeFriend(userId) {
+            if (confirm('Remove this friend?')) {
+                friends = friends.filter(f => f.id !== userId);
+                localStorage.setItem('userFriends', JSON.stringify(friends));
+                loadContent();
+                showNotification('Friend removed 👋', 'info');
+            }
+        }
+
+        function openGroup(groupId) {
+            const group = groups.find(g => g.id === groupId);
+            if (group) {
+                currentChat = {
+                    id: groupId,
+                    name: group.name,
+                    avatar: group.avatar,
+                    status: `${group.online}/${group.members} online`,
+                    type: 'group'
+                };
+                
+                document.getElementById('currentChatName').textContent = group.name;
+                document.getElementById('currentChatAvatar').textContent = group.avatar;
+                document.getElementById('currentChatStatus').textContent = `${group.online}/${group.members} online`;
+                
+                showChatMessages(groupId);
+            }
+        }
+
+        function showCreateGroupDialog() {
+            const groupName = prompt('Enter group name:');
+            if (groupName && groupName.trim()) {
+                const newGroup = {
+                    id: 'group_' + Date.now(),
+                    name: groupName.trim(),
+                    avatar: '👨‍👩‍👧‍👦',
+                    members: 1,
+                    online: 1
+                };
+                groups.push(newGroup);
+                localStorage.setItem('userGroups', JSON.stringify(groups));
+                loadContent();
+                showNotification('Group created! 🎉', 'success');
+            }
+        }
+
         function showChatMessages(chatId) {
             const messagesContainer = document.getElementById('messagesContainer');
             const chatMessages = messages[chatId] || getDefaultMessages(chatId);
@@ -1167,8 +1370,10 @@ HTML_TEMPLATE = '''
                     <div class="message ${msg.sender}" data-message-id="${msg.id}">
                         ${msg.text}
                         <div class="message-actions">
-                            <button class="message-action" onclick="editMessage('${msg.id}')">✏️</button>
-                            <button class="message-action" onclick="deleteMessage('${msg.id}')">🗑️</button>
+                            ${msg.sender === 'sent' ? `
+                                <button class="message-action" onclick="editMessage('${msg.id}')">✏️</button>
+                                <button class="message-action" onclick="deleteMessage('${msg.id}')">🗑️</button>
+                            ` : ''}
                             ${msg.views ? `<button class="message-action">👁️ ${msg.views}</button>` : ''}
                         </div>
                         <div class="message-time">${msg.time}</div>
@@ -1192,11 +1397,40 @@ HTML_TEMPLATE = '''
         function getWelcomeMessage(chatId) {
             return `
                 <div style="text-align: center; padding: 40px 15px; color: var(--text-secondary);">
-                    <div style="font-size: 3rem; margin-bottom: 15px;">💬</div>
+                    <div style="font-size: 3rem; margin-bottom: 15px; animation: float 3s ease-in-out infinite;">💬</div>
                     <h3 style="margin-bottom: 12px;">${currentChat.name}</h3>
                     <p>Start conversation with quantum encryption</p>
                 </div>
             `;
+        }
+
+        function handleTyping() {
+            if (currentChat) {
+                showTypingIndicator();
+                
+                clearTimeout(typingTimer);
+                typingTimer = setTimeout(() => {
+                    hideTypingIndicator();
+                }, 1000);
+            }
+        }
+
+        function showTypingIndicator() {
+            const indicator = document.getElementById('typingIndicator');
+            const typingUser = document.getElementById('typingUser');
+            
+            if (currentChat.type === 'user') {
+                typingUser.textContent = currentChat.name;
+            } else {
+                typingUser.textContent = 'Someone';
+            }
+            
+            indicator.classList.remove('hidden');
+        }
+
+        function hideTypingIndicator() {
+            const indicator = document.getElementById('typingIndicator');
+            indicator.classList.add('hidden');
         }
 
         function sendMessage() {
@@ -1212,6 +1446,7 @@ HTML_TEMPLATE = '''
                 
                 input.value = '';
                 editingMessageId = null;
+                hideTypingIndicator();
             }
         }
 
@@ -1257,11 +1492,13 @@ HTML_TEMPLATE = '''
             showNotification('Message sent! ✨', 'success');
             
             // Имитация ответа
-            setTimeout(() => {
-                if (currentChat) {
-                    simulateReply();
-                }
-            }, 1000 + Math.random() * 2000);
+            if (currentChat.type === 'user' || currentChat.id === 'support') {
+                setTimeout(() => {
+                    if (currentChat) {
+                        simulateReply();
+                    }
+                }, 1000 + Math.random() * 2000);
+            }
         }
 
         function editMessage(messageId) {
@@ -1280,7 +1517,6 @@ HTML_TEMPLATE = '''
                 messages[currentChat.id][messageIndex].text = newText;
                 messages[currentChat.id][messageIndex].edited = true;
                 
-                // Обновляем отображение
                 const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
                 if (messageElement) {
                     messageElement.querySelector('div:first-child').textContent = newText + ' (edited)';
@@ -1313,10 +1549,15 @@ HTML_TEMPLATE = '''
                     'Thanks for your message! How can we help? 🚀',
                     'We appreciate your feedback!',
                     'Our team will review your message shortly. 👨‍🚀'
+                ],
+                'user': [
+                    'Hey! Thanks for reaching out! 👋',
+                    'That sounds interesting! Tell me more...',
+                    'I will get back to you soon! ⏰'
                 ]
             };
             
-            const chatReplies = replies[currentChat.id] || ['Thank you for your message!'];
+            const chatReplies = replies[currentChat.type] || ['Thank you for your message!'];
             const replyText = chatReplies[Math.floor(Math.random() * chatReplies.length)];
             
             const replyElement = document.createElement('div');
@@ -1333,7 +1574,6 @@ HTML_TEMPLATE = '''
             messagesContainer.appendChild(replyElement);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
             
-            // Сохраняем ответ
             if (!messages[currentChat.id]) {
                 messages[currentChat.id] = [];
             }
@@ -1349,86 +1589,22 @@ HTML_TEMPLATE = '''
             saveData();
         }
 
-        function startChatWithFriend(friendId) {
-            const friend = friends.find(f => f.id === friendId);
-            if (friend) {
-                const chatId = `friend_${friendId}`;
-                currentChat = {
-                    id: chatId,
-                    name: friend.name,
-                    avatar: friend.avatar,
-                    status: 'online',
-                    type: 'friend'
-                };
-                
-                document.getElementById('currentChatName').textContent = friend.name;
-                document.getElementById('currentChatAvatar').textContent = friend.avatar;
-                document.getElementById('currentChatStatus').textContent = 'online';
-                
-                showChatMessages(chatId);
-                showNotification(`Started chat with ${friend.name} 💬`, 'success');
-            }
-        }
-
-        function removeFriend(friendId) {
-            if (confirm('Remove this friend?')) {
-                friends = friends.filter(f => f.id !== friendId);
-                localStorage.setItem('userFriends', JSON.stringify(friends));
-                loadContent();
-                showNotification('Friend removed 👋', 'info');
-            }
-        }
-
-        function showAddFriendDialog() {
-            const friendName = prompt('Enter friend username:');
-            if (friendName && friendName.trim()) {
-                const newFriend = {
-                    id: 'friend_' + Date.now(),
-                    name: friendName.trim(),
-                    avatar: '👤',
-                    online: true
-                };
-                friends.push(newFriend);
-                localStorage.setItem('userFriends', JSON.stringify(friends));
-                loadContent();
-                showNotification('Friend added! 👥', 'success');
-            }
-        }
-
-        function openGroup(groupId) {
-            const group = groups.find(g => g.id === groupId);
-            if (group) {
-                currentChat = {
-                    id: groupId,
-                    name: group.name,
-                    avatar: group.avatar,
-                    status: `${group.online}/${group.members} online`,
-                    type: 'group'
-                };
-                
-                document.getElementById('currentChatName').textContent = group.name;
-                document.getElementById('currentChatAvatar').textContent = group.avatar;
-                document.getElementById('currentChatStatus').textContent = `${group.online}/${group.members} online`;
-                
-                showChatMessages(groupId);
-            }
-        }
-
-        function showCreateGroupDialog() {
-            const groupName = prompt('Enter group name:');
-            if (groupName && groupName.trim()) {
-                const newGroup = {
-                    id: 'group_' + Date.now(),
-                    name: groupName.trim(),
-                    avatar: '👨‍👩‍👧‍👦',
-                    members: 1,
-                    online: 1
-                };
-                groups.push(newGroup);
-                localStorage.setItem('userGroups', JSON.stringify(groups));
-                loadContent();
-                showNotification('Group created! 🎉', 'success');
-            }
+        function createRippleEffect(event) {
+            const btn = event.currentTarget;
+            const circle = document.createElement('span');
+            const diameter = Math.max(btn.clientWidth, btn.clientHeight);
+            const radius = diameter / 2;
+            
+            circle.style.width = circle.style.height = `${diameter}px`;
+            circle.style.left = `${event.clientX - btn.getBoundingClientRect().left - radius}px`;
+            circle.style.top = `${event.clientY - btn.getBoundingClientRect().top - radius}px`;
+            circle.classList.add('ripple');
+            
+            btn.appendChild(circle);
+            
+            setTimeout(() => {
+                circle.remove();
+            }, 600);
         }
 
         function toggleSidebar() {
@@ -1450,6 +1626,14 @@ HTML_TEMPLATE = '''
             if (newName && newName !== currentUser.name) {
                 currentUser.name = newName;
                 document.getElementById('userName').textContent = newName;
+                
+                // Обновляем имя в allUsers
+                const userIndex = allUsers.findIndex(u => u.id === currentUser.id);
+                if (userIndex > -1) {
+                    allUsers[userIndex].name = newName;
+                    localStorage.setItem('allUsers', JSON.stringify(allUsers));
+                }
+                
                 showNotification('Name updated! ✅', 'success');
             }
             
@@ -1525,6 +1709,14 @@ HTML_TEMPLATE = '''
                 notification.remove();
             }, 3000);
         }
+
+        // Добавляем ripple эффект ко всем кнопкам
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('btn') || e.target.closest('.btn')) {
+                const btn = e.target.classList.contains('btn') ? e.target : e.target.closest('.btn');
+                createRippleEffect({...e, currentTarget: btn});
+            }
+        });
 
         // Обработка Enter для отправки сообщений
         document.getElementById('messageInput').addEventListener('keypress', function(e) {
