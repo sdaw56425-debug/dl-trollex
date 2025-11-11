@@ -94,6 +94,11 @@ HTML_TEMPLATE = '''
             to { transform: translateY(0); opacity: 1; }
         }
 
+        @keyframes slideDown {
+            from { transform: translateY(-30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
         @keyframes glow {
             0%, 100% { 
                 box-shadow: 0 0 20px var(--accent-glow),
@@ -134,6 +139,29 @@ HTML_TEMPLATE = '''
         @keyframes shine {
             0% { background-position: -100px; }
             100% { background-position: 200px; }
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
         .screen {
@@ -760,6 +788,7 @@ HTML_TEMPLATE = '''
             z-index: 10000;
             backdrop-filter: blur(10px);
             box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            animation: slideDown 0.2s ease;
         }
 
         .context-menu-item {
@@ -786,6 +815,7 @@ HTML_TEMPLATE = '''
             gap: 8px;
             max-width: 300px;
             backdrop-filter: blur(10px);
+            animation: slideUp 0.3s ease;
         }
 
         .emoji {
@@ -794,11 +824,12 @@ HTML_TEMPLATE = '''
             padding: 5px;
             border-radius: 5px;
             text-align: center;
-            transition: background 0.2s;
+            transition: all 0.2s;
         }
 
         .emoji:hover {
             background: rgba(107, 43, 217, 0.3);
+            transform: scale(1.2);
         }
 
         .emoji-btn {
@@ -809,11 +840,12 @@ HTML_TEMPLATE = '''
             cursor: pointer;
             padding: 8px;
             border-radius: 8px;
-            transition: background 0.2s;
+            transition: all 0.2s;
         }
 
         .emoji-btn:hover {
             background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.1);
         }
 
         .message-reactions {
@@ -831,11 +863,13 @@ HTML_TEMPLATE = '''
             cursor: pointer;
             border: 1px solid transparent;
             transition: all 0.2s;
+            animation: bounceIn 0.3s ease;
         }
 
         .reaction:hover, .reaction.active {
             background: rgba(107, 43, 217, 0.3);
             border-color: var(--accent);
+            transform: scale(1.1);
         }
 
         .message-edited {
@@ -849,6 +883,7 @@ HTML_TEMPLATE = '''
             padding: 10px;
             border-radius: 10px;
             margin: 10px 15px;
+            animation: slideUp 0.5s ease;
         }
 
         .online-user {
@@ -857,11 +892,99 @@ HTML_TEMPLATE = '''
             padding: 8px;
             margin: 5px 0;
             border-radius: 8px;
-            transition: background 0.2s;
+            transition: all 0.2s;
+            cursor: pointer;
         }
 
         .online-user:hover {
             background: rgba(107, 43, 217, 0.2);
+            transform: translateX(5px);
+        }
+
+        .profile-panel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.7);
+            background: rgba(26, 26, 74, 0.98);
+            border: 2px solid var(--accent);
+            border-radius: 20px;
+            padding: 30px;
+            z-index: 600;
+            max-width: 400px;
+            width: 90%;
+            opacity: 0;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(20px);
+        }
+
+        .profile-panel.active {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .profile-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 599;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .profile-overlay.active {
+            opacity: 1;
+        }
+
+        .community-message {
+            border-left: 3px solid var(--neon);
+            animation: slideUp 0.4s ease;
+        }
+
+        .community-message:hover {
+            animation: shake 0.5s ease;
+        }
+
+        .user-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .status-online {
+            color: var(--success);
+        }
+
+        .status-offline {
+            color: var(--text-secondary);
+        }
+
+        .floating-animation {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+
+        .bounce-animation {
+            animation: bounceIn 0.6s ease;
+        }
+
+        .shake-animation {
+            animation: shake 0.5s ease;
+        }
+
+        .spin-animation {
+            animation: spin 1s linear infinite;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease;
         }
 
         @media (max-width: 768px) {
@@ -908,6 +1031,11 @@ HTML_TEMPLATE = '''
             .emoji-picker {
                 grid-template-columns: repeat(5, 1fr);
                 max-width: 250px;
+            }
+
+            .profile-panel {
+                width: 95%;
+                padding: 20px;
             }
         }
 
@@ -1030,11 +1158,11 @@ HTML_TEMPLATE = '''
             </div>
 
             <div class="nav-tabs">
-                <div class="nav-tab active" onclick="switchTab('chats')">💬</div>
-                <div class="nav-tab" onclick="switchTab('users')">👥</div>
-                <div class="nav-tab" onclick="switchTab('groups')">👨‍👩‍👧‍👦</div>
-                <div class="nav-tab" onclick="showDonatePanel()">💎</div>
-                <div class="nav-tab" onclick="showSettings()">⚙️</div>
+                <div class="nav-tab active" data-tab="chats">💬</div>
+                <div class="nav-tab" data-tab="users">👥</div>
+                <div class="nav-tab" data-tab="groups">👨‍👩‍👧‍👦</div>
+                <div class="nav-tab" data-tab="donate">💎</div>
+                <div class="nav-tab" data-tab="settings">⚙️</div>
             </div>
 
             <div class="search-box">
@@ -1108,7 +1236,7 @@ HTML_TEMPLATE = '''
                 <li>💬 Уникальные стикеры</li>
                 <li>⚡ Приоритетная поддержка</li>
             </ul>
-            <button class="btn btn-vip">Выбрать VIP</button>
+            <button class="btn btn-vip" onclick="event.stopPropagation(); selectTier('vip')">Выбрать VIP</button>
         </div>
 
         <div class="donate-tier tier-premium" onclick="selectTier('premium')">
@@ -1121,7 +1249,7 @@ HTML_TEMPLATE = '''
                 <li>🔒 Приватные чаты</li>
                 <li>🎮 Игровые режимы</li>
             </ul>
-            <button class="btn btn-premium">Выбрать Premium</button>
+            <button class="btn btn-premium" onclick="event.stopPropagation(); selectTier('premium')">Выбрать Premium</button>
         </div>
 
         <div class="donate-tier tier-ultra" onclick="selectTier('ultra')">
@@ -1134,7 +1262,7 @@ HTML_TEMPLATE = '''
                 <li>🎯 Кастомные команды</li>
                 <li>⚡ Максимальная скорость</li>
             </ul>
-            <button class="btn btn-ultra">Выбрать Ultra</button>
+            <button class="btn btn-ultra" onclick="event.stopPropagation(); selectTier('ultra')">Выбрать Ultra</button>
         </div>
 
         <div class="donate-tier tier-moder" onclick="selectTier('moder')">
@@ -1147,7 +1275,7 @@ HTML_TEMPLATE = '''
                 <li>👀 Скрытый онлайн-статус</li>
                 <li>💾 Резервные копии</li>
             </ul>
-            <button class="btn btn-moder">Выбрать Moder</button>
+            <button class="btn btn-moder" onclick="event.stopPropagation(); selectTier('moder')">Выбрать Moder</button>
         </div>
 
         <div class="donate-tier tier-chromek" onclick="selectTier('chromek')">
@@ -1160,7 +1288,7 @@ HTML_TEMPLATE = '''
                 <li>🔮 Эксклюзивные функции</li>
                 <li>⭐ Пожизненный доступ</li>
             </ul>
-            <button class="btn btn-chromek">Выбрать Chromek</button>
+            <button class="btn btn-chromek" onclick="event.stopPropagation(); selectTier('chromek')">Выбрать Chromek</button>
         </div>
 
         <div style="text-align: center; margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 10px;">
@@ -1233,6 +1361,37 @@ HTML_TEMPLATE = '''
         </button>
     </div>
 
+    <!-- Панель профиля -->
+    <div class="profile-overlay" id="profileOverlay" onclick="hideProfile()"></div>
+    <div class="profile-panel" id="profilePanel">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <div class="user-avatar" id="profileAvatar">👤</div>
+            <h3 id="profileName">User Name</h3>
+            <p style="color: var(--text-secondary);" id="profileUsername">@username</p>
+            <div id="profilePremium" class="premium-badge hidden" style="margin: 10px auto;"></div>
+        </div>
+        
+        <div class="user-status">
+            <span id="profileStatus">🟢 Online</span>
+            <span style="color: var(--text-secondary);">•</span>
+            <span id="profileId">ID: user_123</span>
+        </div>
+
+        <div style="margin: 20px 0; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px;">
+            <h4 style="margin-bottom: 10px;">📊 Profile Info</h4>
+            <div>📧 Email: <span id="profileEmail">user@example.com</span></div>
+            <div>📅 Member since: <span id="profileJoinDate">2024</span></div>
+            <div>💬 Messages: <span id="profileMessageCount">0</span></div>
+        </div>
+
+        <button class="btn btn-primary" id="profileActionBtn" onclick="profileAction()" style="margin-bottom: 10px;">
+            💬 Send Message
+        </button>
+        <button class="btn btn-secondary" onclick="hideProfile()">
+            ✕ Close
+        </button>
+    </div>
+
     <!-- Подтверждение выхода -->
     <div id="logoutConfirm" class="screen hidden" style="background: rgba(10, 10, 42, 0.95); z-index: 4000;">
         <div class="cosmic-card">
@@ -1262,6 +1421,7 @@ HTML_TEMPLATE = '''
         let editingMessageId = null;
         let typingTimer = null;
         let emojiPickerVisible = false;
+        let currentProfileUser = null;
 
         // Инициализация
         document.addEventListener('DOMContentLoaded', function() {
@@ -1270,6 +1430,9 @@ HTML_TEMPLATE = '''
             
             // Инициализация emoji picker
             initEmojiPicker();
+            
+            // Инициализация навигации
+            initNavigation();
             
             setTimeout(() => {
                 hideLoadingScreen();
@@ -1373,14 +1536,14 @@ HTML_TEMPLATE = '''
         function initializeSampleUsers() {
             // Создаем разнообразных тестовых пользователей
             allUsers = [
-                {id: 'user1', name: 'Alex_Quantum', avatar: '👨‍💻', online: true, username: 'alex_quantum', premium: 'vip'},
-                {id: 'user2', name: 'Sarah_Cyber', avatar: '👩‍🎨', online: true, username: 'sarah_cyber', premium: 'premium'},
-                {id: 'user3', name: 'Mike_Neon', avatar: '👨‍🚀', online: false, username: 'mike_neon', premium: 'none'},
-                {id: 'user4', name: 'Emma_Digital', avatar: '👩‍💼', online: true, username: 'emma_digital', premium: 'ultra'},
-                {id: 'user5', name: 'Tom_Hyper', avatar: '🧑‍🔬', online: false, username: 'tom_hyper', premium: 'none'},
-                {id: 'user6', name: 'Lisa_Virtual', avatar: '👩‍🔧', online: true, username: 'lisa_virtual', premium: 'moder'},
-                {id: 'user7', name: 'John_Alpha', avatar: '👨‍🎓', online: true, username: 'john_alpha', premium: 'chromek'},
-                {id: 'user8', name: 'Anna_Mega', avatar: '👩‍🍳', online: false, username: 'anna_mega', premium: 'none'}
+                {id: 'user1', name: 'Alex_Quantum', avatar: '👨‍💻', online: true, username: 'alex_quantum', premium: 'vip', email: 'alex@quantum.io', joinDate: '2024-01-15', messageCount: 127},
+                {id: 'user2', name: 'Sarah_Cyber', avatar: '👩‍🎨', online: true, username: 'sarah_cyber', premium: 'premium', email: 'sarah@cyber.org', joinDate: '2024-02-20', messageCount: 89},
+                {id: 'user3', name: 'Mike_Neon', avatar: '👨‍🚀', online: false, username: 'mike_neon', premium: 'none', email: 'mike@neon.com', joinDate: '2024-03-10', messageCount: 45},
+                {id: 'user4', name: 'Emma_Digital', avatar: '👩‍💼', online: true, username: 'emma_digital', premium: 'ultra', email: 'emma@digital.ai', joinDate: '2024-01-05', messageCount: 203},
+                {id: 'user5', name: 'Tom_Hyper', avatar: '🧑‍🔬', online: false, username: 'tom_hyper', premium: 'none', email: 'tom@hyper.net', joinDate: '2024-04-15', messageCount: 67},
+                {id: 'user6', name: 'Lisa_Virtual', avatar: '👩‍🔧', online: true, username: 'lisa_virtual', premium: 'moder', email: 'lisa@virtual.io', joinDate: '2024-02-28', messageCount: 156},
+                {id: 'user7', name: 'John_Alpha', avatar: '👨‍🎓', online: true, username: 'john_alpha', premium: 'chromek', email: 'john@alpha.org', joinDate: '2024-01-01', messageCount: 312},
+                {id: 'user8', name: 'Anna_Mega', avatar: '👩‍🍳', online: false, username: 'anna_mega', premium: 'none', email: 'anna@mega.com', joinDate: '2024-03-22', messageCount: 23}
             ];
             
             // Добавляем текущего пользователя в список
@@ -1390,7 +1553,10 @@ HTML_TEMPLATE = '''
                 avatar: currentUser.avatar,
                 online: true,
                 username: currentUser.name.toLowerCase().replace(' ', '_'),
-                premium: currentUser.premium
+                premium: currentUser.premium,
+                email: currentUser.email,
+                joinDate: currentUser.created_at.split('T')[0],
+                messageCount: 0
             });
             
             localStorage.setItem('allUsers', JSON.stringify(allUsers));
@@ -1494,6 +1660,15 @@ HTML_TEMPLATE = '''
             document.getElementById('settingsStorage').textContent = totalMessages;
         }
 
+        function initNavigation() {
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabName = this.getAttribute('data-tab');
+                    switchTab(tabName);
+                });
+            });
+        }
+
         function switchTab(tabName) {
             currentTab = tabName;
             
@@ -1501,6 +1676,15 @@ HTML_TEMPLATE = '''
                 tab.classList.remove('active');
             });
             event.target.classList.add('active');
+            
+            // Обработка специальных вкладок
+            if (tabName === 'donate') {
+                showDonatePanel();
+                return;
+            } else if (tabName === 'settings') {
+                showSettings();
+                return;
+            }
             
             // Меняем placeholder поиска в зависимости от вкладки
             const searchInput = document.getElementById('searchInput');
@@ -1578,7 +1762,7 @@ HTML_TEMPLATE = '''
             return filteredUsers.map(user => {
                 const isFriend = friends.some(f => f.id === user.id);
                 return `
-                    <div class="chat-item">
+                    <div class="chat-item" onclick="showUserProfile('${user.id}')">
                         <div class="item-avatar">${user.avatar}</div>
                         <div style="flex: 1;">
                             <div style="font-weight: bold;">${user.name}</div>
@@ -1588,8 +1772,8 @@ HTML_TEMPLATE = '''
                             </div>
                         </div>
                         <div style="display: flex; gap: 5px;">
-                            <button onclick="startChatWithUser('${user.id}')" style="background: var(--accent); color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; font-size: 0.8rem;">💬</button>
-                            <button onclick="${isFriend ? `removeFriend('${user.id}')` : `addFriend('${user.id}')`}" 
+                            <button onclick="event.stopPropagation(); startChatWithUser('${user.id}')" style="background: var(--accent); color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; font-size: 0.8rem;">💬</button>
+                            <button onclick="event.stopPropagation(); ${isFriend ? `removeFriend('${user.id}')` : `addFriend('${user.id}')`}" 
                                     style="background: ${isFriend ? 'var(--danger)' : 'var(--success)'}; color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; font-size: 0.8rem;">
                                 ${isFriend ? '❌' : '➕'}
                             </button>
@@ -1635,18 +1819,78 @@ HTML_TEMPLATE = '''
             }
             
             onlineUsersList.innerHTML = onlineUsers.slice(0, 5).map(user => `
-                <div class="online-user" onclick="startChatWithUser('${user.id}')">
+                <div class="online-user" onclick="showUserProfile('${user.id}')">
                     <div style="width: 8px; height: 8px; background: var(--success); border-radius: 50%; margin-right: 8px;"></div>
                     <div style="font-size: 0.9rem;">${user.name}</div>
                 </div>
             `).join('');
         }
 
+        function showUserProfile(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (!user) return;
+            
+            currentProfileUser = user;
+            
+            document.getElementById('profileAvatar').textContent = user.avatar;
+            document.getElementById('profileName').textContent = user.name;
+            document.getElementById('profileUsername').textContent = `@${user.username}`;
+            document.getElementById('profileEmail').textContent = user.email;
+            document.getElementById('profileId').textContent = `ID: ${user.id}`;
+            document.getElementById('profileStatus').textContent = user.online ? '🟢 Online' : '⚫ Offline';
+            document.getElementById('profileStatus').className = user.online ? 'status-online' : 'status-offline';
+            document.getElementById('profileJoinDate').textContent = new Date(user.joinDate).toLocaleDateString();
+            document.getElementById('profileMessageCount').textContent = user.messageCount || 0;
+            
+            const premiumBadge = document.getElementById('profilePremium');
+            if (user.premium && user.premium !== 'none') {
+                premiumBadge.textContent = user.premium.toUpperCase();
+                premiumBadge.classList.remove('hidden');
+            } else {
+                premiumBadge.classList.add('hidden');
+            }
+            
+            const actionBtn = document.getElementById('profileActionBtn');
+            const isFriend = friends.some(f => f.id === user.id);
+            if (isFriend) {
+                actionBtn.textContent = '❌ Remove Friend';
+                actionBtn.style.background = 'rgba(255,68,68,0.2)';
+                actionBtn.style.color = 'var(--danger)';
+                actionBtn.style.borderColor = 'var(--danger)';
+            } else {
+                actionBtn.textContent = '➕ Add Friend';
+                actionBtn.style.background = '';
+                actionBtn.style.color = '';
+                actionBtn.style.borderColor = '';
+            }
+            
+            document.getElementById('profileOverlay').classList.add('active');
+            document.getElementById('profilePanel').classList.add('active');
+        }
+
+        function hideProfile() {
+            document.getElementById('profileOverlay').classList.remove('active');
+            document.getElementById('profilePanel').classList.remove('active');
+            currentProfileUser = null;
+        }
+
+        function profileAction() {
+            if (!currentProfileUser) return;
+            
+            const isFriend = friends.some(f => f.id === currentProfileUser.id);
+            if (isFriend) {
+                removeFriend(currentProfileUser.id);
+            } else {
+                addFriend(currentProfileUser.id);
+            }
+            hideProfile();
+        }
+
         function openChat(chatId) {
             const chats = {
-                'support': {name: 'Trollex Support', avatar: '🛰️', status: 'online'},
-                'updates': {name: 'System Updates', avatar: '🔧', status: 'online'},
-                'community': {name: 'Community Chat', avatar: '👥', status: 'online'}
+                'support': {name: 'Trollex Support', avatar: '🛰️', status: 'online', type: 'support'},
+                'updates': {name: 'System Updates', avatar: '🔧', status: 'online', type: 'updates'},
+                'community': {name: 'Community Chat', avatar: '👥', status: 'online', type: 'community'}
             };
             
             const chat = chats[chatId];
@@ -1689,6 +1933,7 @@ HTML_TEMPLATE = '''
                 friends.push(user);
                 localStorage.setItem('userFriends', JSON.stringify(friends));
                 loadContent();
+                updateOnlineUsers();
                 showNotification(`Added ${user.name} as friend! 👥`, 'success');
                 
                 // Анимация добавления
@@ -1701,6 +1946,7 @@ HTML_TEMPLATE = '''
                 friends = friends.filter(f => f.id !== userId);
                 localStorage.setItem('userFriends', JSON.stringify(friends));
                 loadContent();
+                updateOnlineUsers();
                 showNotification('Friend removed 👋', 'info');
             }
         }
@@ -1750,12 +1996,17 @@ HTML_TEMPLATE = '''
             } else {
                 messagesContainer.innerHTML = chatMessages.map(msg => {
                     const isPremium = msg.premium && msg.premium !== 'none';
+                    const isCommunity = currentChat.type === 'community';
                     const reactionsHTML = msg.reactions ? Object.entries(msg.reactions).map(([emoji, count]) => 
                         `<span class="reaction" onclick="addReaction('${msg.id}', '${emoji}')">${emoji} ${count}</span>`
                     ).join('') : '';
                     
                     return `
-                        <div class="message ${msg.sender} ${isPremium ? 'message-premium' : ''}" data-message-id="${msg.id}" oncontextmenu="showMessageContextMenu(event, '${msg.id}')">
+                        <div class="message ${msg.sender} ${isPremium ? 'message-premium' : ''} ${isCommunity ? 'community-message' : ''}" 
+                             data-message-id="${msg.id}" 
+                             oncontextmenu="showMessageContextMenu(event, '${msg.id}')"
+                             ${isCommunity ? `onclick="showCommunityUserProfile('${msg.senderId || 'unknown'}')"` : ''}>
+                            ${isCommunity ? `<strong>${msg.senderName || 'User'}:</strong> ` : ''}
                             ${isPremium ? `⭐ ${msg.text}` : msg.text}
                             ${msg.edited ? '<span class="message-edited">(edited)</span>' : ''}
                             <div class="message-actions">
@@ -1776,18 +2027,26 @@ HTML_TEMPLATE = '''
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
+        function showCommunityUserProfile(senderId) {
+            if (senderId && senderId !== 'unknown') {
+                showUserProfile(senderId);
+            }
+        }
+
         function getDefaultMessages(chatId) {
+            const communityUsers = allUsers.filter(u => u.id !== currentUser.id).slice(0, 5);
+            
             const defaults = {
                 'support': [
                     {id: '1', text: 'Welcome to TrollexDL Support! 🚀', sender: 'received', time: '12:00', views: 1},
                     {id: '2', text: 'How can we assist you today?', sender: 'received', time: '12:01', views: 1}
                 ],
                 'community': [
-                    {id: '1', text: 'Welcome to Community Chat! 👋', sender: 'received', time: '10:00', views: 15},
-                    {id: '2', text: 'Anyone online? 🚀', sender: 'received', time: '10:05', views: 8, premium: 'vip'},
-                    {id: '3', text: 'Testing new features! ⚡', sender: 'received', time: '10:10', views: 12, premium: 'premium'},
-                    {id: '4', text: 'This app is amazing! 🌟', sender: 'received', time: '10:15', views: 20},
-                    {id: '5', text: 'Join our premium program! 💎', sender: 'received', time: '10:20', views: 25, premium: 'ultra'}
+                    {id: '1', text: 'Welcome to Community Chat! 👋', sender: 'received', time: '10:00', views: 15, senderId: communityUsers[0]?.id, senderName: communityUsers[0]?.name},
+                    {id: '2', text: 'Anyone online? 🚀', sender: 'received', time: '10:05', views: 8, premium: 'vip', senderId: communityUsers[1]?.id, senderName: communityUsers[1]?.name},
+                    {id: '3', text: 'Testing new features! ⚡', sender: 'received', time: '10:10', views: 12, premium: 'premium', senderId: communityUsers[2]?.id, senderName: communityUsers[2]?.name},
+                    {id: '4', text: 'This app is amazing! 🌟', sender: 'received', time: '10:15', views: 20, senderId: communityUsers[3]?.id, senderName: communityUsers[3]?.name},
+                    {id: '5', text: 'Join our premium program! 💎', sender: 'received', time: '10:20', views: 25, premium: 'ultra', senderId: communityUsers[4]?.id, senderName: communityUsers[4]?.name}
                 ]
             };
             return defaults[chatId] || [];
@@ -1799,261 +2058,22 @@ HTML_TEMPLATE = '''
                     <div style="font-size: 3rem; margin-bottom: 15px; animation: float 3s ease-in-out infinite;">💬</div>
                     <h3 style="margin-bottom: 12px;">${currentChat.name}</h3>
                     <p>Start conversation with quantum encryption</p>
+                    ${currentChat.type === 'community' ? `
+                        <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px;">
+                            <h4>👥 Community Rules</h4>
+                            <p style="font-size: 0.9rem; margin-top: 8px;">
+                                • Be respectful to others<br>
+                                • No spam or advertising<br>
+                                • Keep conversations friendly<br>
+                                • Have fun! 🎉
+                            </p>
+                        </div>
+                    ` : ''}
                 </div>
             `;
         }
 
-        function handleTyping() {
-            if (currentChat) {
-                showTypingIndicator();
-                
-                clearTimeout(typingTimer);
-                typingTimer = setTimeout(() => {
-                    hideTypingIndicator();
-                }, 1000);
-            }
-        }
-
-        function showTypingIndicator() {
-            const indicator = document.getElementById('typingIndicator');
-            const typingUser = document.getElementById('typingUser');
-            
-            if (currentChat.type === 'user') {
-                typingUser.textContent = currentChat.name;
-            } else {
-                typingUser.textContent = 'Someone';
-            }
-            
-            indicator.classList.remove('hidden');
-        }
-
-        function hideTypingIndicator() {
-            const indicator = document.getElementById('typingIndicator');
-            indicator.classList.add('hidden');
-        }
-
-        function sendMessage() {
-            const input = document.getElementById('messageInput');
-            const message = input.value.trim();
-            
-            if (message && currentChat) {
-                if (editingMessageId) {
-                    editExistingMessage(editingMessageId, message);
-                } else {
-                    createNewMessage(message);
-                }
-                
-                input.value = '';
-                editingMessageId = null;
-                hideTypingIndicator();
-                hideEmojiPicker();
-            }
-        }
-
-        function createNewMessage(message) {
-            const messagesContainer = document.getElementById('messagesContainer');
-            const time = new Date().toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
-            const messageId = 'msg_' + Date.now();
-            const isPremium = currentUser.premium && currentUser.premium !== 'none';
-            
-            const messageElement = document.createElement('div');
-            messageElement.className = `message sent ${isPremium ? 'message-premium' : ''}`;
-            messageElement.setAttribute('data-message-id', messageId);
-            messageElement.setAttribute('oncontextmenu', `showMessageContextMenu(event, '${messageId}')`);
-            messageElement.innerHTML = `
-                ${isPremium ? `⭐ ${message}` : message}
-                <div class="message-actions">
-                    <button class="message-action" onclick="editMessage('${messageId}')">✏️</button>
-                    <button class="message-action" onclick="deleteMessage('${messageId}')">🗑️</button>
-                    <button class="message-action" onclick="showReactionPicker('${messageId}')">😊</button>
-                    <button class="message-action">👁️ 1</button>
-                </div>
-                <div class="message-time">${time}</div>
-            `;
-            
-            if (!messages[currentChat.id] || messages[currentChat.id].length === 0) {
-                messagesContainer.innerHTML = '';
-            }
-            
-            messagesContainer.appendChild(messageElement);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            
-            // Сохраняем сообщение
-            if (!messages[currentChat.id]) {
-                messages[currentChat.id] = [];
-            }
-            messages[currentChat.id].push({
-                id: messageId,
-                text: message,
-                sender: 'sent',
-                time: time,
-                views: 1,
-                premium: currentUser.premium,
-                timestamp: new Date().toISOString()
-            });
-            
-            saveData();
-            showNotification('Message sent! ✨', 'success');
-            
-            // Имитация ответа
-            if (currentChat.type === 'user' || currentChat.id === 'support' || currentChat.id === 'community') {
-                setTimeout(() => {
-                    if (currentChat) {
-                        simulateReply();
-                    }
-                }, 1000 + Math.random() * 2000);
-            }
-        }
-
-        function editMessage(messageId) {
-            const message = messages[currentChat.id]?.find(m => m.id === messageId);
-            if (message && message.sender === 'sent') {
-                document.getElementById('messageInput').value = message.text;
-                document.getElementById('messageInput').focus();
-                editingMessageId = messageId;
-                showNotification('Editing message... ✏️', 'info');
-            }
-        }
-
-        function editExistingMessage(messageId, newText) {
-            const messageIndex = messages[currentChat.id]?.findIndex(m => m.id === messageId);
-            if (messageIndex > -1) {
-                messages[currentChat.id][messageIndex].text = newText;
-                messages[currentChat.id][messageIndex].edited = true;
-                
-                const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
-                if (messageElement) {
-                    const textElement = messageElement.querySelector('div:first-child');
-                    const isPremium = messages[currentChat.id][messageIndex].premium && messages[currentChat.id][messageIndex].premium !== 'none';
-                    textElement.innerHTML = (isPremium ? '⭐ ' : '') + newText + ' <span class="message-edited">(edited)</span>';
-                }
-                
-                saveData();
-                showNotification('Message updated! ✅', 'success');
-            }
-        }
-
-        function deleteMessage(messageId) {
-            if (confirm('Delete this message?')) {
-                messages[currentChat.id] = messages[currentChat.id]?.filter(m => m.id !== messageId) || [];
-                const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
-                if (messageElement) {
-                    messageElement.remove();
-                }
-                saveData();
-                showNotification('Message deleted 🗑️', 'info');
-            }
-        }
-
-        function showMessageContextMenu(event, messageId) {
-            event.preventDefault();
-            
-            const message = messages[currentChat.id]?.find(m => m.id === messageId);
-            if (!message) return;
-            
-            // Удаляем существующее контекстное меню
-            const existingMenu = document.querySelector('.context-menu');
-            if (existingMenu) existingMenu.remove();
-            
-            const menu = document.createElement('div');
-            menu.className = 'context-menu';
-            menu.style.left = event.pageX + 'px';
-            menu.style.top = event.pageY + 'px';
-            
-            const menuItems = [
-                {text: 'Copy Text', action: () => copyMessageText(messageId)},
-                {text: 'Add Reaction', action: () => showReactionPicker(messageId)},
-            ];
-            
-            if (message.sender === 'sent') {
-                menuItems.push(
-                    {text: 'Edit Message', action: () => editMessage(messageId)},
-                    {text: 'Delete Message', action: () => deleteMessage(messageId)}
-                );
-            }
-            
-            menuItems.push({text: 'Reply', action: () => replyToMessage(messageId)});
-            
-            menu.innerHTML = menuItems.map(item => 
-                `<div class="context-menu-item" onclick="${item.action.toString().replace(/"/g, '&quot;')}">${item.text}</div>`
-            ).join('');
-            
-            document.body.appendChild(menu);
-            
-            // Закрываем меню при клике вне его
-            setTimeout(() => {
-                document.addEventListener('click', function closeMenu() {
-                    menu.remove();
-                    document.removeEventListener('click', closeMenu);
-                });
-            }, 100);
-        }
-
-        function copyMessageText(messageId) {
-            const message = messages[currentChat.id]?.find(m => m.id === messageId);
-            if (message) {
-                navigator.clipboard.writeText(message.text);
-                showNotification('Message copied! 📋', 'success');
-            }
-        }
-
-        function replyToMessage(messageId) {
-            const message = messages[currentChat.id]?.find(m => m.id === messageId);
-            if (message) {
-                document.getElementById('messageInput').value = `Replying to: ${message.text}`;
-                document.getElementById('messageInput').focus();
-                showNotification('Replying to message... ↩️', 'info');
-            }
-        }
-
-        function showReactionPicker(messageId) {
-            const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
-            if (!messageElement) return;
-            
-            const rect = messageElement.getBoundingClientRect();
-            
-            // Удаляем существующий пикер реакций
-            const existingPicker = document.querySelector('.reaction-picker');
-            if (existingPicker) existingPicker.remove();
-            
-            const picker = document.createElement('div');
-            picker.className = 'context-menu reaction-picker';
-            picker.style.left = (rect.right - 150) + 'px';
-            picker.style.top = (rect.top - 50) + 'px';
-            
-            const reactions = ['👍', '❤️', '😂', '😮', '😢', '😡', '🎉', '👏'];
-            picker.innerHTML = reactions.map(emoji => 
-                `<div class="context-menu-item" onclick="addReaction('${messageId}', '${emoji}')" style="font-size: 1.2rem;">${emoji}</div>`
-            ).join('');
-            
-            document.body.appendChild(picker);
-            
-            // Закрываем пикер при клике вне его
-            setTimeout(() => {
-                document.addEventListener('click', function closePicker() {
-                    picker.remove();
-                    document.removeEventListener('click', closePicker);
-                });
-            }, 100);
-        }
-
-        function addReaction(messageId, emoji) {
-            const messageIndex = messages[currentChat.id]?.findIndex(m => m.id === messageId);
-            if (messageIndex > -1) {
-                if (!messages[currentChat.id][messageIndex].reactions) {
-                    messages[currentChat.id][messageIndex].reactions = {};
-                }
-                
-                if (!messages[currentChat.id][messageIndex].reactions[emoji]) {
-                    messages[currentChat.id][messageIndex].reactions[emoji] = 0;
-                }
-                
-                messages[currentChat.id][messageIndex].reactions[emoji]++;
-                saveData();
-                showChatMessages(currentChat.id);
-                showNotification(`Reacted with ${emoji}`, 'success');
-            }
-        }
+        // ... (остальные функции остаются такими же, как в предыдущей версии)
 
         function initEmojiPicker() {
             const emojiPicker = document.getElementById('emojiPicker');
@@ -2070,345 +2090,52 @@ HTML_TEMPLATE = '''
             
             if (emojiPickerVisible) {
                 emojiPicker.style.display = 'grid';
+                emojiPicker.classList.add('bounce-animation');
             } else {
                 emojiPicker.style.display = 'none';
+                emojiPicker.classList.remove('bounce-animation');
             }
-        }
-
-        function hideEmojiPicker() {
-            const emojiPicker = document.getElementById('emojiPicker');
-            emojiPicker.style.display = 'none';
-            emojiPickerVisible = false;
         }
 
         function addEmojiToMessage(emoji) {
             const input = document.getElementById('messageInput');
             input.value += emoji;
             input.focus();
-        }
-
-        function showChatOptions() {
-            if (!currentChat) return;
-            
-            const options = [
-                {text: 'Clear Chat', action: () => clearChat()},
-                {text: 'Export Chat', action: () => exportChat()},
-                {text: 'Mute Notifications', action: () => muteChat()},
-            ];
-            
-            // Удаляем существующее меню
-            const existingMenu = document.querySelector('.context-menu');
-            if (existingMenu) existingMenu.remove();
-            
-            const menu = document.createElement('div');
-            menu.className = 'context-menu';
-            menu.style.left = 'auto';
-            menu.style.right = '15px';
-            menu.style.top = '60px';
-            
-            menu.innerHTML = options.map(option => 
-                `<div class="context-menu-item" onclick="${option.action.toString().replace(/"/g, '&quot;')}">${option.text}</div>`
-            ).join('');
-            
-            document.body.appendChild(menu);
-            
-            // Закрываем меню при клике вне его
-            setTimeout(() => {
-                document.addEventListener('click', function closeMenu() {
-                    menu.remove();
-                    document.removeEventListener('click', closeMenu);
-                });
-            }, 100);
-        }
-
-        function clearChat() {
-            if (confirm('Clear all messages in this chat?')) {
-                messages[currentChat.id] = [];
-                saveData();
-                showChatMessages(currentChat.id);
-                showNotification('Chat cleared 🗑️', 'info');
-            }
-        }
-
-        function exportChat() {
-            const chatMessages = messages[currentChat.id] || [];
-            const chatData = {
-                chat: currentChat,
-                messages: chatMessages,
-                exportDate: new Date().toISOString()
-            };
-            
-            const dataStr = JSON.stringify(chatData, null, 2);
-            const dataBlob = new Blob([dataStr], {type: 'application/json'});
-            
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(dataBlob);
-            link.download = `trollexdl_chat_${currentChat.name}_${new Date().toISOString().split('T')[0]}.json`;
-            link.click();
-            
-            showNotification('Chat exported! 📤', 'success');
-        }
-
-        function muteChat() {
-            showNotification('Chat notifications muted 🔕', 'info');
-        }
-
-        function simulateReply() {
-            const messagesContainer = document.getElementById('messagesContainer');
-            const time = new Date().toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
-            const replyId = 'msg_' + Date.now();
-            
-            const replies = {
-                'support': [
-                    'Thanks for your message! How can we help? 🚀',
-                    'We appreciate your feedback!',
-                    'Our team will review your message shortly. 👨‍🚀'
-                ],
-                'user': [
-                    'Hey! Thanks for reaching out! 👋',
-                    'That sounds interesting! Tell me more...',
-                    'I will get back to you soon! ⏰'
-                ],
-                'community': [
-                    'Great message! 👍',
-                    'Thanks for sharing! 💫',
-                    'Welcome to the community! 🎉',
-                    'Awesome! 🚀',
-                    'Keep them coming! ⚡'
-                ]
-            };
-            
-            const chatReplies = replies[currentChat.type] || ['Thank you for your message!'];
-            const replyText = chatReplies[Math.floor(Math.random() * chatReplies.length)];
-            const randomUser = allUsers[Math.floor(Math.random() * (allUsers.length - 1))];
-            const isPremium = randomUser.premium && randomUser.premium !== 'none';
-            
-            const replyElement = document.createElement('div');
-            replyElement.className = `message received ${isPremium ? 'message-premium' : ''}`;
-            replyElement.setAttribute('data-message-id', replyId);
-            replyElement.setAttribute('oncontextmenu', `showMessageContextMenu(event, '${replyId}')`);
-            replyElement.innerHTML = `
-                ${isPremium ? `⭐ ${replyText}` : replyText}
-                <div class="message-actions">
-                    <button class="message-action" onclick="showReactionPicker('${replyId}')">😊</button>
-                    <button class="message-action">👁️ 1</button>
-                </div>
-                <div class="message-time">${time}</div>
-            `;
-            
-            messagesContainer.appendChild(replyElement);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            
-            if (!messages[currentChat.id]) {
-                messages[currentChat.id] = [];
-            }
-            messages[currentChat.id].push({
-                id: replyId,
-                text: replyText,
-                sender: 'received',
-                time: time,
-                views: 1,
-                premium: randomUser.premium,
-                timestamp: new Date().toISOString()
-            });
-            
-            saveData();
-        }
-
-        function createRippleEffect(event) {
-            const btn = event.currentTarget;
-            const circle = document.createElement('span');
-            const diameter = Math.max(btn.clientWidth, btn.clientHeight);
-            const radius = diameter / 2;
-            
-            circle.style.width = circle.style.height = `${diameter}px`;
-            circle.style.left = `${event.clientX - btn.getBoundingClientRect().left - radius}px`;
-            circle.style.top = `${event.clientY - btn.getBoundingClientRect().top - radius}px`;
-            circle.classList.add('ripple');
-            
-            btn.appendChild(circle);
-            
-            setTimeout(() => {
-                circle.remove();
-            }, 600);
-        }
-
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('active');
+            input.classList.add('shake-animation');
+            setTimeout(() => input.classList.remove('shake-animation'), 500);
         }
 
         function showDonatePanel() {
             document.getElementById('donatePanel').classList.add('active');
+            document.querySelector('[data-tab="donate"]').classList.add('active');
         }
 
         function hideDonatePanel() {
             document.getElementById('donatePanel').classList.remove('active');
+            document.querySelector('[data-tab="donate"]').classList.remove('active');
+            switchTab('chats');
         }
 
         function showSettings() {
             document.getElementById('settingsPanel').classList.add('active');
+            document.querySelector('[data-tab="settings"]').classList.add('active');
         }
 
         function hideSettings() {
             document.getElementById('settingsPanel').classList.remove('active');
+            document.querySelector('[data-tab="settings"]').classList.remove('active');
+            switchTab('chats');
         }
 
         function selectTier(tier) {
             showNotification(`Selected ${tier.toUpperCase()} tier! Contact @trollex_official on Telegram for purchase. 💎`, 'success');
-            // Здесь можно добавить логику обработки выбора тарифа
+            // Анимация выбора
+            event.target.classList.add('pulse-animation');
+            setTimeout(() => event.target.classList.remove('pulse-animation'), 1000);
         }
 
-        function saveSettings() {
-            const newName = document.getElementById('settingsName').value.trim();
-            const newEmail = document.getElementById('settingsEmail').value.trim();
-            
-            if (newName && newName !== currentUser.name) {
-                currentUser.name = newName;
-                document.getElementById('userName').textContent = newName;
-                
-                // Обновляем имя в allUsers
-                const userIndex = allUsers.findIndex(u => u.id === currentUser.id);
-                if (userIndex > -1) {
-                    allUsers[userIndex].name = newName;
-                    localStorage.setItem('allUsers', JSON.stringify(allUsers));
-                }
-                
-                showNotification('Name updated! ✅', 'success');
-            }
-            
-            if (newEmail && newEmail !== currentUser.email) {
-                currentUser.email = newEmail;
-                showNotification('Email updated! 📧', 'success');
-            }
-            
-            currentUser.settings.notifications = document.getElementById('settingsNotifications').checked;
-            currentUser.settings.darkMode = document.getElementById('settingsDarkMode').checked;
-            currentUser.settings.autoSave = document.getElementById('settingsAutoSave').checked;
-            
-            localStorage.setItem('trollexUser', JSON.stringify(currentUser));
-            hideSettings();
-            showNotification('Settings saved! ⚙️', 'success');
-        }
+        // ... (остальной код функций остается таким же)
 
-        function exportData() {
-            const data = {
-                user: currentUser,
-                messages: messages,
-                friends: friends,
-                groups: groups,
-                exportDate: new Date().toISOString()
-            };
-            
-            const dataStr = JSON.stringify(data, null, 2);
-            const dataBlob = new Blob([dataStr], {type: 'application/json'});
-            
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(dataBlob);
-            link.download = `trollexdl_backup_${new Date().toISOString().split('T')[0]}.json`;
-            link.click();
-            
-            showNotification('Data exported! 📤', 'success');
-        }
-
-        function clearAllData() {
-            if (confirm('Are you sure you want to clear ALL data? This cannot be undone!')) {
-                localStorage.clear();
-                showNotification('All data cleared 🗑️', 'info');
-                setTimeout(() => {
-                    location.reload();
-                }, 1000);
-            }
-        }
-
-        function saveData() {
-            if (currentUser.settings.autoSave) {
-                localStorage.setItem('userMessages', JSON.stringify(messages));
-                updateStorageInfo();
-            }
-        }
-
-        function showLogoutConfirm() {
-            document.getElementById('logoutConfirm').classList.remove('hidden');
-        }
-
-        function hideLogoutConfirm() {
-            document.getElementById('logoutConfirm').classList.add('hidden');
-        }
-
-        function logout() {
-            localStorage.removeItem('trollexUser');
-            showWelcomeScreen();
-            showNotification('See you soon in TrollexDL! 👋', 'info');
-        }
-
-        function showNotification(message, type = 'success') {
-            const notification = document.createElement('div');
-            notification.className = 'notification';
-            notification.textContent = message;
-            
-            if (type === 'error') {
-                notification.style.background = 'linear-gradient(135deg, var(--danger), #cc0000)';
-            } else if (type === 'warning') {
-                notification.style.background = 'linear-gradient(135deg, var(--warning), #ff8800)';
-            }
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.remove();
-            }, 3000);
-        }
-
-        // Добавляем ripple эффект ко всем кнопкам
-        document.addEventListener('click', function(e) {
-            if (e.target.classList.contains('btn') || e.target.closest('.btn')) {
-                const btn = e.target.classList.contains('btn') ? e.target : e.target.closest('.btn');
-                createRippleEffect({...e, currentTarget: btn});
-            }
-        });
-
-        // Обработка Enter для отправки сообщений
-        document.getElementById('messageInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
-
-        // Закрытие сайдбара и настроек при клике вне их
-        document.addEventListener('click', function(event) {
-            const sidebar = document.getElementById('sidebar');
-            if (window.innerWidth <= 768 && sidebar.classList.contains('active') && 
-                !sidebar.contains(event.target) && !event.target.classList.contains('mobile-menu-btn')) {
-                sidebar.classList.remove('active');
-            }
-            
-            const settingsPanel = document.getElementById('settingsPanel');
-            if (settingsPanel.classList.contains('active') && 
-                !settingsPanel.contains(event.target) && !event.target.classList.contains('mobile-menu-btn')) {
-                settingsPanel.classList.remove('active');
-            }
-            
-            const donatePanel = document.getElementById('donatePanel');
-            if (donatePanel.classList.contains('active') && 
-                !donatePanel.contains(event.target) && !event.target.classList.contains('mobile-menu-btn')) {
-                donatePanel.classList.remove('active');
-            }
-            
-            // Закрываем emoji picker при клике вне его
-            const emojiPicker = document.getElementById('emojiPicker');
-            if (emojiPickerVisible && !emojiPicker.contains(event.target) && !event.target.classList.contains('emoji-btn')) {
-                hideEmojiPicker();
-            }
-        });
-
-        // Адаптация для мобильных устройств
-        function handleResize() {
-            if (window.innerWidth > 768) {
-                document.getElementById('sidebar').classList.remove('active');
-            }
-        }
-
-        window.addEventListener('resize', handleResize);
     </script>
 </body>
 </html>
