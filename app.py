@@ -1,95 +1,31 @@
 # app.py
-from flask import Flask, render_template_string, request, jsonify, session
+from flask import Flask, render_template_string, request, jsonify
 import datetime
 import random
 import os
-import json
 import uuid
-import time
+import re
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'cosmic-secret-2024'
-app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(days=30)
+app.config['SECRET_KEY'] = 'trollexdl-secret-2024'
 
-# Базы данных в памяти
+# Глобальные хранилища
 users_db = {}
-chats_db = {}
 messages_db = {}
-calls_db = {}
+active_calls = {}
 
-class CosmicChat:
-    def __init__(self):
-        self.online_users = set()
-    
-    def add_user(self, user_data):
-        user_id = str(uuid.uuid4())
-        user_data.update({
-            'id': user_id,
-            'online': True,
-            'created_at': datetime.datetime.now().isoformat(),
-            'last_seen': datetime.datetime.now().isoformat(),
-            'level': random.randint(1, 100),
-            'stars': random.randint(100, 5000),
-            'avatar': random.choice(['🚀', '👨‍🚀', '👩‍🚀', '🛸', '🌌', '🌟', '⭐', '☄️', '🌠', '🪐']),
-            'theme': 'cosmic'
-        })
-        users_db[user_id] = user_data
-        self.online_users.add(user_id)
-        return user_data
-    
-    def create_chat(self, user1_id, user2_id):
-        chat_id = str(uuid.uuid4())
-        chat_data = {
-            'id': chat_id,
-            'participants': [user1_id, user2_id],
-            'created_at': datetime.datetime.now().isoformat(),
-            'last_activity': datetime.datetime.now().isoformat(),
-            'unread_count': {user1_id: 0, user2_id: 0}
-        }
-        chats_db[chat_id] = chat_data
-        return chat_data
-    
-    def send_message(self, chat_id, user_id, text):
-        message_id = str(uuid.uuid4())
-        message_data = {
-            'id': message_id,
-            'chat_id': chat_id,
-            'user_id': user_id,
-            'text': text,
-            'timestamp': datetime.datetime.now().isoformat(),
-            'read': False
-        }
-        messages_db[message_id] = message_data
-        
-        # Обновляем последнюю активность чата
-        if chat_id in chats_db:
-            chats_db[chat_id]['last_activity'] = datetime.datetime.now().isoformat()
-            # Увеличиваем счетчик непрочитанных для другого пользователя
-            for participant in chats_db[chat_id]['participants']:
-                if participant != user_id:
-                    chats_db[chat_id]['unread_count'][participant] += 1
-        
-        return message_data
+def generate_username():
+    adjectives = ['Quantum', 'Neon', 'Cyber', 'Digital', 'Virtual', 'Hyper', 'Mega', 'Ultra', 'Super', 'Alpha']
+    nouns = ['Phoenix', 'Dragon', 'Wolf', 'Tiger', 'Eagle', 'Falcon', 'Shark', 'Lion', 'Hawk', 'Panther']
+    numbers = random.randint(1000, 9999)
+    return f"{random.choice(adjectives)}_{random.choice(nouns)}{numbers}"
 
-cosmic_chat = CosmicChat()
+def generate_email(username):
+    domains = ['cosmic.com', 'quantum.io', 'nebula.org', 'galaxy.net', 'universe.ai']
+    return f"{username.lower()}@{random.choice(domains)}"
 
-# Создаем тестовых пользователей при запуске
-def initialize_sample_users():
-    sample_users = [
-        {'name': 'Космонавт_Алекс', 'username': 'cosmo_alex'},
-        {'name': 'Звездная_София', 'username': 'star_sofia'},
-        {'name': 'Галактический_Макс', 'username': 'galaxy_max'},
-        {'name': 'Лунная_Анна', 'username': 'moon_anna'},
-        {'name': 'Орбитальный_Даня', 'username': 'orbit_danya'},
-        {'name': 'Туманная_Катя', 'username': 'nebula_katya'},
-        {'name': 'Комета_Сергей', 'username': 'comet_sergey'},
-        {'name': 'Спутник_Оля', 'username': 'satellite_olya'}
-    ]
-    
-    for user_data in sample_users:
-        cosmic_chat.add_user(user_data)
-
-initialize_sample_users()
+def generate_user_id():
+    return f"user_{uuid.uuid4().hex[:8]}"
 
 HTML_TEMPLATE = '''
 <!DOCTYPE html>
@@ -97,38 +33,38 @@ HTML_TEMPLATE = '''
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CosmicChat 🚀 Межгалактическое общение</title>
+    <title>TrollexDL 🚀 Ultimate Messenger</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', system-ui, sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
 
         :root {
-            --cosmic-primary: #0a0a2a;
-            --cosmic-secondary: #1a1a4a;
-            --cosmic-accent: #4a1a8c;
-            --cosmic-glow: #6c2bd9;
-            --cosmic-nebula: #8b5cf6;
-            --cosmic-star: #fbbf24;
-            --cosmic-text: #ffffff;
-            --cosmic-text-secondary: #b0b0ff;
+            --primary: #0a0a2a;
+            --secondary: #1a1a4a;
+            --accent: #6c2bd9;
+            --accent-glow: #8b5cf6;
+            --neon: #00ff88;
+            --text: #ffffff;
+            --text-secondary: #b0b0ff;
+            --danger: #ff4444;
+            --success: #00ff88;
         }
 
         body {
-            background: linear-gradient(135deg, var(--cosmic-primary) 0%, var(--cosmic-secondary) 50%, var(--cosmic-accent) 100%);
-            color: var(--cosmic-text);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 50%, var(--accent) 100%);
+            color: var(--text);
             min-height: 100vh;
             overflow-x: hidden;
             position: relative;
         }
 
-        body::before {
-            content: '';
+        .cosmic-bg {
             position: fixed;
             top: 0;
             left: 0;
@@ -137,46 +73,41 @@ HTML_TEMPLATE = '''
             background: 
                 radial-gradient(circle at 20% 80%, rgba(107, 43, 217, 0.4) 0%, transparent 50%),
                 radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.3) 0%, transparent 50%),
-                radial-gradient(circle at 40% 40%, rgba(251, 191, 36, 0.2) 0%, transparent 50%);
-            pointer-events: none;
+                radial-gradient(circle at 40% 40%, rgba(0, 255, 136, 0.2) 0%, transparent 50%);
+            animation: cosmicShift 15s ease-in-out infinite;
             z-index: -1;
-            animation: cosmicShift 20s ease-in-out infinite;
         }
 
         @keyframes cosmicShift {
-            0%, 100% { opacity: 0.8; }
-            50% { opacity: 1; }
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.02); }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes glow {
+            0%, 100% { 
+                box-shadow: 0 0 20px var(--accent-glow),
+                           0 0 40px rgba(139, 92, 246, 0.3);
+            }
+            50% { 
+                box-shadow: 0 0 30px var(--accent-glow),
+                           0 0 60px rgba(139, 92, 246, 0.5),
+                           0 0 80px rgba(0, 255, 136, 0.2);
+            }
+        }
+
+        @keyframes typewriter {
+            from { width: 0; }
+            to { width: 100%; }
         }
 
         @keyframes float {
-            0%, 100% { transform: translateY(0px) rotate(0deg); }
-            33% { transform: translateY(-10px) rotate(120deg); }
-            66% { transform: translateY(-5px) rotate(240deg); }
-        }
-
-        @keyframes glowPulse {
-            0%, 100% { 
-                box-shadow: 0 0 20px var(--cosmic-glow),
-                           0 0 40px var(--cosmic-nebula);
-            }
-            50% { 
-                box-shadow: 0 0 30px var(--cosmic-glow),
-                           0 0 60px var(--cosmic-nebula),
-                           0 0 80px var(--cosmic-star);
-            }
-        }
-
-        @keyframes starTwinkle {
-            0%, 100% { opacity: 0.3; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.2); }
-        }
-
-        .star {
-            position: fixed;
-            background: white;
-            border-radius: 50%;
-            animation: starTwinkle 3s infinite;
-            z-index: -1;
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
         }
 
         .screen {
@@ -196,20 +127,20 @@ HTML_TEMPLATE = '''
             display: none !important;
         }
 
-        .cosmic-container {
-            background: rgba(26, 26, 74, 0.8);
+        .cosmic-card {
+            background: rgba(26, 26, 74, 0.9);
             backdrop-filter: blur(20px);
-            border: 2px solid var(--cosmic-glow);
+            border: 2px solid var(--accent);
             border-radius: 25px;
             padding: 40px;
             width: 100%;
             max-width: 450px;
+            animation: slideUp 0.8s ease-out, glow 4s infinite;
             position: relative;
             overflow: hidden;
-            animation: glowPulse 4s infinite;
         }
 
-        .cosmic-container::before {
+        .cosmic-card::before {
             content: '';
             position: absolute;
             top: -50%;
@@ -218,7 +149,6 @@ HTML_TEMPLATE = '''
             height: 200%;
             background: linear-gradient(45deg, transparent, rgba(107, 43, 217, 0.1), transparent);
             animation: shine 6s infinite;
-            z-index: -1;
         }
 
         @keyframes shine {
@@ -231,19 +161,22 @@ HTML_TEMPLATE = '''
             font-weight: 900;
             text-align: center;
             margin-bottom: 20px;
-            background: linear-gradient(45deg, var(--cosmic-star), var(--cosmic-nebula), var(--cosmic-glow));
+            background: linear-gradient(45deg, var(--neon), var(--accent-glow), var(--accent));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             text-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
-            animation: float 6s ease-in-out infinite;
         }
 
-        .subtitle {
-            text-align: center;
-            color: var(--cosmic-text-secondary);
-            margin-bottom: 30px;
-            font-size: 1.1rem;
-            line-height: 1.6;
+        .typewriter {
+            overflow: hidden;
+            border-right: 2px solid var(--neon);
+            white-space: nowrap;
+            animation: typewriter 3s steps(40, end), blink-caret 0.75s step-end infinite;
+        }
+
+        @keyframes blink-caret {
+            from, to { border-color: transparent; }
+            50% { border-color: var(--neon); }
         }
 
         .btn {
@@ -254,7 +187,7 @@ HTML_TEMPLATE = '''
             font-size: 1.1rem;
             font-weight: 700;
             cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            transition: all 0.3s ease;
             margin-bottom: 15px;
             position: relative;
             overflow: hidden;
@@ -262,41 +195,20 @@ HTML_TEMPLATE = '''
             letter-spacing: 1px;
         }
 
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s;
-        }
-
-        .btn:hover::before {
-            left: 100%;
-        }
-
         .btn-primary {
-            background: linear-gradient(135deg, var(--cosmic-glow), var(--cosmic-nebula));
+            background: linear-gradient(135deg, var(--accent), var(--accent-glow));
             color: white;
-            box-shadow: 0 10px 30px rgba(107, 43, 217, 0.4);
         }
 
         .btn-primary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 40px rgba(107, 43, 217, 0.6);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(107, 43, 217, 0.4);
         }
 
         .btn-secondary {
             background: rgba(255, 255, 255, 0.1);
-            color: var(--cosmic-text);
-            border: 2px solid var(--cosmic-glow);
-        }
-
-        .btn-secondary:hover {
-            background: rgba(107, 43, 217, 0.2);
-            transform: translateY(-2px);
+            color: var(--text);
+            border: 2px solid var(--accent);
         }
 
         .user-card {
@@ -304,7 +216,7 @@ HTML_TEMPLATE = '''
             padding: 25px;
             border-radius: 20px;
             margin: 20px 0;
-            border: 1px solid var(--cosmic-glow);
+            border: 1px solid var(--accent);
             text-align: center;
         }
 
@@ -312,55 +224,34 @@ HTML_TEMPLATE = '''
             width: 80px;
             height: 80px;
             border-radius: 20px;
-            background: linear-gradient(135deg, var(--cosmic-glow), var(--cosmic-nebula));
+            background: linear-gradient(135deg, var(--accent), var(--accent-glow));
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 2rem;
             margin: 0 auto 15px;
-            animation: float 4s ease-in-out infinite;
         }
 
         .app {
             width: 100%;
             height: 100vh;
-            background: var(--cosmic-primary);
+            background: var(--primary);
             display: flex;
         }
 
         .sidebar {
             width: 350px;
-            background: rgba(26, 26, 74, 0.9);
+            background: rgba(26, 26, 74, 0.95);
             backdrop-filter: blur(10px);
-            border-right: 2px solid var(--cosmic-glow);
+            border-right: 2px solid var(--accent);
             display: flex;
             flex-direction: column;
-            position: relative;
-            z-index: 100;
         }
 
         .user-header {
             padding: 25px;
-            background: linear-gradient(135deg, var(--cosmic-accent), var(--cosmic-glow));
+            background: linear-gradient(135deg, var(--accent), var(--accent-glow));
             text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .user-header::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="white" opacity="0.3"/></svg>');
-            animation: starsMove 20s linear infinite;
-        }
-
-        @keyframes starsMove {
-            from { transform: translateY(0); }
-            to { transform: translateY(-100px); }
         }
 
         .nav-tabs {
@@ -382,7 +273,7 @@ HTML_TEMPLATE = '''
         }
 
         .nav-tab.active {
-            background: linear-gradient(135deg, var(--cosmic-glow), var(--cosmic-nebula));
+            background: linear-gradient(135deg, var(--accent), var(--accent-glow));
             color: white;
         }
 
@@ -394,20 +285,10 @@ HTML_TEMPLATE = '''
             width: 100%;
             padding: 15px 20px;
             background: rgba(255, 255, 255, 0.1);
-            border: 2px solid var(--cosmic-glow);
+            border: 2px solid var(--accent);
             border-radius: 15px;
-            color: var(--cosmic-text);
+            color: var(--text);
             font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        .search-input:focus {
-            outline: none;
-            box-shadow: 0 0 20px rgba(107, 43, 217, 0.5);
-        }
-
-        .search-input::placeholder {
-            color: var(--cosmic-text-secondary);
         }
 
         .content-list {
@@ -416,7 +297,7 @@ HTML_TEMPLATE = '''
             padding: 10px;
         }
 
-        .chat-item, .user-item {
+        .chat-item {
             display: flex;
             align-items: center;
             padding: 18px;
@@ -426,67 +307,51 @@ HTML_TEMPLATE = '''
             cursor: pointer;
             transition: all 0.3s ease;
             border: 1px solid transparent;
-            position: relative;
         }
 
-        .chat-item:hover, .user-item:hover {
+        .chat-item:hover {
             background: rgba(107, 43, 217, 0.2);
-            border-color: var(--cosmic-glow);
+            border-color: var(--accent);
             transform: translateX(5px);
+        }
+
+        .chat-item.active {
+            background: rgba(107, 43, 217, 0.3);
+            border-color: var(--accent);
         }
 
         .item-avatar {
             width: 50px;
             height: 50px;
             border-radius: 12px;
-            background: linear-gradient(135deg, var(--cosmic-glow), var(--cosmic-nebula));
+            background: linear-gradient(135deg, var(--accent), var(--accent-glow));
             display: flex;
             align-items: center;
             justify-content: center;
             margin-right: 15px;
             font-size: 1.3rem;
-            animation: float 3s ease-in-out infinite;
         }
 
         .online-dot {
-            position: absolute;
-            top: 15px;
-            right: 15px;
             width: 12px;
             height: 12px;
-            background: #00ff00;
+            background: var(--success);
             border-radius: 50%;
-            box-shadow: 0 0 10px #00ff00;
-        }
-
-        .unread-badge {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: var(--cosmic-star);
-            color: var(--cosmic-primary);
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.8rem;
-            font-weight: bold;
+            box-shadow: 0 0 10px var(--success);
+            margin-left: auto;
         }
 
         .chat-area {
             flex: 1;
             display: flex;
             flex-direction: column;
-            background: var(--cosmic-primary);
-            position: relative;
+            background: var(--primary);
         }
 
         .chat-header {
             padding: 20px;
             background: rgba(26, 26, 74, 0.9);
-            border-bottom: 2px solid var(--cosmic-glow);
+            border-bottom: 2px solid var(--accent);
             display: flex;
             align-items: center;
             gap: 15px;
@@ -499,7 +364,6 @@ HTML_TEMPLATE = '''
             display: flex;
             flex-direction: column;
             gap: 15px;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="1" fill="white" opacity="0.1"/><circle cx="80" cy="40" r="1" fill="white" opacity="0.1"/><circle cx="40" cy="80" r="1" fill="white" opacity="0.1"/></svg>');
         }
 
         .message {
@@ -507,23 +371,18 @@ HTML_TEMPLATE = '''
             padding: 15px 20px;
             border-radius: 20px;
             position: relative;
-            animation: messageSlide 0.3s ease-out;
-        }
-
-        @keyframes messageSlide {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            animation: slideUp 0.3s ease-out;
         }
 
         .message.received {
             background: rgba(107, 43, 217, 0.3);
             align-self: flex-start;
             border-bottom-left-radius: 5px;
-            border: 1px solid var(--cosmic-glow);
+            border: 1px solid var(--accent);
         }
 
         .message.sent {
-            background: linear-gradient(135deg, var(--cosmic-glow), var(--cosmic-nebula));
+            background: linear-gradient(135deg, var(--accent), var(--accent-glow));
             align-self: flex-end;
             border-bottom-right-radius: 5px;
             color: white;
@@ -539,7 +398,7 @@ HTML_TEMPLATE = '''
         .message-input-container {
             padding: 20px;
             background: rgba(26, 26, 74, 0.9);
-            border-top: 2px solid var(--cosmic-glow);
+            border-top: 2px solid var(--accent);
             display: flex;
             gap: 15px;
             align-items: center;
@@ -549,115 +408,21 @@ HTML_TEMPLATE = '''
             flex: 1;
             padding: 15px 20px;
             background: rgba(255, 255, 255, 0.1);
-            border: 2px solid var(--cosmic-glow);
+            border: 2px solid var(--accent);
             border-radius: 25px;
-            color: var(--cosmic-text);
+            color: var(--text);
             font-size: 1rem;
             outline: none;
-            transition: all 0.3s ease;
-        }
-
-        .message-input:focus {
-            box-shadow: 0 0 20px rgba(107, 43, 217, 0.5);
         }
 
         .send-btn {
             padding: 15px 25px;
-            background: linear-gradient(135deg, var(--cosmic-glow), var(--cosmic-nebula));
+            background: linear-gradient(135deg, var(--accent), var(--accent-glow));
             color: white;
             border: none;
             border-radius: 20px;
             cursor: pointer;
             font-weight: bold;
-            transition: all 0.3s ease;
-        }
-
-        .send-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 5px 20px rgba(107, 43, 217, 0.6);
-        }
-
-        .call-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, var(--cosmic-primary), var(--cosmic-accent));
-            z-index: 3000;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: space-between;
-            padding: 40px 20px;
-        }
-
-        .call-avatar {
-            width: 150px;
-            height: 150px;
-            border-radius: 30px;
-            background: linear-gradient(135deg, var(--cosmic-glow), var(--cosmic-nebula));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 4rem;
-            margin-bottom: 20px;
-            animation: glowPulse 3s infinite;
-        }
-
-        .call-controls {
-            display: flex;
-            gap: 25px;
-            margin-bottom: 40px;
-        }
-
-        .control-btn {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            border: none;
-            font-size: 1.8rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        }
-
-        .control-btn:hover {
-            transform: scale(1.1);
-        }
-
-        .call-end {
-            background: #ff4444;
-            color: white;
-        }
-
-        .call-accept {
-            background: #00ff00;
-            color: white;
-        }
-
-        .call-mute {
-            background: var(--cosmic-secondary);
-            color: white;
-        }
-
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: linear-gradient(135deg, var(--cosmic-glow), var(--cosmic-nebula));
-            color: white;
-            padding: 15px 25px;
-            border-radius: 15px;
-            z-index: 4000;
-            animation: slideInRight 0.3s ease, glowPulse 2s infinite;
-            box-shadow: 0 10px 30px rgba(107, 43, 217, 0.4);
-            border: 1px solid var(--cosmic-glow);
-        }
-
-        @keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
         }
 
         .settings-panel {
@@ -668,7 +433,7 @@ HTML_TEMPLATE = '''
             height: 100%;
             background: rgba(26, 26, 74, 0.95);
             backdrop-filter: blur(20px);
-            border-left: 2px solid var(--cosmic-glow);
+            border-left: 2px solid var(--accent);
             z-index: 500;
             transition: right 0.3s ease;
             padding: 30px;
@@ -679,11 +444,97 @@ HTML_TEMPLATE = '''
             right: 0;
         }
 
+        .setting-item {
+            margin-bottom: 20px;
+        }
+
+        .setting-label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .setting-input {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid var(--accent);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 1rem;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-glow));
+            color: white;
+            padding: 15px 25px;
+            border-radius: 15px;
+            z-index: 4000;
+            animation: slideUp 0.3s ease, glow 2s infinite;
+            border: 1px solid var(--accent);
+        }
+
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background: var(--neon);
+            animation: confettiFall 5s linear forwards;
+            z-index: 10000;
+        }
+
+        @keyframes confettiFall {
+            0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+        }
+
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            background: rgba(107, 43, 217, 0.2);
+            border-radius: 15px;
+            margin: 10px 20px;
+            align-self: flex-start;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        .typing-dots {
+            display: flex;
+            margin-left: 10px;
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--neon);
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: typingBounce 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typingBounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-5px); }
+        }
+
         .mobile-menu-btn {
             display: none;
             background: none;
             border: none;
-            color: var(--cosmic-text);
+            color: var(--text);
             font-size: 1.5rem;
             cursor: pointer;
             padding: 10px;
@@ -706,102 +557,73 @@ HTML_TEMPLATE = '''
                 display: block;
             }
             
-            .cosmic-container {
+            .cosmic-card {
                 padding: 25px;
                 margin: 10px;
             }
-            
-            .call-controls {
-                gap: 15px;
-            }
-            
-            .control-btn {
-                width: 60px;
-                height: 60px;
-                font-size: 1.5rem;
-            }
-        }
-
-        /* Создаем звезды на фоне */
-        .stars-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: -1;
-        }
-
-        .star {
-            position: absolute;
-            background: white;
-            border-radius: 50%;
-            animation: starTwinkle 3s infinite;
         }
     </style>
 </head>
 <body>
-    <!-- Фоновые звезды -->
-    <div class="stars-container" id="starsContainer"></div>
+    <div class="cosmic-bg"></div>
 
     <!-- Экран загрузки -->
     <div id="loadingScreen" class="screen">
-        <div class="cosmic-container" style="text-align: center;">
-            <div class="logo">🌌 CosmicChat</div>
-            <div class="subtitle">Запуск межгалактической связи...</div>
-            <div style="font-size: 2rem; margin: 20px 0;">🚀</div>
-            <div style="color: var(--cosmic-text-secondary);">Инициализация протоколов связи</div>
+        <div class="cosmic-card" style="text-align: center;">
+            <div class="logo">TrollexDL</div>
+            <div class="typewriter">Initializing quantum protocol...</div>
+            <div style="margin-top: 30px; font-size: 2rem;">🚀</div>
         </div>
     </div>
 
     <!-- Главный экран -->
     <div id="welcomeScreen" class="screen hidden">
-        <div class="cosmic-container">
-            <div class="logo">CosmicChat</div>
-            <div class="subtitle">
-                Межгалактический мессенджер с защищенными звонками<br>
-                и космическим дизайном
+        <div class="cosmic-card">
+            <div class="logo">TrollexDL</div>
+            <div style="text-align: center; color: var(--text-secondary); margin-bottom: 30px; line-height: 1.6;">
+                Ultimate messaging experience<br>
+                with quantum encryption & neon design
             </div>
             
             <button class="btn btn-primary" onclick="showRegisterScreen()">
-                🌟 НАЧАТЬ ПУТЕШЕСТВИЕ
+                🚀 START JOURNEY
             </button>
             
             <button class="btn btn-secondary" onclick="quickStart()">
-                🚀 БЫСТРЫЙ СТАРТ
+                ⚡ QUICK START
             </button>
 
-            <div style="text-align: center; margin-top: 25px; color: var(--cosmic-text-secondary);">
-                ⚡ Мгновенные сообщения<br>
-                📞 HD звонки<br>
-                🌐 Работает везде
+            <div style="text-align: center; margin-top: 25px; color: var(--text-secondary); font-size: 0.9rem;">
+                • Quantum Encryption<br>
+                • HD Voice/Video Calls<br>
+                • Cosmic Design<br>
+                • Cross-Platform
             </div>
         </div>
     </div>
 
     <!-- Регистрация -->
     <div id="registerScreen" class="screen hidden">
-        <div class="cosmic-container">
-            <div class="logo">Регистрация</div>
-            <div class="subtitle">Создайте свой космический профиль</div>
+        <div class="cosmic-card">
+            <div class="logo">Registration</div>
             
             <div class="user-card">
-                <div class="user-avatar" id="registerAvatar">👨‍🚀</div>
-                <h3 id="registerName">Космонавт</h3>
-                <p style="color: var(--cosmic-text-secondary);">ID: <span id="registerId">...</span></p>
+                <div class="user-avatar" id="registerAvatar">🚀</div>
+                <h3 id="registerName">Quantum_User</h3>
+                <p style="color: var(--text-secondary);">ID: <span id="registerId">...</span></p>
+                <p style="color: var(--text-secondary); margin-top: 5px;">📧 <span id="registerEmail">...</span></p>
             </div>
             
             <button class="btn btn-primary" onclick="registerUser()">
-                ✅ СОЗДАТЬ ПРОФИЛЬ
+                ✅ CREATE PROFILE
             </button>
             
             <button class="btn btn-secondary" onclick="generateNewUser()">
-                🔄 СГЕНЕРИРОВАТЬ
+                🔄 GENERATE NEW
             </button>
             
             <button class="btn btn-secondary" onclick="showWelcomeScreen()">
-                ← НАЗАД
+                ← BACK
             </button>
         </div>
     </div>
@@ -811,24 +633,19 @@ HTML_TEMPLATE = '''
         <div class="sidebar" id="sidebar">
             <div class="user-header">
                 <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
-                <div class="user-avatar" id="userAvatar">👨‍🚀</div>
-                <h3 id="userName">Космонавт</h3>
+                <div class="user-avatar" id="userAvatar">🚀</div>
+                <h3 id="userName">User</h3>
                 <p style="opacity: 0.8;">ID: <span id="userId">...</span></p>
-                <div style="margin-top: 10px;">
-                    <span style="color: var(--cosmic-star);">⭐</span>
-                    <span id="userStars">1000</span> звезд
-                </div>
             </div>
 
             <div class="nav-tabs">
                 <div class="nav-tab active" onclick="switchTab('chats')">💬</div>
                 <div class="nav-tab" onclick="switchTab('calls')">📞</div>
-                <div class="nav-tab" onclick="switchTab('contacts')">👥</div>
                 <div class="nav-tab" onclick="showSettings()">⚙️</div>
             </div>
 
             <div class="search-box">
-                <input type="text" class="search-input" placeholder="🔍 Поиск во Вселенной..." id="searchInput" oninput="searchItems()">
+                <input type="text" class="search-input" placeholder="🔍 Search universe..." id="searchInput" oninput="searchItems()">
             </div>
 
             <div class="content-list" id="contentList">
@@ -836,8 +653,8 @@ HTML_TEMPLATE = '''
             </div>
 
             <div style="padding: 20px;">
-                <button class="btn btn-secondary" onclick="showLogoutConfirm()" style="background: rgba(255,68,68,0.2); color: #ff4444; border-color: #ff4444;">
-                    🚪 Выйти
+                <button class="btn btn-secondary" onclick="showLogoutConfirm()" style="background: rgba(255,68,68,0.2); color: var(--danger); border-color: var(--danger);">
+                    🚪 Logout
                 </button>
             </div>
         </div>
@@ -847,27 +664,36 @@ HTML_TEMPLATE = '''
                 <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
                 <div class="item-avatar" id="currentChatAvatar">💬</div>
                 <div style="flex: 1;">
-                    <h3 id="currentChatName">CosmicChat</h3>
-                    <p style="color: var(--cosmic-text-secondary);" id="currentChatStatus">Выберите чат для общения</p>
+                    <h3 id="currentChatName">TrollexDL</h3>
+                    <p style="color: var(--text-secondary);" id="currentChatStatus">Select chat to start messaging</p>
                 </div>
                 <button class="mobile-menu-btn" onclick="showSettings()">⚙️</button>
             </div>
 
             <div class="messages-container" id="messagesContainer">
-                <div style="text-align: center; padding: 50px 20px; color: var(--cosmic-text-secondary);">
+                <div style="text-align: center; padding: 50px 20px; color: var(--text-secondary);">
                     <div style="font-size: 4rem; margin-bottom: 20px;">🌌</div>
-                    <h3 style="margin-bottom: 15px;">Добро пожаловать в CosmicChat!</h3>
-                    <p>Начните общение с другими космическими путешественниками</p>
+                    <h3 style="margin-bottom: 15px;">Welcome to TrollexDL!</h3>
+                    <p>Start messaging with quantum encryption</p>
                     <div style="margin-top: 30px; font-size: 0.9rem; opacity: 0.7;">
-                        🔒 Защищенные сообщения<br>
-                        📞 Качественные звонки<br>
-                        🌐 Доступно везде
+                        🔒 Quantum Encryption<br>
+                        📞 HD Calls<br>
+                        🚀 Ultra Fast
                     </div>
                 </div>
             </div>
 
+            <div class="typing-indicator hidden" id="typingIndicator">
+                <span id="typingUser">User</span> is typing
+                <div class="typing-dots">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            </div>
+
             <div class="message-input-container">
-                <input type="text" class="message-input" placeholder="Введите ваше межгалактическое сообщение..." id="messageInput">
+                <input type="text" class="message-input" placeholder="Type your quantum message..." id="messageInput" oninput="handleTyping()">
                 <button class="send-btn" onclick="sendMessage()">🚀</button>
             </div>
         </div>
@@ -875,68 +701,62 @@ HTML_TEMPLATE = '''
 
     <!-- Панель настроек -->
     <div class="settings-panel" id="settingsPanel">
-        <h3 style="margin-bottom: 25px; text-align: center;">⚙️ Настройки</h3>
+        <h3 style="margin-bottom: 25px; text-align: center;">⚙️ Settings</h3>
         
-        <div style="margin-bottom: 20px;">
-            <label style="display: block; margin-bottom: 8px; color: var(--cosmic-text-secondary);">Тема:</label>
-            <select style="width: 100%; padding: 12px; background: rgba(255,255,255,0.1); border: 1px solid var(--cosmic-glow); border-radius: 10px; color: var(--cosmic-text);">
-                <option>🌌 Космическая</option>
-                <option>🚀 Галактическая</option>
-                <option>⭐ Звездная</option>
+        <div class="setting-item">
+            <label class="setting-label">👤 Display Name</label>
+            <input type="text" class="setting-input" id="settingsName" placeholder="Enter new name">
+        </div>
+
+        <div class="setting-item">
+            <label class="setting-label">📧 Email</label>
+            <input type="email" class="setting-input" id="settingsEmail" placeholder="Enter email">
+        </div>
+
+        <div class="setting-item">
+            <label class="setting-label">🎨 Theme</label>
+            <select class="setting-input" id="settingsTheme">
+                <option>🌌 Cosmic</option>
+                <option>🚀 Neon</option>
+                <option>⚡ Quantum</option>
+                <option>🔮 Mystic</option>
             </select>
         </div>
 
-        <div style="margin-bottom: 20px;">
-            <label style="display: block; margin-bottom: 8px; color: var(--cosmic-text-secondary);">Уведомления:</label>
+        <div class="setting-item">
+            <label class="setting-label">🔔 Notifications</label>
             <div style="display: flex; gap: 10px;">
-                <button class="btn btn-secondary" style="flex: 1;">🔔 Вкл</button>
-                <button class="btn btn-secondary" style="flex: 1;">🔕 Выкл</button>
+                <button class="btn btn-secondary" style="flex: 1;" onclick="toggleSetting('notifications', true)">🔔 On</button>
+                <button class="btn btn-secondary" style="flex: 1;" onclick="toggleSetting('notifications', false)">🔕 Off</button>
             </div>
         </div>
 
         <div style="margin-bottom: 30px;">
-            <h4 style="margin-bottom: 15px; color: var(--cosmic-text-secondary);">Ваш профиль</h4>
+            <h4 style="margin-bottom: 15px; color: var(--text-secondary);">Profile Info</h4>
             <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px;">
-                <div>👤 Имя: <span id="settingsUserName">-</span></div>
                 <div>🆔 ID: <span id="settingsUserId">-</span></div>
-                <div>⭐ Звезд: <span id="settingsUserStars">0</span></div>
-                <div>📅 Регистрация: <span id="settingsUserRegDate">-</span></div>
+                <div>📅 Registered: <span id="settingsUserRegDate">-</span></div>
+                <div>💾 Storage: <span id="settingsStorage">0</span> messages</div>
             </div>
         </div>
 
-        <button class="btn btn-primary" onclick="hideSettings()" style="margin-bottom: 15px;">✅ Сохранить</button>
-        <button class="btn btn-secondary" onclick="showLogoutConfirm()">🚪 Выйти</button>
-    </div>
-
-    <!-- Экран звонка -->
-    <div id="callScreen" class="call-screen hidden">
-        <div style="text-align: center;">
-            <div class="call-avatar" id="callAvatar">👨‍🚀</div>
-            <h2 id="callUserName">Космонавт</h2>
-            <p id="callStatus" style="color: var(--cosmic-text-secondary); font-size: 1.2rem;">Установка связи...</p>
-            <p id="callTimer" style="font-size: 2.5rem; font-weight: bold; margin: 20px 0;">00:00</p>
-        </div>
-        
-        <div class="call-controls">
-            <button class="control-btn call-mute" onclick="toggleMute()">🎤</button>
-            <button class="control-btn call-end" onclick="endCall()">📞</button>
-            <button class="control-btn call-mute" onclick="toggleVideo()">📹</button>
-        </div>
+        <button class="btn btn-primary" onclick="saveSettings()" style="margin-bottom: 15px;">💾 Save Settings</button>
+        <button class="btn btn-secondary" onclick="showLogoutConfirm()">🚪 Logout</button>
     </div>
 
     <!-- Подтверждение выхода -->
     <div id="logoutConfirm" class="screen hidden" style="background: rgba(10, 10, 42, 0.95); z-index: 4000;">
-        <div class="cosmic-container">
-            <h3 style="margin-bottom: 20px; text-align: center;">🚪 Подтверждение выхода</h3>
-            <p style="text-align: center; margin-bottom: 25px; color: var(--cosmic-text-secondary);">
-                Ваш профиль будет сохранен.<br>
-                Вернуться можно в любой момент!
+        <div class="cosmic-card">
+            <h3 style="margin-bottom: 20px; text-align: center;">🚪 Confirm Logout</h3>
+            <p style="text-align: center; margin-bottom: 25px; color: var(--text-secondary);">
+                Your data will be saved securely.<br>
+                You can return anytime!
             </p>
-            <button class="btn btn-primary" onclick="logout()" style="background: rgba(255,68,68,0.2); color: #ff4444; border-color: #ff4444;">
-                ✅ Выйти
+            <button class="btn btn-primary" onclick="logout()" style="background: rgba(255,68,68,0.2); color: var(--danger); border-color: var(--danger);">
+                ✅ Logout
             </button>
             <button class="btn btn-secondary" onclick="hideLogoutConfirm()">
-                ❌ Отмена
+                ❌ Cancel
             </button>
         </div>
     </div>
@@ -946,34 +766,15 @@ HTML_TEMPLATE = '''
         let currentUser = null;
         let currentTab = 'chats';
         let currentChat = null;
-        let callTimer = null;
-        let callStartTime = null;
         let messages = {};
-        let users = {};
+        let typingTimer = null;
 
-        // Создаем звездное небо
-        function createStars() {
-            const container = document.getElementById('starsContainer');
-            for (let i = 0; i < 150; i++) {
-                const star = document.createElement('div');
-                star.className = 'star';
-                star.style.width = Math.random() * 3 + 'px';
-                star.style.height = star.style.width;
-                star.style.left = Math.random() * 100 + '%';
-                star.style.top = Math.random() * 100 + '%';
-                star.style.animationDelay = Math.random() * 5 + 's';
-                star.style.opacity = Math.random() * 0.7 + 0.3;
-                container.appendChild(star);
-            }
-        }
-
-        // Инициализация при загрузке
+        // Инициализация
         document.addEventListener('DOMContentLoaded', function() {
-            createStars();
             setTimeout(() => {
                 hideLoadingScreen();
                 checkAutoLogin();
-            }, 2500);
+            }, 2000);
         });
 
         function hideLoadingScreen() {
@@ -1001,56 +802,77 @@ HTML_TEMPLATE = '''
         }
 
         function generateNewUser() {
+            const name = generateUsername();
+            const email = generateEmail(name);
+            const userId = generateUserId();
             const avatars = ['🚀', '👨‍🚀', '👩‍🚀', '🛸', '🌌', '🌟', '⭐', '☄️', '🌠', '🪐'];
-            const names = ['Космонавт', 'Астронавт', 'Галактик', 'Звездный', 'Орбитальный', 'Лунный', 'Марсианский', 'Спутник'];
-            const suffixes = ['Искатель', 'Путешественник', 'Первопроходец', 'Исследователь', 'Наблюдатель'];
             
-            const avatar = avatars[Math.floor(Math.random() * avatars.length)];
-            const name = names[Math.floor(Math.random() * names.length)] + '_' + suffixes[Math.floor(Math.random() * suffixes.length)];
-            const userId = 'user_' + Date.now();
-            
-            document.getElementById('registerAvatar').textContent = avatar;
+            document.getElementById('registerAvatar').textContent = avatars[Math.floor(Math.random() * avatars.length)];
             document.getElementById('registerName').textContent = name;
             document.getElementById('registerId').textContent = userId;
+            document.getElementById('registerEmail').textContent = email;
+        }
+
+        function generateUsername() {
+            const adjectives = ['Quantum', 'Neon', 'Cyber', 'Digital', 'Virtual', 'Hyper', 'Mega', 'Ultra', 'Super', 'Alpha'];
+            const nouns = ['Phoenix', 'Dragon', 'Wolf', 'Tiger', 'Eagle', 'Falcon', 'Shark', 'Lion', 'Hawk', 'Panther'];
+            const numbers = Math.floor(Math.random() * 9000) + 1000;
+            return `${adjectives[Math.floor(Math.random() * adjectives.length)]}_${nouns[Math.floor(Math.random() * nouns.length)]}${numbers}`;
+        }
+
+        function generateEmail(username) {
+            const domains = ['quantum.io', 'nebula.org', 'cosmic.com', 'trollex.ai', 'universe.net'];
+            return `${username.toLowerCase()}@${domains[Math.floor(Math.random() * domains.length)]}`;
+        }
+
+        function generateUserId() {
+            return 'user_' + Math.random().toString(36).substr(2, 9).toUpperCase();
         }
 
         function registerUser() {
             const name = document.getElementById('registerName').textContent;
             const avatar = document.getElementById('registerAvatar').textContent;
             const userId = document.getElementById('registerId').textContent;
+            const email = document.getElementById('registerEmail').textContent;
             
             currentUser = {
                 id: userId,
                 name: name,
                 avatar: avatar,
-                stars: Math.floor(Math.random() * 5000) + 1000,
-                level: Math.floor(Math.random() * 100) + 1,
-                online: true,
+                email: email,
+                theme: 'cosmic',
+                notifications: true,
                 created_at: new Date().toISOString()
             };
             
-            // Сохраняем в localStorage
-            localStorage.setItem('cosmicUser', JSON.stringify(currentUser));
+            localStorage.setItem('trollexUser', JSON.stringify(currentUser));
+            localStorage.setItem('userMessages', JSON.stringify(messages));
             
             showMainApp();
-            showNotification('Космический профиль создан! 🎉', 'success');
+            createConfetti();
+            showNotification('Quantum profile created! 🎉', 'success');
         }
 
         function quickStart() {
-            const savedUser = localStorage.getItem('cosmicUser');
+            const savedUser = localStorage.getItem('trollexUser');
             if (savedUser) {
                 currentUser = JSON.parse(savedUser);
                 showMainApp();
-                showNotification('С возвращением в космос! 🚀', 'success');
+                showNotification('Welcome back to TrollexDL! 🚀', 'success');
             } else {
                 showRegisterScreen();
             }
         }
 
         function checkAutoLogin() {
-            const savedUser = localStorage.getItem('cosmicUser');
+            const savedUser = localStorage.getItem('trollexUser');
+            const savedMessages = localStorage.getItem('userMessages');
+            
             if (savedUser) {
                 currentUser = JSON.parse(savedUser);
+                if (savedMessages) {
+                    messages = JSON.parse(savedMessages);
+                }
                 showMainApp();
             } else {
                 showWelcomeScreen();
@@ -1064,13 +886,13 @@ HTML_TEMPLATE = '''
             document.getElementById('userName').textContent = currentUser.name;
             document.getElementById('userAvatar').textContent = currentUser.avatar;
             document.getElementById('userId').textContent = currentUser.id;
-            document.getElementById('userStars').textContent = currentUser.stars;
             
             // Настройки
-            document.getElementById('settingsUserName').textContent = currentUser.name;
+            document.getElementById('settingsName').value = currentUser.name;
+            document.getElementById('settingsEmail').value = currentUser.email;
             document.getElementById('settingsUserId').textContent = currentUser.id;
-            document.getElementById('settingsUserStars').textContent = currentUser.stars;
-            document.getElementById('settingsUserRegDate').textContent = new Date(currentUser.created_at).toLocaleDateString('ru-RU');
+            document.getElementById('settingsUserRegDate').textContent = new Date(currentUser.created_at).toLocaleDateString();
+            document.getElementById('settingsStorage').textContent = Object.values(messages).reduce((acc, msgs) => acc + msgs.length, 0);
             
             loadContent();
         }
@@ -1078,7 +900,6 @@ HTML_TEMPLATE = '''
         function switchTab(tabName) {
             currentTab = tabName;
             
-            // Обновляем активные табы
             document.querySelectorAll('.nav-tab').forEach(tab => {
                 tab.classList.remove('active');
             });
@@ -1097,97 +918,64 @@ HTML_TEMPLATE = '''
                 contentHTML = getChatsContent(searchTerm);
             } else if (currentTab === 'calls') {
                 contentHTML = getCallsContent(searchTerm);
-            } else if (currentTab === 'contacts') {
-                contentHTML = getContactsContent(searchTerm);
             }
             
             contentList.innerHTML = contentHTML;
         }
 
         function getChatsContent(searchTerm) {
-            const sampleChats = [
-                {id: 'chat1', name: 'Космическая_Поддержка', avatar: '🛰️', lastMessage: 'Чем можем помочь?', unread: 2, online: true, type: 'support'},
-                {id: 'chat2', name: 'Технический_Отдел', avatar: '🔧', lastMessage: 'Обновление системы', unread: 0, online: true, type: 'tech'},
-                {id: 'chat3', name: 'Новости_Галактики', avatar: '📡', lastMessage: 'Новые космические открытия', unread: 5, online: true, type: 'news'}
+            const chats = [
+                {id: 'support', name: 'Trollex Support', avatar: '🛰️', lastMessage: 'How can we help?', online: true, type: 'support'},
+                {id: 'updates', name: 'System Updates', avatar: '🔧', lastMessage: 'Latest features available', online: true, type: 'updates'},
+                {id: 'community', name: 'Community Chat', avatar: '👥', lastMessage: 'Welcome to TrollexDL!', online: true, type: 'community'}
             ];
             
-            const filteredChats = sampleChats.filter(chat => 
+            const filteredChats = chats.filter(chat => 
                 chat.name.toLowerCase().includes(searchTerm)
             );
             
             if (filteredChats.length === 0) {
-                return '<div style="text-align: center; padding: 40px; color: var(--cosmic-text-secondary);">🌌 Чаты не найдены</div>';
+                return '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">🌌 No chats found</div>';
             }
             
             return filteredChats.map(chat => `
-                <div class="chat-item" onclick="openChat('${chat.id}')">
+                <div class="chat-item ${currentChat?.id === chat.id ? 'active' : ''}" onclick="openChat('${chat.id}')">
                     <div class="item-avatar">${chat.avatar}</div>
                     <div style="flex: 1;">
                         <div style="font-weight: bold; font-size: 1.1rem;">${chat.name}</div>
-                        <div style="color: var(--cosmic-text-secondary); font-size: 0.9rem;">${chat.lastMessage}</div>
+                        <div style="color: var(--text-secondary); font-size: 0.9rem;">${chat.lastMessage}</div>
                     </div>
                     ${chat.online ? '<div class="online-dot"></div>' : ''}
-                    ${chat.unread > 0 ? `<div class="unread-badge">${chat.unread}</div>` : ''}
                 </div>
             `).join('');
         }
 
         function getCallsContent(searchTerm) {
-            const sampleUsers = [
-                {id: 'user1', name: 'Алексей_Звездный', avatar: '👨‍🚀', online: true, lastCall: '2 мин назад', status: 'available'},
-                {id: 'user2', name: 'София_Галактика', avatar: '👩‍🚀', online: true, lastCall: '5 мин назад', status: 'available'},
-                {id: 'user3', name: 'Максим_Орбита', avatar: '🧑‍🚀', online: false, lastCall: '1 час назад', status: 'busy'},
-                {id: 'user4', name: 'Анна_Лунная', avatar: '👩‍🔬', online: true, lastCall: '10 мин назад', status: 'available'},
-                {id: 'user5', name: 'Дмитрий_Марсианский', avatar: '👨‍🔬', online: false, lastCall: '2 часа назад', status: 'offline'}
+            const callHistory = [
+                {id: '1', name: 'Trollex Support', avatar: '🛰️', type: 'voice', duration: '2:30', date: 'Today', status: 'completed'},
+                {id: '2', name: 'System Bot', avatar: '🤖', type: 'video', duration: '5:15', date: 'Yesterday', status: 'completed'},
+                {id: '3', name: 'Community', avatar: '👥', type: 'voice', duration: '1:45', date: '2 days ago', status: 'missed'}
             ];
             
-            const filteredUsers = sampleUsers.filter(user => 
-                user.name.toLowerCase().includes(searchTerm)
+            const filteredCalls = callHistory.filter(call => 
+                call.name.toLowerCase().includes(searchTerm)
             );
             
-            if (filteredUsers.length === 0) {
-                return '<div style="text-align: center; padding: 40px; color: var(--cosmic-text-secondary);">🌌 Пользователи не найдены</div>';
+            if (filteredCalls.length === 0) {
+                return '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">📞 No call history</div>';
             }
             
-            return filteredUsers.map(user => `
-                <div class="user-item">
-                    <div class="item-avatar">${user.avatar}</div>
+            return filteredCalls.map(call => `
+                <div class="chat-item">
+                    <div class="item-avatar">${call.avatar}</div>
                     <div style="flex: 1;">
-                        <div style="font-weight: bold; font-size: 1.1rem;">${user.name}</div>
-                        <div style="color: ${user.online ? '#00ff00' : 'var(--cosmic-text-secondary)'}; font-size: 0.9rem;">
-                            ${user.online ? '● онлайн' : '○ офлайн'} • ${user.lastCall}
+                        <div style="font-weight: bold; font-size: 1.1rem;">${call.name}</div>
+                        <div style="color: var(--text-secondary); font-size: 0.9rem;">
+                            ${call.type === 'video' ? '📹' : '📞'} • ${call.duration} • ${call.date}
                         </div>
                     </div>
-                    <div style="display: flex; gap: 8px;">
-                        <button onclick="startVoiceCall('${user.id}')" style="background: var(--cosmic-glow); color: white; border: none; border-radius: 8px; padding: 8px 12px; cursor: pointer; font-size: 0.9rem;">📞</button>
-                        <button onclick="startVideoCall('${user.id}')" style="background: var(--cosmic-nebula); color: white; border: none; border-radius: 8px; padding: 8px 12px; cursor: pointer; font-size: 0.9rem;">📹</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function getContactsContent(searchTerm) {
-            const contacts = [
-                {name: 'Центр_Управления', avatar: '🛰️', role: 'Главный координатор'},
-                {name: 'Тех_Поддержка', avatar: '🔧', role: 'Техническая помощь'},
-                {name: 'Безопасность', avatar: '🛡️', role: 'Защита системы'},
-                {name: 'Разработчики', avatar: '👨‍💻', role: 'Создатели платформы'}
-            ];
-            
-            const filteredContacts = contacts.filter(contact => 
-                contact.name.toLowerCase().includes(searchTerm)
-            );
-            
-            if (filteredContacts.length === 0) {
-                return '<div style="text-align: center; padding: 40px; color: var(--cosmic-text-secondary);">🌌 Контакты не найдены</div>';
-            }
-            
-            return filteredContacts.map(contact => `
-                <div class="chat-item">
-                    <div class="item-avatar">${contact.avatar}</div>
-                    <div style="flex: 1;">
-                        <div style="font-weight: bold; font-size: 1.1rem;">${contact.name}</div>
-                        <div style="color: var(--cosmic-text-secondary); font-size: 0.9rem;">${contact.role}</div>
+                    <div style="color: ${call.status === 'completed' ? 'var(--success)' : 'var(--danger)'};">
+                        ${call.status === 'completed' ? '✅' : '❌'}
                     </div>
                 </div>
             `).join('');
@@ -1199,51 +987,102 @@ HTML_TEMPLATE = '''
 
         function openChat(chatId) {
             const chats = {
-                'chat1': {name: 'Космическая_Поддержка', avatar: '🛰️', status: 'онлайн'},
-                'chat2': {name: 'Технический_Отдел', avatar: '🔧', status: 'онлайн'},
-                'chat3': {name: 'Новости_Галактики', avatar: '📡', status: 'рассылка'}
+                'support': {name: 'Trollex Support', avatar: '🛰️', status: 'online'},
+                'updates': {name: 'System Updates', avatar: '🔧', status: 'online'},
+                'community': {name: 'Community Chat', avatar: '👥', status: 'online'}
             };
             
             const chat = chats[chatId];
             if (chat) {
-                currentChat = chat;
+                currentChat = {...chat, id: chatId};
                 
                 document.getElementById('currentChatName').textContent = chat.name;
                 document.getElementById('currentChatAvatar').textContent = chat.avatar;
                 document.getElementById('currentChatStatus').textContent = chat.status;
                 
+                // Обновляем активный чат в списке
+                loadContent();
                 showChatMessages(chatId);
             }
         }
 
         function showChatMessages(chatId) {
             const messagesContainer = document.getElementById('messagesContainer');
-            const chatMessages = {
-                'chat1': [
-                    {text: 'Добро пожаловать в космическую поддержку! 👨‍🚀', sender: 'received', time: '12:00', id: '1'},
-                    {text: 'Чем можем помочь в вашем межгалактическом путешествии?', sender: 'received', time: '12:01', id: '2'},
-                    {text: 'Привет! Как работает система звонков?', sender: 'sent', time: '12:02', id: '3'},
-                    {text: 'Система звонков использует квантовое шифрование для максимальной безопасности! 🔒', sender: 'received', time: '12:03', id: '4'}
-                ],
-                'chat2': [
-                    {text: 'Технический отдел на связи! 🔧', sender: 'received', time: '11:30', id: '1'},
-                    {text: 'Готовы помочь с любыми техническими вопросами', sender: 'received', time: '11:31', id: '2'}
-                ],
-                'chat3': [
-                    {text: 'Добро пожаловать в новости галактики! 🌌', sender: 'received', time: '10:15', id: '1'},
-                    {text: 'Сегодня открыта новая планета в системе Альфа Центавра!', sender: 'received', time: '10:16', id: '2'}
-                ]
-            };
             
-            const messages = chatMessages[chatId] || [];
-            messagesContainer.innerHTML = messages.map(msg => `
-                <div class="message ${msg.sender}" data-message-id="${msg.id}">
-                    ${msg.text}
-                    <div class="message-time">${msg.time}</div>
-                </div>
-            `).join('');
+            // Загружаем сохраненные сообщения для этого чата
+            const chatMessages = messages[chatId] || getDefaultMessages(chatId);
+            
+            if (chatMessages.length === 0) {
+                messagesContainer.innerHTML = getWelcomeMessage(chatId);
+            } else {
+                messagesContainer.innerHTML = chatMessages.map(msg => `
+                    <div class="message ${msg.sender}" data-message-id="${msg.id}">
+                        ${msg.text}
+                        <div class="message-time">${msg.time}</div>
+                    </div>
+                `).join('');
+            }
             
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function getDefaultMessages(chatId) {
+            const defaults = {
+                'support': [
+                    {id: '1', text: 'Welcome to TrollexDL Support! 🚀', sender: 'received', time: '12:00'},
+                    {id: '2', text: 'How can we assist you today?', sender: 'received', time: '12:01'}
+                ],
+                'updates': [
+                    {id: '1', text: 'System Updates Channel 📡', sender: 'received', time: '11:30'},
+                    {id: '2', text: 'Latest version: TrollexDL v2.0', sender: 'received', time: '11:31'}
+                ],
+                'community': [
+                    {id: '1', text: 'Welcome to Community Chat! 👥', sender: 'received', time: '10:15'},
+                    {id: '2', text: 'Share your experiences with TrollexDL', sender: 'received', time: '10:16'}
+                ]
+            };
+            return defaults[chatId] || [];
+        }
+
+        function getWelcomeMessage(chatId) {
+            const welcomeTexts = {
+                'support': 'Get help and support for TrollexDL',
+                'updates': 'Stay updated with latest features',
+                'community': 'Connect with other TrollexDL users'
+            };
+            
+            return `
+                <div style="text-align: center; padding: 50px 20px; color: var(--text-secondary);">
+                    <div style="font-size: 4rem; margin-bottom: 20px;">💬</div>
+                    <h3 style="margin-bottom: 15px;">${currentChat.name}</h3>
+                    <p>${welcomeTexts[chatId]}</p>
+                    <div style="margin-top: 30px; font-size: 0.9rem; opacity: 0.7;">
+                        Start typing to begin conversation
+                    </div>
+                </div>
+            `;
+        }
+
+        function handleTyping() {
+            if (currentChat) {
+                showTypingIndicator();
+                
+                // Сбрасываем таймер при каждом вводе
+                clearTimeout(typingTimer);
+                typingTimer = setTimeout(() => {
+                    hideTypingIndicator();
+                }, 1000);
+            }
+        }
+
+        function showTypingIndicator() {
+            const indicator = document.getElementById('typingIndicator');
+            indicator.classList.remove('hidden');
+        }
+
+        function hideTypingIndicator() {
+            const indicator = document.getElementById('typingIndicator');
+            indicator.classList.add('hidden');
         }
 
         function sendMessage() {
@@ -1255,6 +1094,7 @@ HTML_TEMPLATE = '''
                 const time = new Date().toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
                 const messageId = 'msg_' + Date.now();
                 
+                // Создаем элемент сообщения
                 const messageElement = document.createElement('div');
                 messageElement.className = 'message sent';
                 messageElement.setAttribute('data-message-id', messageId);
@@ -1263,15 +1103,21 @@ HTML_TEMPLATE = '''
                     <div class="message-time">${time}</div>
                 `;
                 
+                // Если это первое сообщение, очищаем welcome message
+                if (!messages[currentChat.id] || messages[currentChat.id].length === 0) {
+                    messagesContainer.innerHTML = '';
+                }
+                
                 messagesContainer.appendChild(messageElement);
                 input.value = '';
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                hideTypingIndicator();
                 
                 // Сохраняем сообщение
-                if (!messages[currentChat.name]) {
-                    messages[currentChat.name] = [];
+                if (!messages[currentChat.id]) {
+                    messages[currentChat.id] = [];
                 }
-                messages[currentChat.name].push({
+                messages[currentChat.id].push({
                     id: messageId,
                     text: message,
                     sender: 'sent',
@@ -1280,116 +1126,69 @@ HTML_TEMPLATE = '''
                 });
                 
                 // Сохраняем в localStorage
-                localStorage.setItem('cosmicMessages', JSON.stringify(messages));
+                localStorage.setItem('userMessages', JSON.stringify(messages));
                 
-                showNotification('Сообщение отправлено в космос! ✨', 'success');
+                showNotification('Message sent! ✨', 'success');
                 
-                // Имитация ответа
+                // Имитация ответа через 1-3 секунды
                 setTimeout(() => {
-                    const replyTime = new Date().toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
-                    const replyId = 'msg_' + Date.now();
-                    
-                    const replies = [
-                        'Отличное сообщение! 🚀',
-                        'Понял вас! Продолжаем...',
-                        'Интересно! Расскажите подробнее 🌟',
-                        'Спасибо за ваше сообщение! 👨‍🚀'
-                    ];
-                    
-                    const replyElement = document.createElement('div');
-                    replyElement.className = 'message received';
-                    replyElement.setAttribute('data-message-id', replyId);
-                    replyElement.innerHTML = `
-                        ${replies[Math.floor(Math.random() * replies.length)]}
-                        <div class="message-time">${replyTime}</div>
-                    `;
-                    
-                    messagesContainer.appendChild(replyElement);
-                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                    
-                    // Сохраняем ответ
-                    if (!messages[currentChat.name]) {
-                        messages[currentChat.name] = [];
+                    if (currentChat) { // Проверяем что чат все еще открыт
+                        simulateReply();
                     }
-                    messages[currentChat.name].push({
-                        id: replyId,
-                        text: replyElement.textContent,
-                        sender: 'received',
-                        time: replyTime,
-                        timestamp: new Date().toISOString()
-                    });
-                    
-                    localStorage.setItem('cosmicMessages', JSON.stringify(messages));
                 }, 1000 + Math.random() * 2000);
             }
         }
 
-        function startVoiceCall(userId) {
-            const users = {
-                'user1': {name: 'Алексей_Звездный', avatar: '👨‍🚀'},
-                'user2': {name: 'София_Галактика', avatar: '👩‍🚀'},
-                'user3': {name: 'Максим_Орбита', avatar: '🧑‍🚀'},
-                'user4': {name: 'Анна_Лунная', avatar: '👩‍🔬'},
-                'user5': {name: 'Дмитрий_Марсианский', avatar: '👨‍🔬'}
+        function simulateReply() {
+            const messagesContainer = document.getElementById('messagesContainer');
+            const time = new Date().toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
+            const replyId = 'msg_' + Date.now();
+            
+            const replies = {
+                'support': [
+                    'Thanks for your message! How can we assist you further? 🚀',
+                    'We appreciate your feedback! Is there anything specific you need help with?',
+                    'Our team will review your message shortly. Thank you! 👨‍🚀'
+                ],
+                'updates': [
+                    'New features are coming soon! Stay tuned! ⚡',
+                    'Your system is up to date with the latest version! ✅',
+                    'We are working on exciting new updates! 🌟'
+                ],
+                'community': [
+                    'Great to see you in the community! 👋',
+                    'Thanks for sharing! Other users will appreciate this! 💫',
+                    'Welcome to our growing community! 🎉'
+                ]
             };
             
-            const user = users[userId];
-            if (user) {
-                showCallScreen(user, 'voice');
-            }
-        }
-
-        function startVideoCall(userId) {
-            const users = {
-                'user1': {name: 'Алексей_Звездный', avatar: '👨‍🚀'},
-                'user2': {name: 'София_Галактика', avatar: '👩‍🚀'},
-                'user3': {name: 'Максим_Орбита', avatar: '🧑‍🚀'},
-                'user4': {name: 'Анна_Лунная', avatar: '👩‍🔬'},
-                'user5': {name: 'Дмитрий_Марсианский', avatar: '👨‍🔬'}
-            };
+            const chatReplies = replies[currentChat.id] || ['Thank you for your message!'];
+            const replyText = chatReplies[Math.floor(Math.random() * chatReplies.length)];
             
-            const user = users[userId];
-            if (user) {
-                showCallScreen(user, 'video');
-            }
-        }
-
-        function showCallScreen(user, type) {
-            document.getElementById('callScreen').style.display = 'flex';
-            document.getElementById('callAvatar').textContent = user.avatar;
-            document.getElementById('callUserName').textContent = user.name;
-            document.getElementById('callStatus').textContent = type === 'voice' ? 'Голосовой звонок...' : 'Видеозвонок...';
+            const replyElement = document.createElement('div');
+            replyElement.className = 'message received';
+            replyElement.setAttribute('data-message-id', replyId);
+            replyElement.innerHTML = `
+                ${replyText}
+                <div class="message-time">${time}</div>
+            `;
             
-            startCallTimer();
-            showNotification(`Установка связи с ${user.name}...`, 'info');
-        }
-
-        function startCallTimer() {
-            callStartTime = new Date();
-            callTimer = setInterval(() => {
-                const now = new Date();
-                const diff = Math.floor((now - callStartTime) / 1000);
-                const minutes = Math.floor(diff / 60);
-                const seconds = diff % 60;
-                document.getElementById('callTimer').textContent = 
-                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            }, 1000);
-        }
-
-        function endCall() {
-            if (callTimer) {
-                clearInterval(callTimer);
+            messagesContainer.appendChild(replyElement);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            // Сохраняем ответ
+            if (!messages[currentChat.id]) {
+                messages[currentChat.id] = [];
             }
-            document.getElementById('callScreen').style.display = 'none';
-            showNotification('Космическая связь завершена 📞', 'info');
-        }
-
-        function toggleMute() {
-            showNotification('Микрофон переключен 🎤', 'info');
-        }
-
-        function toggleVideo() {
-            showNotification('Камера переключена 📹', 'info');
+            messages[currentChat.id].push({
+                id: replyId,
+                text: replyText,
+                sender: 'received',
+                time: time,
+                timestamp: new Date().toISOString()
+            });
+            
+            localStorage.setItem('userMessages', JSON.stringify(messages));
         }
 
         function toggleSidebar() {
@@ -1402,7 +1201,34 @@ HTML_TEMPLATE = '''
 
         function hideSettings() {
             document.getElementById('settingsPanel').classList.remove('active');
-            showNotification('Настройки сохранены! ✅', 'success');
+        }
+
+        function toggleSetting(setting, value) {
+            currentUser[setting] = value;
+            showNotification(`${setting.charAt(0).toUpperCase() + setting.slice(1)} ${value ? 'enabled' : 'disabled'}!`, 'info');
+        }
+
+        function saveSettings() {
+            const newName = document.getElementById('settingsName').value.trim();
+            const newEmail = document.getElementById('settingsEmail').value.trim();
+            
+            if (newName && newName !== currentUser.name) {
+                currentUser.name = newName;
+                document.getElementById('userName').textContent = newName;
+                showNotification('Name updated successfully! ✅', 'success');
+            }
+            
+            if (newEmail && newEmail !== currentUser.email) {
+                currentUser.email = newEmail;
+                showNotification('Email updated successfully! 📧', 'success');
+            }
+            
+            currentUser.theme = document.getElementById('settingsTheme').value;
+            
+            localStorage.setItem('trollexUser', JSON.stringify(currentUser));
+            hideSettings();
+            
+            createConfetti();
         }
 
         function showLogoutConfirm() {
@@ -1414,9 +1240,9 @@ HTML_TEMPLATE = '''
         }
 
         function logout() {
-            localStorage.removeItem('cosmicUser');
+            localStorage.removeItem('trollexUser');
             showWelcomeScreen();
-            showNotification('До новых космических встреч! 👋', 'info');
+            showNotification('See you soon in TrollexDL! 👋', 'info');
         }
 
         function showNotification(message, type = 'success') {
@@ -1425,23 +1251,32 @@ HTML_TEMPLATE = '''
             notification.textContent = message;
             
             if (type === 'error') {
-                notification.style.background = 'linear-gradient(135deg, #ff4444, #cc0000)';
-            } else if (type === 'info') {
-                notification.style.background = 'linear-gradient(135deg, var(--cosmic-glow), var(--cosmic-nebula))';
+                notification.style.background = 'linear-gradient(135deg, var(--danger), #cc0000)';
             }
             
             document.body.appendChild(notification);
             
             setTimeout(() => {
                 notification.remove();
-            }, 4000);
+            }, 3000);
         }
 
-        // Загрузка сохраненных сообщений
-        function loadSavedMessages() {
-            const savedMessages = localStorage.getItem('cosmicMessages');
-            if (savedMessages) {
-                messages = JSON.parse(savedMessages);
+        function createConfetti() {
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + 'vw';
+                    confetti.style.background = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                    confetti.style.width = Math.random() * 10 + 5 + 'px';
+                    confetti.style.height = confetti.style.width;
+                    
+                    document.body.appendChild(confetti);
+                    
+                    setTimeout(() => {
+                        confetti.remove();
+                    }, 5000);
+                }, i * 100);
             }
         }
 
@@ -1452,7 +1287,7 @@ HTML_TEMPLATE = '''
             }
         });
 
-        // Закрытие сайдбара при клике вне его на мобильных
+        // Закрытие сайдбара и настроек при клике вне их
         document.addEventListener('click', function(event) {
             const sidebar = document.getElementById('sidebar');
             if (window.innerWidth <= 768 && sidebar.classList.contains('active') && 
@@ -1460,7 +1295,6 @@ HTML_TEMPLATE = '''
                 sidebar.classList.remove('active');
             }
             
-            // Закрытие настроек при клике вне
             const settingsPanel = document.getElementById('settingsPanel');
             if (settingsPanel.classList.contains('active') && 
                 !settingsPanel.contains(event.target) && !event.target.classList.contains('mobile-menu-btn')) {
@@ -1468,8 +1302,10 @@ HTML_TEMPLATE = '''
             }
         });
 
-        // Загружаем сохраненные сообщения при старте
-        loadSavedMessages();
+        // Загрузка сообщений при изменении чата
+        function updateMessagesStorage() {
+            document.getElementById('settingsStorage').textContent = Object.values(messages).reduce((acc, msgs) => acc + msgs.length, 0);
+        }
     </script>
 </body>
 </html>
@@ -1482,39 +1318,14 @@ def index():
 @app.route('/api/send_message', methods=['POST'])
 def api_send_message():
     data = request.json
-    message_id = str(uuid.uuid4())
-    
-    message_data = {
-        'id': message_id,
-        'chat_id': data.get('chat_id'),
-        'user_id': data.get('user_id'),
-        'text': data.get('text'),
-        'timestamp': datetime.datetime.now().isoformat()
-    }
-    
-    messages_db[message_id] = message_data
-    return jsonify({'success': True, 'message': message_data})
-
-@app.route('/api/get_messages/<chat_id>')
-def api_get_messages(chat_id):
-    chat_messages = [msg for msg in messages_db.values() if msg.get('chat_id') == chat_id]
-    return jsonify({'messages': chat_messages})
-
-@app.route('/api/get_users')
-def api_get_users():
-    return jsonify({'users': list(users_db.values())})
+    return jsonify({'success': True, 'message': 'Message sent'})
 
 @app.route('/health')
 def health_check():
-    return jsonify({
-        'status': 'cosmic_online',
-        'users_online': len([u for u in users_db.values() if u.get('online')]),
-        'total_messages': len(messages_db),
-        'timestamp': datetime.datetime.now().isoformat()
-    })
+    return jsonify({'status': 'running', 'service': 'TrollexDL'})
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    print(f"🚀 CosmicChat запущен на порту {port}")
+    print(f"🚀 TrollexDL запущен на порту {port}")
     print(f"🌐 Откройте: http://localhost:{port}")
     app.run(host='0.0.0.0', port=port, debug=False)
