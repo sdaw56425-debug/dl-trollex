@@ -28,7 +28,7 @@ class AdvancedChatManager:
         chat_data['theme'] = random.choice(['purple', 'blue', 'pink', 'matrix', 'cyber', 'galaxy'])
         chat_data['unread'] = random.randint(0, 5)
         self.chats.append(chat_data)
-        return chat_data
+        return chat_manager
 
 chat_manager = AdvancedChatManager()
 
@@ -1115,7 +1115,10 @@ HTML_TEMPLATE = '''
         }
 
         function createSampleChats() {
-            chats = []; // Очищаем старые чаты
+            console.log("🔄 Создаем тестовые чаты...");
+            
+            // Очищаем старые чаты
+            chats = [];
             
             const sampleMessages = [
                 "Привет! Как дела? 🚀",
@@ -1125,7 +1128,13 @@ HTML_TEMPLATE = '''
                 "Вау! Звучит интересно! 🌟",
                 "Да, очень увлекательно! Скоро покажу результаты ⚡",
                 "Жду с нетерпением! 🎯",
-                "Обязательно поделюсь! 💎"
+                "Обязательно поделюсь! 💎",
+                "Привет! Что нового? 👋",
+                "Изучаю новые технологии! 🧠",
+                "Класс! Какие именно? 💡",
+                "Web3 и блокчейн разработку ⛓️",
+                "Ого! Это перспективно! 🚀",
+                "Да, будущее уже здесь! 🔮"
             ];
 
             allUsers.forEach((user, index) => {
@@ -1134,9 +1143,10 @@ HTML_TEMPLATE = '''
                 
                 for (let i = 0; i < messageCount; i++) {
                     const isUser = i % 2 === 0;
+                    const messageIndex = (index * messageCount + i) % sampleMessages.length;
                     chatMessages.push({
                         id: `msg_${Date.now()}_${i}_${index}`,
-                        text: sampleMessages[i] || "Привет! 👋",
+                        text: sampleMessages[messageIndex],
                         senderId: isUser ? 'current_user' : user.id,
                         timestamp: new Date(Date.now() - (messageCount - i) * 600000).toISOString()
                     });
@@ -1147,13 +1157,14 @@ HTML_TEMPLATE = '''
                     participants: ['current_user', user.id],
                     lastMessage: chatMessages[chatMessages.length - 1],
                     messages: chatMessages,
-                    unread: Math.floor(Math.random() * 3),
+                    unread: Math.floor(Math.random() * 3) + 1,
                     created_at: new Date().toISOString()
                 };
                 chats.push(newChat);
             });
             
             localStorage.setItem('dl_trolledx_chats', JSON.stringify(chats));
+            console.log("✅ Чаты созданы:", chats.length);
             return chats;
         }
 
@@ -1164,6 +1175,15 @@ HTML_TEMPLATE = '''
                 userStats.logins++;
                 saveUserStats();
                 
+                // ПРОВЕРЯЕМ ЕСТЬ ЛИ ЧАТЫ, ЕСЛИ НЕТ - СОЗДАЕМ
+                const savedChats = localStorage.getItem('dl_trolledx_chats');
+                if (!savedChats || JSON.parse(savedChats).length === 0) {
+                    console.log("🔄 Чатов нет, создаем...");
+                    createSampleChats();
+                } else {
+                    chats = JSON.parse(savedChats);
+                }
+                
                 // Показываем загрузку перед переходом в чат
                 showScreen('loadingScreen');
                 document.querySelector('.loading-text').textContent = 'Возвращаемся в чат...';
@@ -1171,7 +1191,7 @@ HTML_TEMPLATE = '''
                 
                 setTimeout(() => {
                     showMainApp();
-                    // Автоматически открываем первый чат
+                    // Автоматически открываем первый чат если есть чаты
                     if (chats.length > 0) {
                         openChat(chats[0].id);
                     }
@@ -1363,6 +1383,9 @@ HTML_TEMPLATE = '''
                     <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
                         <div style="font-size: 2.5rem; margin-bottom: 1rem;">💬</div>
                         <p style="font-size: 0.9rem;">Чатов пока нет</p>
+                        <button class="btn-secondary" onclick="createSampleChats(); renderChatsList();" style="margin-top: 1rem; font-size: 0.8rem;">
+                            Создать тестовые чаты
+                        </button>
                     </div>
                 `;
                 return;
@@ -1602,5 +1625,6 @@ if __name__ == '__main__':
     print("💫 Ультра-современный дизайн")
     print("📱 Оптимизирован для мобильных")
     print("🎯 Рабочие чаты сразу после регистрации")
+    print("🔧 Исправлен авто-вход с созданием чатов")
     print(f"🔗 http://localhost:{port}")
     app.run(host='0.0.0.0', port=port, debug=False)
