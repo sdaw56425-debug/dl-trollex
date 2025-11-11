@@ -1083,6 +1083,7 @@ HTML_TEMPLATE = '''
             const savedChats = localStorage.getItem('dl_trolledx_chats');
             if (savedChats) {
                 chats = JSON.parse(savedChats);
+                console.log("📁 Загружены сохраненные чаты:", chats.length);
             }
             
             const savedStats = localStorage.getItem('dl_trolledx_stats');
@@ -1092,7 +1093,7 @@ HTML_TEMPLATE = '''
         }
 
         function createSampleChats() {
-            console.log("🔄 Создаем тестовые чаты...");
+            console.log("🔄 СОЗДАЕМ ТЕСТОВЫЕ ЧАТЫ...");
             
             // Очищаем старые чаты
             chats = [];
@@ -1138,10 +1139,11 @@ HTML_TEMPLATE = '''
                     created_at: new Date().toISOString()
                 };
                 chats.push(newChat);
+                console.log("✅ Создан чат с:", user.name);
             });
             
             localStorage.setItem('dl_trolledx_chats', JSON.stringify(chats));
-            console.log("✅ Чаты созданы:", chats.length);
+            console.log("🎉 Все чаты созданы! Всего:", chats.length);
             return chats;
         }
 
@@ -1152,9 +1154,18 @@ HTML_TEMPLATE = '''
                 userStats.logins++;
                 saveUserStats();
                 
+                console.log("🔑 Авто-вход пользователя:", currentUser.name);
+                
                 // ВАЖНО: Всегда создаем чаты при авто-входе
-                console.log("🔄 Авто-вход, создаем чаты...");
-                createSampleChats();
+                console.log("🔄 ПРОВЕРЯЕМ ЧАТЫ ПРИ АВТО-ВХОДЕ...");
+                const savedChats = localStorage.getItem('dl_trolledx_chats');
+                if (!savedChats || JSON.parse(savedChats).length === 0) {
+                    console.log("📝 Чатов нет, создаем новые...");
+                    createSampleChats();
+                } else {
+                    chats = JSON.parse(savedChats);
+                    console.log("📁 Используем существующие чаты:", chats.length);
+                }
                 
                 // Показываем загрузку перед переходом в чат
                 showScreen('loadingScreen');
@@ -1165,11 +1176,15 @@ HTML_TEMPLATE = '''
                     showMainApp();
                     // Автоматически открываем первый чат
                     if (chats.length > 0) {
+                        console.log("🔓 Открываем первый чат:", chats[0].id);
                         openChat(chats[0].id);
+                    } else {
+                        console.log("❌ Чатов нет для открытия");
                     }
                     showNotification(`С возвращением, ${currentUser.name}! 🚀`, 'success');
                 }, 1500);
             } else {
+                console.log("👤 Пользователь не найден, показываем welcome");
                 showScreen('welcomeScreen');
             }
         }
@@ -1179,6 +1194,7 @@ HTML_TEMPLATE = '''
         }
 
         function showScreen(screenId) {
+            console.log('🖥️ Переход на экран:', screenId);
             document.querySelectorAll('.screen').forEach(screen => {
                 screen.classList.add('hidden');
             });
@@ -1303,6 +1319,7 @@ HTML_TEMPLATE = '''
             saveUserStats();
             
             // СОЗДАЕМ ЧАТЫ СРАЗУ ПОСЛЕ РЕГИСТРАЦИИ
+            console.log("🎯 Новая регистрация, создаем чаты...");
             createSampleChats();
             
             // Показываем загрузку перед переходом
@@ -1314,6 +1331,7 @@ HTML_TEMPLATE = '''
                 showMainApp();
                 // АВТОМАТИЧЕСКИ ОТКРЫВАЕМ ПЕРВЫЙ ЧАТ
                 if (chats.length > 0) {
+                    console.log("🔓 Открываем первый чат после регистрации");
                     openChat(chats[0].id);
                 }
                 showNotification(`Добро пожаловать, ${name}! 🚀`, 'success');
@@ -1345,10 +1363,14 @@ HTML_TEMPLATE = '''
             
             renderChatsList();
             startTimeTracking();
+            
+            console.log("🏠 Главное приложение показано");
         }
 
         function renderChatsList() {
             const chatsList = document.getElementById('chatsList');
+            
+            console.log("📋 Рендерим список чатов, всего:", chats.length);
             
             if (chats.length === 0) {
                 chatsList.innerHTML = `
@@ -1360,12 +1382,16 @@ HTML_TEMPLATE = '''
                         </button>
                     </div>
                 `;
+                console.log("❌ Список чатов пуст");
                 return;
             }
             
             chatsList.innerHTML = chats.map(chat => {
                 const otherUser = allUsers.find(u => u.id === chat.participants.find(p => p !== 'current_user'));
-                if (!otherUser) return '';
+                if (!otherUser) {
+                    console.log("❌ Пользователь для чата не найден");
+                    return '';
+                }
                 
                 const lastMessageTime = new Date(chat.lastMessage.timestamp);
                 const timeString = lastMessageTime.toLocaleTimeString('ru-RU', { 
@@ -1390,6 +1416,8 @@ HTML_TEMPLATE = '''
         }
 
         function openChat(chatId) {
+            console.log("🔓 Открываем чат:", chatId);
+            
             currentChat = chats.find(chat => chat.id === chatId);
             if (!currentChat) {
                 console.log("❌ Чат не найден:", chatId);
@@ -1430,7 +1458,7 @@ HTML_TEMPLATE = '''
             }).join('');
             
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            console.log("✅ Чат открыт:", otherUser.name);
+            console.log("✅ Чат открыт:", otherUser.name, "сообщений:", currentChat.messages.length);
         }
 
         function handleKeyPress(event) {
@@ -1607,6 +1635,6 @@ if __name__ == '__main__':
     print("💫 Ультра-современный дизайн")
     print("📱 Оптимизирован для мобильных")
     print("🎯 Рабочие чаты сразу после регистрации")
-    print("🔧 ИСПРАВЛЕНО: Чаты создаются при любом входе")
+    print("🔧 ДОБАВЛЕНЫ КОНСОЛЬНЫЕ ЛОГИ ДЛЯ ОТЛАДКИ")
     print(f"🔗 http://localhost:{port}")
     app.run(host='0.0.0.0', port=port, debug=False)
