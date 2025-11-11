@@ -4,6 +4,7 @@ import datetime
 import random
 import os
 import uuid
+import json
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'trollexdl-premium-2024'
@@ -346,6 +347,7 @@ HTML_TEMPLATE = '''
             font-weight: 600;
             font-size: 0.9rem;
             min-width: 60px;
+            user-select: none;
         }
 
         .nav-tab.active {
@@ -595,6 +597,7 @@ HTML_TEMPLATE = '''
             border: 2px solid;
             text-align: center;
             transition: all 0.3s ease;
+            cursor: pointer;
         }
 
         .donate-tier:hover {
@@ -748,6 +751,119 @@ HTML_TEMPLATE = '''
             30% { transform: translateY(-5px); }
         }
 
+        .context-menu {
+            position: fixed;
+            background: rgba(26, 26, 74, 0.95);
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            padding: 8px;
+            z-index: 10000;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .context-menu-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .context-menu-item:hover {
+            background: rgba(107, 43, 217, 0.3);
+        }
+
+        .emoji-picker {
+            position: absolute;
+            bottom: 70px;
+            right: 15px;
+            background: rgba(26, 26, 74, 0.95);
+            border: 1px solid var(--accent);
+            border-radius: 12px;
+            padding: 15px;
+            display: none;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+            max-width: 300px;
+            backdrop-filter: blur(10px);
+        }
+
+        .emoji {
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 5px;
+            text-align: center;
+            transition: background 0.2s;
+        }
+
+        .emoji:hover {
+            background: rgba(107, 43, 217, 0.3);
+        }
+
+        .emoji-btn {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .emoji-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .message-reactions {
+            display: flex;
+            gap: 5px;
+            margin-top: 5px;
+            flex-wrap: wrap;
+        }
+
+        .reaction {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .reaction:hover, .reaction.active {
+            background: rgba(107, 43, 217, 0.3);
+            border-color: var(--accent);
+        }
+
+        .message-edited {
+            font-size: 0.7rem;
+            opacity: 0.6;
+            margin-left: 5px;
+        }
+
+        .online-users {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 10px;
+            margin: 10px 15px;
+        }
+
+        .online-user {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .online-user:hover {
+            background: rgba(107, 43, 217, 0.2);
+        }
+
         @media (max-width: 768px) {
             .sidebar {
                 position: absolute;
@@ -788,6 +904,11 @@ HTML_TEMPLATE = '''
             .message {
                 max-width: 90%;
             }
+
+            .emoji-picker {
+                grid-template-columns: repeat(5, 1fr);
+                max-width: 250px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -813,6 +934,11 @@ HTML_TEMPLATE = '''
             
             .send-btn {
                 padding: 10px 16px;
+            }
+
+            .emoji-picker {
+                grid-template-columns: repeat(4, 1fr);
+                max-width: 200px;
             }
         }
     </style>
@@ -896,6 +1022,13 @@ HTML_TEMPLATE = '''
                 🎄 <span id="sidebarCountdown">...</span> until New Year!
             </div>
 
+            <div class="online-users">
+                <div style="font-weight: bold; margin-bottom: 8px;">🟢 Online Now</div>
+                <div id="onlineUsersList">
+                    <!-- Динамически заполняется -->
+                </div>
+            </div>
+
             <div class="nav-tabs">
                 <div class="nav-tab active" onclick="switchTab('chats')">💬</div>
                 <div class="nav-tab" onclick="switchTab('users')">👥</div>
@@ -927,7 +1060,7 @@ HTML_TEMPLATE = '''
                     <h3 id="currentChatName">TrollexDL</h3>
                     <p style="color: var(--text-secondary);" id="currentChatStatus">Select chat to start messaging</p>
                 </div>
-                <button class="mobile-menu-btn" onclick="showSettings()">⚙️</button>
+                <button class="mobile-menu-btn" onclick="showChatOptions()">⋮</button>
             </div>
 
             <div class="messages-container" id="messagesContainer">
@@ -948,8 +1081,13 @@ HTML_TEMPLATE = '''
             </div>
 
             <div class="message-input-container">
+                <button class="emoji-btn" onclick="toggleEmojiPicker()">😊</button>
                 <input type="text" class="message-input" placeholder="Type your message..." id="messageInput" oninput="handleTyping()">
                 <button class="send-btn" onclick="sendMessage()">🚀</button>
+            </div>
+
+            <div class="emoji-picker" id="emojiPicker">
+                <!-- Emojis will be populated by JavaScript -->
             </div>
         </div>
     </div>
@@ -961,7 +1099,7 @@ HTML_TEMPLATE = '''
             <button class="mobile-menu-btn" onclick="hideDonatePanel()" style="font-size: 1.5rem;">✕</button>
         </div>
         
-        <div class="donate-tier tier-vip">
+        <div class="donate-tier tier-vip" onclick="selectTier('vip')">
             <h4>🌟 VIP</h4>
             <div class="tier-price">299 ₽</div>
             <ul class="tier-features">
@@ -970,10 +1108,10 @@ HTML_TEMPLATE = '''
                 <li>💬 Уникальные стикеры</li>
                 <li>⚡ Приоритетная поддержка</li>
             </ul>
-            <button class="btn btn-vip" onclick="selectTier('vip')">Выбрать VIP</button>
+            <button class="btn btn-vip">Выбрать VIP</button>
         </div>
 
-        <div class="donate-tier tier-premium">
+        <div class="donate-tier tier-premium" onclick="selectTier('premium')">
             <h4>💫 Premium</h4>
             <div class="tier-price">599 ₽</div>
             <ul class="tier-features">
@@ -983,10 +1121,10 @@ HTML_TEMPLATE = '''
                 <li>🔒 Приватные чаты</li>
                 <li>🎮 Игровые режимы</li>
             </ul>
-            <button class="btn btn-premium" onclick="selectTier('premium')">Выбрать Premium</button>
+            <button class="btn btn-premium">Выбрать Premium</button>
         </div>
 
-        <div class="donate-tier tier-ultra">
+        <div class="donate-tier tier-ultra" onclick="selectTier('ultra')">
             <h4>🚀 Ultra</h4>
             <div class="tier-price">999 ₽</div>
             <ul class="tier-features">
@@ -996,10 +1134,10 @@ HTML_TEMPLATE = '''
                 <li>🎯 Кастомные команды</li>
                 <li>⚡ Максимальная скорость</li>
             </ul>
-            <button class="btn btn-ultra" onclick="selectTier('ultra')">Выбрать Ultra</button>
+            <button class="btn btn-ultra">Выбрать Ultra</button>
         </div>
 
-        <div class="donate-tier tier-moder">
+        <div class="donate-tier tier-moder" onclick="selectTier('moder')">
             <h4>🛡️ Moder</h4>
             <div class="tier-price">1499 ₽</div>
             <ul class="tier-features">
@@ -1009,10 +1147,10 @@ HTML_TEMPLATE = '''
                 <li>👀 Скрытый онлайн-статус</li>
                 <li>💾 Резервные копии</li>
             </ul>
-            <button class="btn btn-moder" onclick="selectTier('moder')">Выбрать Moder</button>
+            <button class="btn btn-moder">Выбрать Moder</button>
         </div>
 
-        <div class="donate-tier tier-chromek">
+        <div class="donate-tier tier-chromek" onclick="selectTier('chromek')">
             <h4>🌈 Chromek</h4>
             <div class="tier-price">2499 ₽</div>
             <ul class="tier-features">
@@ -1022,7 +1160,7 @@ HTML_TEMPLATE = '''
                 <li>🔮 Эксклюзивные функции</li>
                 <li>⭐ Пожизненный доступ</li>
             </ul>
-            <button class="btn btn-chromek" onclick="selectTier('chromek')">Выбрать Chromek</button>
+            <button class="btn btn-chromek">Выбрать Chromek</button>
         </div>
 
         <div style="text-align: center; margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 10px;">
@@ -1090,6 +1228,9 @@ HTML_TEMPLATE = '''
 
         <button class="btn btn-primary" onclick="saveSettings()" style="margin-bottom: 12px;">💾 Save Settings</button>
         <button class="btn btn-secondary" onclick="exportData()">📤 Export Data</button>
+        <button class="btn btn-secondary" onclick="clearAllData()" style="background: rgba(255,68,68,0.2); color: var(--danger); border-color: var(--danger); margin-top: 8px;">
+            🗑️ Clear All Data
+        </button>
     </div>
 
     <!-- Подтверждение выхода -->
@@ -1120,11 +1261,15 @@ HTML_TEMPLATE = '''
         let groups = [];
         let editingMessageId = null;
         let typingTimer = null;
+        let emojiPickerVisible = false;
 
         // Инициализация
         document.addEventListener('DOMContentLoaded', function() {
             updateNewYearCountdown();
             setInterval(updateNewYearCountdown, 60000);
+            
+            // Инициализация emoji picker
+            initEmojiPicker();
             
             setTimeout(() => {
                 hideLoadingScreen();
@@ -1312,6 +1457,7 @@ HTML_TEMPLATE = '''
             loadSettings();
             
             loadContent();
+            updateOnlineUsers();
         }
 
         function updatePremiumBadge() {
@@ -1479,6 +1625,23 @@ HTML_TEMPLATE = '''
             `;
         }
 
+        function updateOnlineUsers() {
+            const onlineUsers = allUsers.filter(user => user.online && user.id !== currentUser.id);
+            const onlineUsersList = document.getElementById('onlineUsersList');
+            
+            if (onlineUsers.length === 0) {
+                onlineUsersList.innerHTML = '<div style="color: var(--text-secondary); font-size: 0.9rem; text-align: center;">No users online</div>';
+                return;
+            }
+            
+            onlineUsersList.innerHTML = onlineUsers.slice(0, 5).map(user => `
+                <div class="online-user" onclick="startChatWithUser('${user.id}')">
+                    <div style="width: 8px; height: 8px; background: var(--success); border-radius: 50%; margin-right: 8px;"></div>
+                    <div style="font-size: 0.9rem;">${user.name}</div>
+                </div>
+            `).join('');
+        }
+
         function openChat(chatId) {
             const chats = {
                 'support': {name: 'Trollex Support', avatar: '🛰️', status: 'online'},
@@ -1587,16 +1750,23 @@ HTML_TEMPLATE = '''
             } else {
                 messagesContainer.innerHTML = chatMessages.map(msg => {
                     const isPremium = msg.premium && msg.premium !== 'none';
+                    const reactionsHTML = msg.reactions ? Object.entries(msg.reactions).map(([emoji, count]) => 
+                        `<span class="reaction" onclick="addReaction('${msg.id}', '${emoji}')">${emoji} ${count}</span>`
+                    ).join('') : '';
+                    
                     return `
-                        <div class="message ${msg.sender} ${isPremium ? 'message-premium' : ''}" data-message-id="${msg.id}">
+                        <div class="message ${msg.sender} ${isPremium ? 'message-premium' : ''}" data-message-id="${msg.id}" oncontextmenu="showMessageContextMenu(event, '${msg.id}')">
                             ${isPremium ? `⭐ ${msg.text}` : msg.text}
+                            ${msg.edited ? '<span class="message-edited">(edited)</span>' : ''}
                             <div class="message-actions">
                                 ${msg.sender === 'sent' ? `
                                     <button class="message-action" onclick="editMessage('${msg.id}')">✏️</button>
                                     <button class="message-action" onclick="deleteMessage('${msg.id}')">🗑️</button>
                                 ` : ''}
+                                <button class="message-action" onclick="showReactionPicker('${msg.id}')">😊</button>
                                 ${msg.views ? `<button class="message-action">👁️ ${msg.views}</button>` : ''}
                             </div>
+                            ${reactionsHTML ? `<div class="message-reactions">${reactionsHTML}</div>` : ''}
                             <div class="message-time">${msg.time}</div>
                         </div>
                     `;
@@ -1676,6 +1846,7 @@ HTML_TEMPLATE = '''
                 input.value = '';
                 editingMessageId = null;
                 hideTypingIndicator();
+                hideEmojiPicker();
             }
         }
 
@@ -1688,11 +1859,13 @@ HTML_TEMPLATE = '''
             const messageElement = document.createElement('div');
             messageElement.className = `message sent ${isPremium ? 'message-premium' : ''}`;
             messageElement.setAttribute('data-message-id', messageId);
+            messageElement.setAttribute('oncontextmenu', `showMessageContextMenu(event, '${messageId}')`);
             messageElement.innerHTML = `
                 ${isPremium ? `⭐ ${message}` : message}
                 <div class="message-actions">
                     <button class="message-action" onclick="editMessage('${messageId}')">✏️</button>
                     <button class="message-action" onclick="deleteMessage('${messageId}')">🗑️</button>
+                    <button class="message-action" onclick="showReactionPicker('${messageId}')">😊</button>
                     <button class="message-action">👁️ 1</button>
                 </div>
                 <div class="message-time">${time}</div>
@@ -1752,7 +1925,7 @@ HTML_TEMPLATE = '''
                 if (messageElement) {
                     const textElement = messageElement.querySelector('div:first-child');
                     const isPremium = messages[currentChat.id][messageIndex].premium && messages[currentChat.id][messageIndex].premium !== 'none';
-                    textElement.textContent = (isPremium ? '⭐ ' : '') + newText + ' (edited)';
+                    textElement.innerHTML = (isPremium ? '⭐ ' : '') + newText + ' <span class="message-edited">(edited)</span>';
                 }
                 
                 saveData();
@@ -1770,6 +1943,214 @@ HTML_TEMPLATE = '''
                 saveData();
                 showNotification('Message deleted 🗑️', 'info');
             }
+        }
+
+        function showMessageContextMenu(event, messageId) {
+            event.preventDefault();
+            
+            const message = messages[currentChat.id]?.find(m => m.id === messageId);
+            if (!message) return;
+            
+            // Удаляем существующее контекстное меню
+            const existingMenu = document.querySelector('.context-menu');
+            if (existingMenu) existingMenu.remove();
+            
+            const menu = document.createElement('div');
+            menu.className = 'context-menu';
+            menu.style.left = event.pageX + 'px';
+            menu.style.top = event.pageY + 'px';
+            
+            const menuItems = [
+                {text: 'Copy Text', action: () => copyMessageText(messageId)},
+                {text: 'Add Reaction', action: () => showReactionPicker(messageId)},
+            ];
+            
+            if (message.sender === 'sent') {
+                menuItems.push(
+                    {text: 'Edit Message', action: () => editMessage(messageId)},
+                    {text: 'Delete Message', action: () => deleteMessage(messageId)}
+                );
+            }
+            
+            menuItems.push({text: 'Reply', action: () => replyToMessage(messageId)});
+            
+            menu.innerHTML = menuItems.map(item => 
+                `<div class="context-menu-item" onclick="${item.action.toString().replace(/"/g, '&quot;')}">${item.text}</div>`
+            ).join('');
+            
+            document.body.appendChild(menu);
+            
+            // Закрываем меню при клике вне его
+            setTimeout(() => {
+                document.addEventListener('click', function closeMenu() {
+                    menu.remove();
+                    document.removeEventListener('click', closeMenu);
+                });
+            }, 100);
+        }
+
+        function copyMessageText(messageId) {
+            const message = messages[currentChat.id]?.find(m => m.id === messageId);
+            if (message) {
+                navigator.clipboard.writeText(message.text);
+                showNotification('Message copied! 📋', 'success');
+            }
+        }
+
+        function replyToMessage(messageId) {
+            const message = messages[currentChat.id]?.find(m => m.id === messageId);
+            if (message) {
+                document.getElementById('messageInput').value = `Replying to: ${message.text}`;
+                document.getElementById('messageInput').focus();
+                showNotification('Replying to message... ↩️', 'info');
+            }
+        }
+
+        function showReactionPicker(messageId) {
+            const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+            if (!messageElement) return;
+            
+            const rect = messageElement.getBoundingClientRect();
+            
+            // Удаляем существующий пикер реакций
+            const existingPicker = document.querySelector('.reaction-picker');
+            if (existingPicker) existingPicker.remove();
+            
+            const picker = document.createElement('div');
+            picker.className = 'context-menu reaction-picker';
+            picker.style.left = (rect.right - 150) + 'px';
+            picker.style.top = (rect.top - 50) + 'px';
+            
+            const reactions = ['👍', '❤️', '😂', '😮', '😢', '😡', '🎉', '👏'];
+            picker.innerHTML = reactions.map(emoji => 
+                `<div class="context-menu-item" onclick="addReaction('${messageId}', '${emoji}')" style="font-size: 1.2rem;">${emoji}</div>`
+            ).join('');
+            
+            document.body.appendChild(picker);
+            
+            // Закрываем пикер при клике вне его
+            setTimeout(() => {
+                document.addEventListener('click', function closePicker() {
+                    picker.remove();
+                    document.removeEventListener('click', closePicker);
+                });
+            }, 100);
+        }
+
+        function addReaction(messageId, emoji) {
+            const messageIndex = messages[currentChat.id]?.findIndex(m => m.id === messageId);
+            if (messageIndex > -1) {
+                if (!messages[currentChat.id][messageIndex].reactions) {
+                    messages[currentChat.id][messageIndex].reactions = {};
+                }
+                
+                if (!messages[currentChat.id][messageIndex].reactions[emoji]) {
+                    messages[currentChat.id][messageIndex].reactions[emoji] = 0;
+                }
+                
+                messages[currentChat.id][messageIndex].reactions[emoji]++;
+                saveData();
+                showChatMessages(currentChat.id);
+                showNotification(`Reacted with ${emoji}`, 'success');
+            }
+        }
+
+        function initEmojiPicker() {
+            const emojiPicker = document.getElementById('emojiPicker');
+            const emojis = ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻', '💀', '☠️', '👽', '👾', '🤖', '🎃', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾'];
+            
+            emojiPicker.innerHTML = emojis.map(emoji => 
+                `<div class="emoji" onclick="addEmojiToMessage('${emoji}')">${emoji}</div>`
+            ).join('');
+        }
+
+        function toggleEmojiPicker() {
+            const emojiPicker = document.getElementById('emojiPicker');
+            emojiPickerVisible = !emojiPickerVisible;
+            
+            if (emojiPickerVisible) {
+                emojiPicker.style.display = 'grid';
+            } else {
+                emojiPicker.style.display = 'none';
+            }
+        }
+
+        function hideEmojiPicker() {
+            const emojiPicker = document.getElementById('emojiPicker');
+            emojiPicker.style.display = 'none';
+            emojiPickerVisible = false;
+        }
+
+        function addEmojiToMessage(emoji) {
+            const input = document.getElementById('messageInput');
+            input.value += emoji;
+            input.focus();
+        }
+
+        function showChatOptions() {
+            if (!currentChat) return;
+            
+            const options = [
+                {text: 'Clear Chat', action: () => clearChat()},
+                {text: 'Export Chat', action: () => exportChat()},
+                {text: 'Mute Notifications', action: () => muteChat()},
+            ];
+            
+            // Удаляем существующее меню
+            const existingMenu = document.querySelector('.context-menu');
+            if (existingMenu) existingMenu.remove();
+            
+            const menu = document.createElement('div');
+            menu.className = 'context-menu';
+            menu.style.left = 'auto';
+            menu.style.right = '15px';
+            menu.style.top = '60px';
+            
+            menu.innerHTML = options.map(option => 
+                `<div class="context-menu-item" onclick="${option.action.toString().replace(/"/g, '&quot;')}">${option.text}</div>`
+            ).join('');
+            
+            document.body.appendChild(menu);
+            
+            // Закрываем меню при клике вне его
+            setTimeout(() => {
+                document.addEventListener('click', function closeMenu() {
+                    menu.remove();
+                    document.removeEventListener('click', closeMenu);
+                });
+            }, 100);
+        }
+
+        function clearChat() {
+            if (confirm('Clear all messages in this chat?')) {
+                messages[currentChat.id] = [];
+                saveData();
+                showChatMessages(currentChat.id);
+                showNotification('Chat cleared 🗑️', 'info');
+            }
+        }
+
+        function exportChat() {
+            const chatMessages = messages[currentChat.id] || [];
+            const chatData = {
+                chat: currentChat,
+                messages: chatMessages,
+                exportDate: new Date().toISOString()
+            };
+            
+            const dataStr = JSON.stringify(chatData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `trollexdl_chat_${currentChat.name}_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            
+            showNotification('Chat exported! 📤', 'success');
+        }
+
+        function muteChat() {
+            showNotification('Chat notifications muted 🔕', 'info');
         }
 
         function simulateReply() {
@@ -1805,9 +2186,11 @@ HTML_TEMPLATE = '''
             const replyElement = document.createElement('div');
             replyElement.className = `message received ${isPremium ? 'message-premium' : ''}`;
             replyElement.setAttribute('data-message-id', replyId);
+            replyElement.setAttribute('oncontextmenu', `showMessageContextMenu(event, '${replyId}')`);
             replyElement.innerHTML = `
                 ${isPremium ? `⭐ ${replyText}` : replyText}
                 <div class="message-actions">
+                    <button class="message-action" onclick="showReactionPicker('${replyId}')">😊</button>
                     <button class="message-action">👁️ 1</button>
                 </div>
                 <div class="message-time">${time}</div>
@@ -1927,6 +2310,16 @@ HTML_TEMPLATE = '''
             showNotification('Data exported! 📤', 'success');
         }
 
+        function clearAllData() {
+            if (confirm('Are you sure you want to clear ALL data? This cannot be undone!')) {
+                localStorage.clear();
+                showNotification('All data cleared 🗑️', 'info');
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            }
+        }
+
         function saveData() {
             if (currentUser.settings.autoSave) {
                 localStorage.setItem('userMessages', JSON.stringify(messages));
@@ -1999,6 +2392,12 @@ HTML_TEMPLATE = '''
             if (donatePanel.classList.contains('active') && 
                 !donatePanel.contains(event.target) && !event.target.classList.contains('mobile-menu-btn')) {
                 donatePanel.classList.remove('active');
+            }
+            
+            // Закрываем emoji picker при клике вне его
+            const emojiPicker = document.getElementById('emojiPicker');
+            if (emojiPickerVisible && !emojiPicker.contains(event.target) && !event.target.classList.contains('emoji-btn')) {
+                hideEmojiPicker();
             }
         });
 
