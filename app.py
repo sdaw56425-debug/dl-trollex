@@ -9,29 +9,6 @@ import time
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'ultramodern2024'
 
-class AdvancedChatManager:
-    def __init__(self):
-        self.users = []
-        self.chats = []
-        self.messages = []
-    
-    def add_user(self, user_data):
-        user_data['premium'] = random.choice([True, False, False])
-        user_data['join_date'] = datetime.datetime.now().isoformat()
-        user_data['level'] = random.randint(1, 100)
-        user_data['xp'] = random.randint(100, 5000)
-        self.users.append(user_data)
-        return user_data
-    
-    def create_chat(self, chat_data):
-        chat_data['created_at'] = datetime.datetime.now().isoformat()
-        chat_data['theme'] = random.choice(['purple', 'blue', 'pink', 'matrix', 'cyber', 'galaxy'])
-        chat_data['unread'] = random.randint(0, 5)
-        self.chats.append(chat_data)
-        return chat_manager
-
-chat_manager = AdvancedChatManager()
-
 def generate_username():
     adjectives = ['Космический', 'Фиолетовый', 'Неоновый', 'Цифровой', 'Виртуальный']
     nouns = ['Феникс', 'Единорог', 'Дракон', 'Волк', 'Тигр']
@@ -1139,7 +1116,7 @@ HTML_TEMPLATE = '''
 
             allUsers.forEach((user, index) => {
                 const chatMessages = [];
-                const messageCount = 4; // Фиксированное количество сообщений
+                const messageCount = 4;
                 
                 for (let i = 0; i < messageCount; i++) {
                     const isUser = i % 2 === 0;
@@ -1175,14 +1152,9 @@ HTML_TEMPLATE = '''
                 userStats.logins++;
                 saveUserStats();
                 
-                // ПРОВЕРЯЕМ ЕСТЬ ЛИ ЧАТЫ, ЕСЛИ НЕТ - СОЗДАЕМ
-                const savedChats = localStorage.getItem('dl_trolledx_chats');
-                if (!savedChats || JSON.parse(savedChats).length === 0) {
-                    console.log("🔄 Чатов нет, создаем...");
-                    createSampleChats();
-                } else {
-                    chats = JSON.parse(savedChats);
-                }
+                // ВАЖНО: Всегда создаем чаты при авто-входе
+                console.log("🔄 Авто-вход, создаем чаты...");
+                createSampleChats();
                 
                 // Показываем загрузку перед переходом в чат
                 showScreen('loadingScreen');
@@ -1191,7 +1163,7 @@ HTML_TEMPLATE = '''
                 
                 setTimeout(() => {
                     showMainApp();
-                    // Автоматически открываем первый чат если есть чаты
+                    // Автоматически открываем первый чат
                     if (chats.length > 0) {
                         openChat(chats[0].id);
                     }
@@ -1413,14 +1385,22 @@ HTML_TEMPLATE = '''
                     </div>
                 `;
             }).join('');
+            
+            console.log("✅ Список чатов отрендерен:", chats.length, "чатов");
         }
 
         function openChat(chatId) {
             currentChat = chats.find(chat => chat.id === chatId);
-            if (!currentChat) return;
+            if (!currentChat) {
+                console.log("❌ Чат не найден:", chatId);
+                return;
+            }
 
             const otherUser = allUsers.find(u => u.id === currentChat.participants.find(p => p !== 'current_user'));
-            if (!otherUser) return;
+            if (!otherUser) {
+                console.log("❌ Пользователь чата не найден");
+                return;
+            }
             
             // Убираем непрочитанные сообщения
             currentChat.unread = 0;
@@ -1450,6 +1430,7 @@ HTML_TEMPLATE = '''
             }).join('');
             
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            console.log("✅ Чат открыт:", otherUser.name);
         }
 
         function handleKeyPress(event) {
@@ -1595,6 +1576,7 @@ HTML_TEMPLATE = '''
             if (currentUser) {
                 localStorage.setItem('dl_trolledx_chats', JSON.stringify(chats));
                 localStorage.setItem('dl_trolledx_stats', JSON.stringify(userStats));
+                console.log('💾 Авто-сохранение выполнено');
             }
         }, 30000);
     </script>
@@ -1625,6 +1607,6 @@ if __name__ == '__main__':
     print("💫 Ультра-современный дизайн")
     print("📱 Оптимизирован для мобильных")
     print("🎯 Рабочие чаты сразу после регистрации")
-    print("🔧 Исправлен авто-вход с созданием чатов")
+    print("🔧 ИСПРАВЛЕНО: Чаты создаются при любом входе")
     print(f"🔗 http://localhost:{port}")
     app.run(host='0.0.0.0', port=port, debug=False)
