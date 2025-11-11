@@ -6,7 +6,7 @@ import os
 import uuid
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'trollexdl-pro-2024'
+app.config['SECRET_KEY'] = 'trollexdl-premium-2024'
 
 def get_days_until_new_year():
     now = datetime.datetime.now()
@@ -54,6 +54,11 @@ HTML_TEMPLATE = '''
             --danger: #ff4444;
             --success: #00ff88;
             --warning: #ffaa00;
+            --vip: #ffd700;
+            --premium: #c0c0c0;
+            --ultra: #ff6b35;
+            --moder: #4CAF50;
+            --chromek: #2196F3;
         }
 
         body {
@@ -123,6 +128,11 @@ HTML_TEMPLATE = '''
         @keyframes ripple {
             0% { transform: scale(0); opacity: 1; }
             100% { transform: scale(4); opacity: 0; }
+        }
+
+        @keyframes shine {
+            0% { background-position: -100px; }
+            100% { background-position: 200px; }
         }
 
         .screen {
@@ -212,6 +222,32 @@ HTML_TEMPLATE = '''
             border: 2px solid var(--accent);
         }
 
+        .btn-vip {
+            background: linear-gradient(135deg, var(--vip), #ffed4e);
+            color: #000;
+            font-weight: bold;
+        }
+
+        .btn-premium {
+            background: linear-gradient(135deg, var(--premium), #e0e0e0);
+            color: #000;
+        }
+
+        .btn-ultra {
+            background: linear-gradient(135deg, var(--ultra), #ff8c5a);
+            color: white;
+        }
+
+        .btn-moder {
+            background: linear-gradient(135deg, var(--moder), #66bb6a);
+            color: white;
+        }
+
+        .btn-chromek {
+            background: linear-gradient(135deg, var(--chromek), #64b5f6);
+            color: white;
+        }
+
         .ripple {
             position: absolute;
             border-radius: 50%;
@@ -242,6 +278,19 @@ HTML_TEMPLATE = '''
             font-size: 1.8rem;
             margin: 0 auto 12px;
             animation: pulse 2s ease-in-out infinite;
+        }
+
+        .premium-badge {
+            background: linear-gradient(45deg, var(--vip), var(--premium), var(--ultra));
+            color: black;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-top: 8px;
+            display: inline-block;
+            animation: shine 2s infinite linear;
+            background-size: 200% 100%;
         }
 
         .app {
@@ -416,6 +465,11 @@ HTML_TEMPLATE = '''
             color: white;
         }
 
+        .message-premium {
+            border: 2px solid var(--vip);
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(139, 92, 246, 0.3));
+        }
+
         .message-actions {
             position: absolute;
             top: -25px;
@@ -511,6 +565,63 @@ HTML_TEMPLATE = '''
 
         .settings-panel.active {
             right: 0;
+        }
+
+        .donate-panel {
+            position: fixed;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            max-width: 400px;
+            height: 100%;
+            background: rgba(26, 26, 74, 0.98);
+            backdrop-filter: blur(20px);
+            border-right: 2px solid var(--accent);
+            z-index: 500;
+            transition: left 0.3s ease;
+            padding: 25px;
+            overflow-y: auto;
+        }
+
+        .donate-panel.active {
+            left: 0;
+        }
+
+        .donate-tier {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            border: 2px solid;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .donate-tier:hover {
+            transform: translateY(-5px);
+        }
+
+        .tier-vip { border-color: var(--vip); }
+        .tier-premium { border-color: var(--premium); }
+        .tier-ultra { border-color: var(--ultra); }
+        .tier-moder { border-color: var(--moder); }
+        .tier-chromek { border-color: var(--chromek); }
+
+        .tier-price {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .tier-features {
+            text-align: left;
+            margin: 15px 0;
+            font-size: 0.9rem;
+        }
+
+        .tier-features li {
+            margin: 5px 0;
+            padding-left: 10px;
         }
 
         .setting-item {
@@ -650,7 +761,7 @@ HTML_TEMPLATE = '''
                 transform: translateX(0);
             }
             
-            .settings-panel {
+            .settings-panel, .donate-panel {
                 width: 100%;
                 max-width: none;
             }
@@ -778,6 +889,7 @@ HTML_TEMPLATE = '''
                 <div class="user-avatar" id="userAvatar">🚀</div>
                 <h3 id="userName">User</h3>
                 <p style="opacity: 0.8;">ID: <span id="userId">...</span></p>
+                <div id="userPremiumBadge" class="premium-badge hidden">PREMIUM</div>
             </div>
 
             <div class="new-year-countdown">
@@ -788,6 +900,7 @@ HTML_TEMPLATE = '''
                 <div class="nav-tab active" onclick="switchTab('chats')">💬</div>
                 <div class="nav-tab" onclick="switchTab('users')">👥</div>
                 <div class="nav-tab" onclick="switchTab('groups')">👨‍👩‍👧‍👦</div>
+                <div class="nav-tab" onclick="showDonatePanel()">💎</div>
                 <div class="nav-tab" onclick="showSettings()">⚙️</div>
             </div>
 
@@ -841,6 +954,89 @@ HTML_TEMPLATE = '''
         </div>
     </div>
 
+    <!-- Панель доната -->
+    <div class="donate-panel" id="donatePanel">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+            <h3 style="margin: 0;">💎 Premium Tiers</h3>
+            <button class="mobile-menu-btn" onclick="hideDonatePanel()" style="font-size: 1.5rem;">✕</button>
+        </div>
+        
+        <div class="donate-tier tier-vip">
+            <h4>🌟 VIP</h4>
+            <div class="tier-price">299 ₽</div>
+            <ul class="tier-features">
+                <li>🌈 Цветные сообщения</li>
+                <li>👑 Специальный значок VIP</li>
+                <li>💬 Уникальные стикеры</li>
+                <li>⚡ Приоритетная поддержка</li>
+            </ul>
+            <button class="btn btn-vip" onclick="selectTier('vip')">Выбрать VIP</button>
+        </div>
+
+        <div class="donate-tier tier-premium">
+            <h4>💫 Premium</h4>
+            <div class="tier-price">599 ₽</div>
+            <ul class="tier-features">
+                <li>✅ Все функции VIP</li>
+                <li>🎨 Расширенные темы</li>
+                <li>📊 Статистика профиля</li>
+                <li>🔒 Приватные чаты</li>
+                <li>🎮 Игровые режимы</li>
+            </ul>
+            <button class="btn btn-premium" onclick="selectTier('premium')">Выбрать Premium</button>
+        </div>
+
+        <div class="donate-tier tier-ultra">
+            <h4>🚀 Ultra</h4>
+            <div class="tier-price">999 ₽</div>
+            <ul class="tier-features">
+                <li>✅ Все функции Premium</li>
+                <li>🤖 AI-ассистент</li>
+                <li>🌐 Неограниченное облако</li>
+                <li>🎯 Кастомные команды</li>
+                <li>⚡ Максимальная скорость</li>
+            </ul>
+            <button class="btn btn-ultra" onclick="selectTier('ultra')">Выбрать Ultra</button>
+        </div>
+
+        <div class="donate-tier tier-moder">
+            <h4>🛡️ Moder</h4>
+            <div class="tier-price">1499 ₽</div>
+            <ul class="tier-features">
+                <li>✅ Все функции Ultra</li>
+                <li>🔧 Модераторские права</li>
+                <li>📢 Анонсы сообществу</li>
+                <li>👀 Скрытый онлайн-статус</li>
+                <li>💾 Резервные копии</li>
+            </ul>
+            <button class="btn btn-moder" onclick="selectTier('moder')">Выбрать Moder</button>
+        </div>
+
+        <div class="donate-tier tier-chromek">
+            <h4>🌈 Chromek</h4>
+            <div class="tier-price">2499 ₽</div>
+            <ul class="tier-features">
+                <li>✅ Все функции Moder</li>
+                <li>🌈 Радужные сообщения</li>
+                <li>🎪 Анимации премиум-класса</li>
+                <li>🔮 Эксклюзивные функции</li>
+                <li>⭐ Пожизненный доступ</li>
+            </ul>
+            <button class="btn btn-chromek" onclick="selectTier('chromek')">Выбрать Chromek</button>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 10px;">
+            <h4>📞 Для покупки</h4>
+            <p style="margin: 10px 0; color: var(--text-secondary);">
+                Напишите в Telegram канал:<br>
+                <strong style="color: var(--neon);">@trollex_official</strong>
+            </p>
+            <p style="font-size: 0.9rem; color: var(--text-secondary);">
+                Укажите ваш ID и выбранный тариф
+            </p>
+        </div>
+    </div>
+
     <!-- Панель настроек -->
     <div class="settings-panel" id="settingsPanel">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
@@ -887,6 +1083,7 @@ HTML_TEMPLATE = '''
             <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;">
                 <div>🆔 ID: <span id="settingsUserId">-</span></div>
                 <div>📅 Registered: <span id="settingsUserRegDate">-</span></div>
+                <div>💎 Premium: <span id="settingsUserPremium">None</span></div>
                 <div>💾 Storage: <span id="settingsStorage">0</span> messages</div>
             </div>
         </div>
@@ -1008,6 +1205,7 @@ HTML_TEMPLATE = '''
                 name: name,
                 avatar: avatar,
                 email: email,
+                premium: 'none',
                 settings: {
                     notifications: true,
                     darkMode: true,
@@ -1030,14 +1228,14 @@ HTML_TEMPLATE = '''
         function initializeSampleUsers() {
             // Создаем разнообразных тестовых пользователей
             allUsers = [
-                {id: 'user1', name: 'Alex_Quantum', avatar: '👨‍💻', online: true, username: 'alex_quantum'},
-                {id: 'user2', name: 'Sarah_Cyber', avatar: '👩‍🎨', online: true, username: 'sarah_cyber'},
-                {id: 'user3', name: 'Mike_Neon', avatar: '👨‍🚀', online: false, username: 'mike_neon'},
-                {id: 'user4', name: 'Emma_Digital', avatar: '👩‍💼', online: true, username: 'emma_digital'},
-                {id: 'user5', name: 'Tom_Hyper', avatar: '🧑‍🔬', online: false, username: 'tom_hyper'},
-                {id: 'user6', name: 'Lisa_Virtual', avatar: '👩‍🔧', online: true, username: 'lisa_virtual'},
-                {id: 'user7', name: 'John_Alpha', avatar: '👨‍🎓', online: true, username: 'john_alpha'},
-                {id: 'user8', name: 'Anna_Mega', avatar: '👩‍🍳', online: false, username: 'anna_mega'}
+                {id: 'user1', name: 'Alex_Quantum', avatar: '👨‍💻', online: true, username: 'alex_quantum', premium: 'vip'},
+                {id: 'user2', name: 'Sarah_Cyber', avatar: '👩‍🎨', online: true, username: 'sarah_cyber', premium: 'premium'},
+                {id: 'user3', name: 'Mike_Neon', avatar: '👨‍🚀', online: false, username: 'mike_neon', premium: 'none'},
+                {id: 'user4', name: 'Emma_Digital', avatar: '👩‍💼', online: true, username: 'emma_digital', premium: 'ultra'},
+                {id: 'user5', name: 'Tom_Hyper', avatar: '🧑‍🔬', online: false, username: 'tom_hyper', premium: 'none'},
+                {id: 'user6', name: 'Lisa_Virtual', avatar: '👩‍🔧', online: true, username: 'lisa_virtual', premium: 'moder'},
+                {id: 'user7', name: 'John_Alpha', avatar: '👨‍🎓', online: true, username: 'john_alpha', premium: 'chromek'},
+                {id: 'user8', name: 'Anna_Mega', avatar: '👩‍🍳', online: false, username: 'anna_mega', premium: 'none'}
             ];
             
             // Добавляем текущего пользователя в список
@@ -1046,7 +1244,8 @@ HTML_TEMPLATE = '''
                 name: currentUser.name,
                 avatar: currentUser.avatar,
                 online: true,
-                username: currentUser.name.toLowerCase().replace(' ', '_')
+                username: currentUser.name.toLowerCase().replace(' ', '_'),
+                premium: currentUser.premium
             });
             
             localStorage.setItem('allUsers', JSON.stringify(allUsers));
@@ -1106,10 +1305,28 @@ HTML_TEMPLATE = '''
             document.getElementById('userAvatar').textContent = currentUser.avatar;
             document.getElementById('userId').textContent = currentUser.id;
             
+            // Показываем бейдж премиума если есть
+            updatePremiumBadge();
+            
             // Заполняем настройки
             loadSettings();
             
             loadContent();
+        }
+
+        function updatePremiumBadge() {
+            const badge = document.getElementById('userPremiumBadge');
+            if (currentUser.premium && currentUser.premium !== 'none') {
+                badge.textContent = currentUser.premium.toUpperCase();
+                badge.classList.remove('hidden');
+                
+                // Добавляем специальный класс для премиум пользователей
+                if (currentUser.premium === 'chromek') {
+                    badge.style.background = 'linear-gradient(45deg, #ff0000, #ff8000, #ffff00, #00ff00, #0000ff, #8000ff, #ff00ff)';
+                }
+            } else {
+                badge.classList.add('hidden');
+            }
         }
 
         function loadSettings() {
@@ -1122,6 +1339,7 @@ HTML_TEMPLATE = '''
             }
             document.getElementById('settingsUserId').textContent = currentUser.id;
             document.getElementById('settingsUserRegDate').textContent = new Date(currentUser.created_at).toLocaleDateString();
+            document.getElementById('settingsUserPremium').textContent = currentUser.premium.charAt(0).toUpperCase() + currentUser.premium.slice(1);
             updateStorageInfo();
         }
 
@@ -1220,6 +1438,7 @@ HTML_TEMPLATE = '''
                             <div style="font-weight: bold;">${user.name}</div>
                             <div style="color: ${user.online ? 'var(--success)' : 'var(--text-secondary)'}; font-size: 0.85rem;">
                                 @${user.username} • ${user.online ? '● Online' : '○ Offline'}
+                                ${user.premium !== 'none' ? `<span style="color: var(--${user.premium}); margin-left: 5px;">⭐</span>` : ''}
                             </div>
                         </div>
                         <div style="display: flex; gap: 5px;">
@@ -1366,19 +1585,22 @@ HTML_TEMPLATE = '''
             if (chatMessages.length === 0) {
                 messagesContainer.innerHTML = getWelcomeMessage(chatId);
             } else {
-                messagesContainer.innerHTML = chatMessages.map(msg => `
-                    <div class="message ${msg.sender}" data-message-id="${msg.id}">
-                        ${msg.text}
-                        <div class="message-actions">
-                            ${msg.sender === 'sent' ? `
-                                <button class="message-action" onclick="editMessage('${msg.id}')">✏️</button>
-                                <button class="message-action" onclick="deleteMessage('${msg.id}')">🗑️</button>
-                            ` : ''}
-                            ${msg.views ? `<button class="message-action">👁️ ${msg.views}</button>` : ''}
+                messagesContainer.innerHTML = chatMessages.map(msg => {
+                    const isPremium = msg.premium && msg.premium !== 'none';
+                    return `
+                        <div class="message ${msg.sender} ${isPremium ? 'message-premium' : ''}" data-message-id="${msg.id}">
+                            ${isPremium ? `⭐ ${msg.text}` : msg.text}
+                            <div class="message-actions">
+                                ${msg.sender === 'sent' ? `
+                                    <button class="message-action" onclick="editMessage('${msg.id}')">✏️</button>
+                                    <button class="message-action" onclick="deleteMessage('${msg.id}')">🗑️</button>
+                                ` : ''}
+                                ${msg.views ? `<button class="message-action">👁️ ${msg.views}</button>` : ''}
+                            </div>
+                            <div class="message-time">${msg.time}</div>
                         </div>
-                        <div class="message-time">${msg.time}</div>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
             }
             
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
@@ -1389,6 +1611,13 @@ HTML_TEMPLATE = '''
                 'support': [
                     {id: '1', text: 'Welcome to TrollexDL Support! 🚀', sender: 'received', time: '12:00', views: 1},
                     {id: '2', text: 'How can we assist you today?', sender: 'received', time: '12:01', views: 1}
+                ],
+                'community': [
+                    {id: '1', text: 'Welcome to Community Chat! 👋', sender: 'received', time: '10:00', views: 15},
+                    {id: '2', text: 'Anyone online? 🚀', sender: 'received', time: '10:05', views: 8, premium: 'vip'},
+                    {id: '3', text: 'Testing new features! ⚡', sender: 'received', time: '10:10', views: 12, premium: 'premium'},
+                    {id: '4', text: 'This app is amazing! 🌟', sender: 'received', time: '10:15', views: 20},
+                    {id: '5', text: 'Join our premium program! 💎', sender: 'received', time: '10:20', views: 25, premium: 'ultra'}
                 ]
             };
             return defaults[chatId] || [];
@@ -1454,12 +1683,13 @@ HTML_TEMPLATE = '''
             const messagesContainer = document.getElementById('messagesContainer');
             const time = new Date().toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
             const messageId = 'msg_' + Date.now();
+            const isPremium = currentUser.premium && currentUser.premium !== 'none';
             
             const messageElement = document.createElement('div');
-            messageElement.className = 'message sent';
+            messageElement.className = `message sent ${isPremium ? 'message-premium' : ''}`;
             messageElement.setAttribute('data-message-id', messageId);
             messageElement.innerHTML = `
-                ${message}
+                ${isPremium ? `⭐ ${message}` : message}
                 <div class="message-actions">
                     <button class="message-action" onclick="editMessage('${messageId}')">✏️</button>
                     <button class="message-action" onclick="deleteMessage('${messageId}')">🗑️</button>
@@ -1485,6 +1715,7 @@ HTML_TEMPLATE = '''
                 sender: 'sent',
                 time: time,
                 views: 1,
+                premium: currentUser.premium,
                 timestamp: new Date().toISOString()
             });
             
@@ -1492,7 +1723,7 @@ HTML_TEMPLATE = '''
             showNotification('Message sent! ✨', 'success');
             
             // Имитация ответа
-            if (currentChat.type === 'user' || currentChat.id === 'support') {
+            if (currentChat.type === 'user' || currentChat.id === 'support' || currentChat.id === 'community') {
                 setTimeout(() => {
                     if (currentChat) {
                         simulateReply();
@@ -1519,7 +1750,9 @@ HTML_TEMPLATE = '''
                 
                 const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
                 if (messageElement) {
-                    messageElement.querySelector('div:first-child').textContent = newText + ' (edited)';
+                    const textElement = messageElement.querySelector('div:first-child');
+                    const isPremium = messages[currentChat.id][messageIndex].premium && messages[currentChat.id][messageIndex].premium !== 'none';
+                    textElement.textContent = (isPremium ? '⭐ ' : '') + newText + ' (edited)';
                 }
                 
                 saveData();
@@ -1554,17 +1787,26 @@ HTML_TEMPLATE = '''
                     'Hey! Thanks for reaching out! 👋',
                     'That sounds interesting! Tell me more...',
                     'I will get back to you soon! ⏰'
+                ],
+                'community': [
+                    'Great message! 👍',
+                    'Thanks for sharing! 💫',
+                    'Welcome to the community! 🎉',
+                    'Awesome! 🚀',
+                    'Keep them coming! ⚡'
                 ]
             };
             
             const chatReplies = replies[currentChat.type] || ['Thank you for your message!'];
             const replyText = chatReplies[Math.floor(Math.random() * chatReplies.length)];
+            const randomUser = allUsers[Math.floor(Math.random() * (allUsers.length - 1))];
+            const isPremium = randomUser.premium && randomUser.premium !== 'none';
             
             const replyElement = document.createElement('div');
-            replyElement.className = 'message received';
+            replyElement.className = `message received ${isPremium ? 'message-premium' : ''}`;
             replyElement.setAttribute('data-message-id', replyId);
             replyElement.innerHTML = `
-                ${replyText}
+                ${isPremium ? `⭐ ${replyText}` : replyText}
                 <div class="message-actions">
                     <button class="message-action">👁️ 1</button>
                 </div>
@@ -1583,6 +1825,7 @@ HTML_TEMPLATE = '''
                 sender: 'received',
                 time: time,
                 views: 1,
+                premium: randomUser.premium,
                 timestamp: new Date().toISOString()
             });
             
@@ -1611,12 +1854,25 @@ HTML_TEMPLATE = '''
             document.getElementById('sidebar').classList.toggle('active');
         }
 
+        function showDonatePanel() {
+            document.getElementById('donatePanel').classList.add('active');
+        }
+
+        function hideDonatePanel() {
+            document.getElementById('donatePanel').classList.remove('active');
+        }
+
         function showSettings() {
             document.getElementById('settingsPanel').classList.add('active');
         }
 
         function hideSettings() {
             document.getElementById('settingsPanel').classList.remove('active');
+        }
+
+        function selectTier(tier) {
+            showNotification(`Selected ${tier.toUpperCase()} tier! Contact @trollex_official on Telegram for purchase. 💎`, 'success');
+            // Здесь можно добавить логику обработки выбора тарифа
         }
 
         function saveSettings() {
@@ -1738,6 +1994,12 @@ HTML_TEMPLATE = '''
                 !settingsPanel.contains(event.target) && !event.target.classList.contains('mobile-menu-btn')) {
                 settingsPanel.classList.remove('active');
             }
+            
+            const donatePanel = document.getElementById('donatePanel');
+            if (donatePanel.classList.contains('active') && 
+                !donatePanel.contains(event.target) && !event.target.classList.contains('mobile-menu-btn')) {
+                donatePanel.classList.remove('active');
+            }
         });
 
         // Адаптация для мобильных устройств
@@ -1773,6 +2035,6 @@ def health_check():
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    print(f"🚀 TrollexDL запущен на порту {port}")
+    print(f"🚀 TrollexDL Premium запущен на порту {port}")
     print(f"🌐 Откройте: http://localhost:{port}")
     app.run(host='0.0.0.0', port=port, debug=False)
