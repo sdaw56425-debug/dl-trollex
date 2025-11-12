@@ -277,6 +277,14 @@ HTML_TEMPLATE = '''
             padding: 20px;
             background: linear-gradient(135deg, var(--accent), var(--accent-glow));
             text-align: center;
+            position: relative;
+        }
+
+        .user-header .user-avatar {
+            width: 50px;
+            height: 50px;
+            font-size: 1.2rem;
+            margin: 0 auto 10px;
         }
 
         .nav-tabs {
@@ -285,16 +293,19 @@ HTML_TEMPLATE = '''
             border-radius: 10px;
             padding: 5px;
             margin: 10px;
+            flex-wrap: wrap;
         }
 
         .nav-tab {
             flex: 1;
-            padding: 10px;
+            padding: 8px 5px;
             text-align: center;
             cursor: pointer;
             border-radius: 8px;
             transition: all 0.3s ease;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
+            min-width: 60px;
+            margin: 2px;
         }
 
         .nav-tab.active {
@@ -348,6 +359,7 @@ HTML_TEMPLATE = '''
             justify-content: center;
             margin-right: 10px;
             flex-shrink: 0;
+            font-size: 1rem;
         }
 
         .chat-area {
@@ -365,6 +377,13 @@ HTML_TEMPLATE = '''
             display: flex;
             align-items: center;
             gap: 10px;
+        }
+
+        .chat-header .item-avatar {
+            width: 35px;
+            height: 35px;
+            font-size: 0.9rem;
+            margin: 0;
         }
 
         .messages-container {
@@ -464,6 +483,7 @@ HTML_TEMPLATE = '''
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s ease;
+            font-size: 0.8rem;
         }
 
         .notification {
@@ -497,6 +517,147 @@ HTML_TEMPLATE = '''
             color: var(--text);
             font-size: 1.2rem;
             cursor: pointer;
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        /* Панели */
+        .panel {
+            position: fixed;
+            top: 0;
+            width: 90%;
+            max-width: 400px;
+            height: 100%;
+            background: rgba(26, 26, 74, 0.98);
+            border: 2px solid var(--accent);
+            z-index: 500;
+            transition: transform 0.3s ease;
+            padding: 20px;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+        }
+
+        .settings-panel {
+            right: -100%;
+        }
+
+        .settings-panel.active {
+            right: 0;
+        }
+
+        .donate-panel {
+            left: -100%;
+        }
+
+        .donate-panel.active {
+            left: 0;
+        }
+
+        .call-panel {
+            left: -100%;
+        }
+
+        .call-panel.active {
+            left: 0;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 499;
+            display: none;
+        }
+
+        .overlay.active {
+            display: block;
+        }
+
+        /* Стили для звонков */
+        .call-link-container {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border: 1px solid var(--accent);
+        }
+
+        .call-link {
+            font-family: monospace;
+            color: var(--neon);
+            word-break: break-all;
+            margin: 10px 0;
+        }
+
+        .join-call-container {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 15px 0;
+            border: 1px solid var(--accent);
+        }
+
+        /* Стили для настроек */
+        .settings-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+        }
+
+        .settings-section h4 {
+            margin-bottom: 10px;
+            color: var(--neon);
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--secondary);
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: var(--success);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
         }
 
         @media (max-width: 768px) {
@@ -516,10 +677,21 @@ HTML_TEMPLATE = '''
             .mobile-menu-btn {
                 display: block;
             }
+
+            .nav-tab {
+                font-size: 0.7rem;
+                padding: 6px 3px;
+            }
+
+            .panel {
+                width: 85%;
+            }
         }
     </style>
 </head>
 <body>
+    <div class="overlay" id="overlay" onclick="hideAllPanels()"></div>
+
     <!-- Экран загрузки -->
     <div id="loadingScreen" class="screen">
         <div class="cosmic-card">
@@ -610,6 +782,7 @@ HTML_TEMPLATE = '''
                 <div class="nav-tab active" onclick="switchTab('chats')">💬 Чаты</div>
                 <div class="nav-tab" onclick="switchTab('friends')">👥 Друзья</div>
                 <div class="nav-tab" onclick="switchTab('discover')">🌐 Найти</div>
+                <div class="nav-tab" onclick="switchTab('calls')">📞 Звонки</div>
                 <div class="nav-tab" onclick="showDonatePanel()">💎 Донат</div>
                 <div class="nav-tab" onclick="showSettings()">⚙️ Настройки</div>
             </div>
@@ -640,7 +813,7 @@ HTML_TEMPLATE = '''
                     <div class="empty-state-icon">🌌</div>
                     <h3>Добро пожаловать в TrollexDL!</h3>
                     <p>Начните общение с квантовым шифрованием</p>
-                    <button class="btn btn-primary" onclick="createCallRoom()" style="margin-top: 20px;">
+                    <button class="btn btn-primary" onclick="showCallPanel()" style="margin-top: 20px;">
                         🎥 Создать видеозвонок
                     </button>
                 </div>
@@ -651,6 +824,138 @@ HTML_TEMPLATE = '''
                 <button class="send-btn" onclick="sendMessage()">🚀</button>
             </div>
         </div>
+    </div>
+
+    <!-- Панель звонков -->
+    <div class="panel call-panel" id="callPanel">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3>📞 Видеозвонки</h3>
+            <button class="mobile-menu-btn" onclick="hideCallPanel()" style="position: static; transform: none; font-size: 1.5rem;">✕</button>
+        </div>
+        
+        <div class="call-link-container">
+            <h4>🎥 Создать звонок</h4>
+            <button class="btn btn-primary" onclick="createCallRoom()" style="width: 100%; margin: 10px 0;">
+                🎬 Начать видеозвонок
+            </button>
+            <div id="callLinkContainer" style="display: none;">
+                <div style="font-size: 0.9rem; color: var(--text-secondary); margin: 10px 0;">Ссылка на звонок:</div>
+                <div class="call-link" id="callLink">Загрузка...</div>
+                <button class="btn btn-secondary" onclick="copyCallLink()" style="width: 100%; margin: 5px 0;">
+                    📋 Скопировать ссылку
+                </button>
+                <button class="btn btn-secondary" onclick="shareCallLink()" style="width: 100%; margin: 5px 0;">
+                    📤 Поделиться
+                </button>
+            </div>
+        </div>
+
+        <div class="join-call-container">
+            <h4>🔗 Присоединиться к звонку</h4>
+            <input type="text" class="search-input" id="joinCallInput" placeholder="Вставьте ссылку на звонок...">
+            <button class="btn btn-primary" onclick="joinCallByLink()" style="width: 100%; margin: 10px 0;">
+                ✅ Присоединиться
+            </button>
+        </div>
+
+        <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-top: 20px;">
+            <h4>📊 Последние звонки</h4>
+            <div style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                <div class="empty-state-icon">📞</div>
+                <p>Здесь будут ваши последние звонки</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Панель доната -->
+    <div class="panel donate-panel" id="donatePanel">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3>💎 Премиум тарифы</h3>
+            <button class="mobile-menu-btn" onclick="hideDonatePanel()" style="position: static; transform: none; font-size: 1.5rem;">✕</button>
+        </div>
+        
+        <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+            <h4>🌟 VIP - 299 ₽/мес</h4>
+            <p>• Цветные сообщения<br>• Специальный значок<br>• Приоритет в поддержке</p>
+            <button class="btn btn-primary" onclick="selectTier('vip')">Выбрать VIP</button>
+        </div>
+
+        <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+            <h4>💫 Premium - 599 ₽/мес</h4>
+            <p>• Все функции VIP<br>• Расширенные темы<br>• Неограниченный облачный архив</p>
+            <button class="btn btn-primary" onclick="selectTier('premium')">Выбрать Premium</button>
+        </div>
+
+        <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+            <h4>🚀 Ultimate - 999 ₽/мес</h4>
+            <p>• Все функции Premium<br>• Персональный менеджер<br>• Кастомные функции</p>
+            <button class="btn btn-primary" onclick="selectTier('ultimate')">Выбрать Ultimate</button>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 10px;">
+            <p>💬 Напишите в Telegram: <strong>@trollex_official</strong></p>
+            <p style="margin-top: 10px; font-size: 0.9rem; color: var(--text-secondary);">Для оплаты и активации премиум-статуса</p>
+        </div>
+    </div>
+
+    <!-- Панель настроек -->
+    <div class="panel settings-panel" id="settingsPanel">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3>⚙️ Настройки</h3>
+            <button class="mobile-menu-btn" onclick="hideSettings()" style="position: static; transform: none; font-size: 1.5rem;">✕</button>
+        </div>
+        
+        <div class="settings-section">
+            <h4>👤 Профиль</h4>
+            <div style="margin-bottom: 15px;">
+                <label>Имя пользователя</label>
+                <input type="text" class="search-input" id="settingsName" placeholder="Введите новое имя" style="margin-top: 5px;">
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label>Статус</label>
+                <input type="text" class="search-input" id="settingsStatus" placeholder="Ваш статус" style="margin-top: 5px;">
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h4>🔔 Уведомления</h4>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span>Включить уведомления</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="notificationsToggle" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span>Звук уведомлений</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="soundToggle" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h4>🎨 Внешний вид</h4>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <div style="flex: 1; text-align: center; padding: 10px; background: var(--primary); border-radius: 8px; cursor: pointer; border: 2px solid var(--accent);">
+                    Тёмная
+                </div>
+                <div style="flex: 1; text-align: center; padding: 10px; background: white; color: black; border-radius: 8px; cursor: pointer; border: 2px solid transparent;">
+                    Светлая
+                </div>
+            </div>
+        </div>
+
+        <div style="color: var(--neon); text-align: center; margin: 20px 0;">
+            <span>🔒</span>
+            <span>End-to-End шифрование активно</span>
+        </div>
+
+        <button class="btn btn-primary" onclick="saveSettings()">💾 Сохранить настройки</button>
+        <button class="btn btn-secondary" onclick="logout()" style="background: rgba(255,68,68,0.2); color: var(--danger); border-color: var(--danger); margin-top: 10px;">
+            🚪 Выйти из аккаунта
+        </button>
     </div>
 
     <!-- Уведомления -->
@@ -664,6 +969,7 @@ HTML_TEMPLATE = '''
         let allUsers = [];
         let friends = [];
         let friendRequests = [];
+        let currentCallLink = '';
 
         document.addEventListener('DOMContentLoaded', function() {
             initializeApp();
@@ -695,10 +1001,6 @@ HTML_TEMPLATE = '''
             }
             
             typeNextText();
-        }
-
-        function hideLoadingScreen() {
-            document.getElementById('loadingScreen').classList.add('hidden');
         }
 
         function showWelcomeScreen() {
@@ -883,6 +1185,9 @@ HTML_TEMPLATE = '''
                 case 'discover':
                     contentHTML = getDiscoverContent(searchTerm);
                     break;
+                case 'calls':
+                    contentHTML = getCallsContent();
+                    break;
                 default:
                     contentHTML = '<div class="empty-state">Выберите вкладку</div>';
             }
@@ -979,8 +1284,8 @@ HTML_TEMPLATE = '''
                         <div class="empty-state-icon">👥</div>
                         <h3>Нет друзей</h3>
                         <p>Добавьте друзей чтобы начать общение</p>
-                        <button class="btn btn-primary" onclick="showAddFriendModal()" style="margin-top: 15px;">
-                            👥 Добавить друга
+                        <button class="btn btn-primary" onclick="showAddFriendByLink()" style="margin-top: 15px;">
+                            🔗 Добавить по ссылке
                         </button>
                     </div>
                 `;
@@ -992,8 +1297,8 @@ HTML_TEMPLATE = '''
         function getDiscoverContent(searchTerm) {
             return `
                 <div style="text-align: center; padding: 20px;">
-                    <button class="btn btn-primary" onclick="showAddFriendModal()" style="margin-bottom: 15px;">
-                        👥 Добавить по коду
+                    <button class="btn btn-primary" onclick="showAddFriendByLink()" style="margin-bottom: 15px;">
+                        🔗 Добавить по ссылке
                     </button>
                     <div style="color: var(--text-secondary); font-size: 0.9rem;">
                         Используйте Friend Code для добавления в друзья
@@ -1005,6 +1310,37 @@ HTML_TEMPLATE = '''
                     <div id="recommendedUsers">
                         ${getRecommendedUsers()}
                     </div>
+                </div>
+
+                <div class="friend-code-display">
+                    <h4>📋 Ваш Friend Code</h4>
+                    <div class="friend-code">${currentUser.friendCode}</div>
+                    <button class="btn btn-secondary" onclick="copyToClipboard(currentUser.friendCode)" style="width: 100%; margin-top: 10px;">
+                        📋 Скопировать код
+                    </button>
+                </div>
+            `;
+        }
+
+        function getCallsContent() {
+            return `
+                <div style="text-align: center; padding: 20px;">
+                    <button class="btn btn-primary" onclick="showCallPanel()" style="margin-bottom: 15px;">
+                        🎥 Управление звонками
+                    </button>
+                    <div style="color: var(--text-secondary); font-size: 0.9rem;">
+                        Создавайте и присоединяйтесь к видеозвонкам
+                    </div>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin: 15px 0;">
+                    <h4>📞 Быстрый доступ</h4>
+                    <button class="btn btn-secondary" onclick="createCallRoom()" style="width: 100%; margin: 5px 0;">
+                        🎬 Быстрый звонок
+                    </button>
+                    <button class="btn btn-secondary" onclick="showCallPanel()" style="width: 100%; margin: 5px 0;">
+                        🔗 Присоединиться по ссылке
+                    </button>
                 </div>
             `;
         }
@@ -1072,7 +1408,6 @@ HTML_TEMPLATE = '''
 
             const messagesContainer = document.getElementById('messagesContainer');
             
-            // Убираем empty-state если он есть
             if (messagesContainer.querySelector('.empty-state')) {
                 messagesContainer.innerHTML = '';
             }
@@ -1098,7 +1433,101 @@ HTML_TEMPLATE = '''
             }
         }
 
-        function showAddFriendModal() {
+        // Функции для панелей
+        function showCallPanel() {
+            document.getElementById('callPanel').classList.add('active');
+            document.getElementById('overlay').classList.add('active');
+        }
+
+        function hideCallPanel() {
+            document.getElementById('callPanel').classList.remove('active');
+            document.getElementById('overlay').classList.remove('active');
+        }
+
+        function showDonatePanel() {
+            document.getElementById('donatePanel').classList.add('active');
+            document.getElementById('overlay').classList.add('active');
+        }
+
+        function hideDonatePanel() {
+            document.getElementById('donatePanel').classList.remove('active');
+            document.getElementById('overlay').classList.remove('active');
+        }
+
+        function showSettings() {
+            document.getElementById('settingsPanel').classList.add('active');
+            document.getElementById('overlay').classList.add('active');
+        }
+
+        function hideSettings() {
+            document.getElementById('settingsPanel').classList.remove('active');
+            document.getElementById('overlay').classList.remove('active');
+        }
+
+        function hideAllPanels() {
+            hideCallPanel();
+            hideDonatePanel();
+            hideSettings();
+        }
+
+        // Функции для звонков
+        function createCallRoom() {
+            fetch('/api/create_call', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_id: currentUser.id,
+                    session_token: sessionToken
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    currentCallLink = data.call_link;
+                    document.getElementById('callLink').textContent = currentCallLink;
+                    document.getElementById('callLinkContainer').style.display = 'block';
+                    showNotification('Комната для звонка создана! 🎥');
+                } else {
+                    showNotification('Ошибка создания комнаты ❌');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Ошибка сети ❌');
+            });
+        }
+
+        function copyCallLink() {
+            copyToClipboard(currentCallLink);
+            showNotification('Ссылка скопирована! 📋');
+        }
+
+        function shareCallLink() {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Присоединяйтесь к видеозвонку',
+                    text: 'Присоединяйтесь к моему видеозвонку в TrollexDL',
+                    url: currentCallLink
+                });
+            } else {
+                copyCallLink();
+            }
+        }
+
+        function joinCallByLink() {
+            const callLink = document.getElementById('joinCallInput').value.trim();
+            if (callLink) {
+                showNotification('Присоединение к звонку... 📞');
+                // Здесь будет логика присоединения к звонку
+            } else {
+                showNotification('Введите ссылку на звонок ❌');
+            }
+        }
+
+        // Функции для друзей
+        function showAddFriendByLink() {
             const friendCode = prompt('Введите Friend Code пользователя (формат: TRLX-XXXX-XXXX):');
             if (friendCode) {
                 sendFriendRequestByCode(friendCode);
@@ -1121,7 +1550,7 @@ HTML_TEMPLATE = '''
             .then(data => {
                 if (data.success) {
                     showNotification('Запрос дружбы отправлен! 📤');
-                loadFriendRequests();
+                    loadFriendRequests();
                 } else {
                     showNotification(data.error || 'Ошибка отправки запроса ❌');
                 }
@@ -1237,6 +1666,13 @@ HTML_TEMPLATE = '''
             });
         }
 
+        // Вспомогательные функции
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showNotification('Скопировано! 📋');
+            });
+        }
+
         function showNotification(message) {
             const notification = document.getElementById('notification');
             notification.textContent = message;
@@ -1256,32 +1692,6 @@ HTML_TEMPLATE = '''
             loadContent();
         }
 
-        function createCallRoom() {
-            fetch('/api/create_call', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    user_id: currentUser.id,
-                    session_token: sessionToken
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showNotification('Комната для звонка создана! 🎥');
-                    // Здесь можно добавить логику для присоединения к звонку
-                } else {
-                    showNotification('Ошибка создания комнаты ❌');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showNotification('Ошибка сети ❌');
-            });
-        }
-
         function startVideoCall() {
             if (!currentChat) {
                 showNotification('Выберите чат для звонка 📞');
@@ -1294,12 +1704,22 @@ HTML_TEMPLATE = '''
             showNotification('Функция обмена файлами скоро будет доступна 📎');
         }
 
-        function showDonatePanel() {
-            showNotification('Премиум функции скоро будут доступны 💎');
+        function selectTier(tier) {
+            showNotification(`Выбран тариф: ${tier.toUpperCase()} 💎`);
         }
 
-        function showSettings() {
-            showNotification('Настройки скоро будут доступны ⚙️');
+        function saveSettings() {
+            showNotification('Настройки сохранены! ✅');
+            hideSettings();
+        }
+
+        function logout() {
+            if (confirm('Вы уверены, что хотите выйти?')) {
+                localStorage.removeItem('trollexUser');
+                localStorage.removeItem('sessionToken');
+                showWelcomeScreen();
+                showNotification('Вы вышли из аккаунта 👋');
+            }
         }
 
         // Закрываем sidebar при клике вне его на мобильных
@@ -1504,23 +1924,82 @@ def api_create_call():
         user_id = data.get('user_id')
         
         call_id = generate_call_id()
+        call_link = f"{request.host_url}call/{call_id}"
+        
         active_calls[call_id] = {
             'creator': user_id,
             'participants': [user_id],
             'created_at': datetime.datetime.now().isoformat(),
             'security_level': 'high',
-            'type': 'video'
+            'type': 'video',
+            'link': call_link
         }
         
         logger.info(f"Создан защищённый звонок: {call_id}")
         return jsonify({
             'success': True, 
             'call_id': call_id,
+            'call_link': call_link,
             'security_level': 'high'
         })
     except Exception as e:
         logger.error(f"Ошибка создания звонка: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/call/<call_id>')
+def call_room(call_id):
+    if call_id in active_calls:
+        return f'''
+        <html>
+            <head>
+                <title>Присоединиться к звонку - TrollexDL</title>
+                <style>
+                    body {{
+                        background: linear-gradient(135deg, #0a0a2a 0%, #1a1a4a 100%);
+                        color: white;
+                        font-family: 'Segoe UI', sans-serif;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        height: 100vh;
+                        margin: 0;
+                    }}
+                    .container {{
+                        text-align: center;
+                        padding: 40px;
+                        background: rgba(26, 26, 74, 0.95);
+                        border-radius: 20px;
+                        border: 2px solid #6c2bd9;
+                    }}
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h1>🎥 Видеозвонок TrollexDL</h1>
+                    <p>Присоединяйтесь к защищённому звонку</p>
+                    <button onclick="joinCall()" style="
+                        background: linear-gradient(135deg, #6c2bd9, #8b5cf6);
+                        color: white;
+                        border: none;
+                        padding: 15px 30px;
+                        border-radius: 10px;
+                        font-size: 1rem;
+                        cursor: pointer;
+                        margin: 20px 0;
+                    ">✅ Присоединиться к звонку</button>
+                    <p style="color: #b0b0ff;">Ссылка действительна: {active_calls[call_id]['created_at']}</p>
+                </div>
+                <script>
+                    function joinCall() {{
+                        alert('Присоединение к звонку... (функция в разработке)');
+                        // Здесь будет WebRTC логика
+                    }}
+                </script>
+            </body>
+        </html>
+        '''
+    else:
+        return "Звонок не найден или завершен", 404
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
