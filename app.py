@@ -15,9 +15,11 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'trollexdl-premium-2024')
 
-# Хранилище активных звонков
+# Хранилища данных
 active_calls = {}
 user_sessions = {}
+user_messages = {}
+all_users = []
 
 def get_days_until_new_year():
     now = datetime.datetime.now()
@@ -46,6 +48,20 @@ def generate_session_token():
 def verify_session(user_id, session_token):
     """Проверка валидности сессии"""
     return user_id in user_sessions and session_token == user_sessions.get(user_id)
+
+def initialize_sample_data():
+    """Инициализация тестовых данных"""
+    global all_users
+    all_users = [
+        {'id': 'user1', 'name': 'Alex_Quantum', 'avatar': '👨‍💻', 'online': True, 'last_seen': 'только что'},
+        {'id': 'user2', 'name': 'Sarah_Cyber', 'avatar': '👩‍🎨', 'online': True, 'last_seen': '2 мин назад'},
+        {'id': 'user3', 'name': 'Mike_Neon', 'avatar': '👨‍🚀', 'online': False, 'last_seen': '1 час назад'},
+        {'id': 'user4', 'name': 'Emma_Digital', 'avatar': '👩‍💼', 'online': True, 'last_seen': 'только что'},
+        {'id': 'user5', 'name': 'Max_Virtual', 'avatar': '🤖', 'online': False, 'last_seen': '30 мин назад'},
+        {'id': 'user6', 'name': 'Luna_Hyper', 'avatar': '👽', 'online': True, 'last_seen': '5 мин назад'},
+        {'id': 'user7', 'name': 'Tom_Alpha', 'avatar': '🦊', 'online': True, 'last_seen': 'только что'},
+        {'id': 'user8', 'name': 'Anna_Phantom', 'avatar': '🐲', 'online': False, 'last_seen': '2 часа назад'}
+    ]
 
 HTML_TEMPLATE = '''
 <!DOCTYPE html>
@@ -146,56 +162,6 @@ HTML_TEMPLATE = '''
             }
         }
 
-        .typing-animation {
-            display: inline-block;
-            overflow: hidden;
-            border-right: 2px solid var(--neon);
-            white-space: nowrap;
-            margin: 0 auto;
-            animation: typing 3.5s steps(40, end), blink-caret 0.75s step-end infinite;
-            font-size: 1.1rem;
-            min-height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        @keyframes typing {
-            from { width: 0 }
-            to { width: 100% }
-        }
-
-        @keyframes blink-caret {
-            from, to { border-color: transparent }
-            50% { border-color: var(--neon) }
-        }
-
-        .quantum-loader {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 20px 0;
-        }
-
-        .quantum-dot {
-            width: 12px;
-            height: 12px;
-            margin: 0 5px;
-            border-radius: 50%;
-            background: var(--neon);
-            animation: quantum-pulse 1.5s ease-in-out infinite;
-            box-shadow: 0 0 10px var(--neon);
-        }
-
-        .quantum-dot:nth-child(2) { animation-delay: 0.2s; }
-        .quantum-dot:nth-child(3) { animation-delay: 0.4s; }
-        .quantum-dot:nth-child(4) { animation-delay: 0.6s; }
-
-        @keyframes quantum-pulse {
-            0%, 100% { transform: scale(0.8); opacity: 0.5; }
-            50% { transform: scale(1.2); opacity: 1; }
-        }
-
         .btn {
             width: 100%;
             padding: 15px;
@@ -237,7 +203,6 @@ HTML_TEMPLATE = '''
             margin: 15px 0;
             border: 1px solid var(--accent);
             backdrop-filter: blur(5px);
-            animation: cardAppear 0.4s ease-out;
         }
 
         .user-avatar {
@@ -251,12 +216,6 @@ HTML_TEMPLATE = '''
             font-size: 1.5rem;
             margin: 0 auto 10px;
             box-shadow: 0 4px 15px rgba(107, 43, 217, 0.3);
-            animation: avatarFloat 3s ease-in-out infinite;
-        }
-
-        @keyframes avatarFloat {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-5px); }
         }
 
         .app {
@@ -302,10 +261,6 @@ HTML_TEMPLATE = '''
             background: var(--accent);
         }
 
-        .nav-tab:hover {
-            background: rgba(107, 43, 217, 0.3);
-        }
-
         .search-box {
             padding: 10px;
         }
@@ -318,12 +273,6 @@ HTML_TEMPLATE = '''
             border-radius: 10px;
             color: var(--text);
             font-size: 0.9rem;
-        }
-
-        .search-input:focus {
-            outline: none;
-            border-color: var(--neon);
-            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
         }
 
         .content-list {
@@ -342,22 +291,6 @@ HTML_TEMPLATE = '''
             cursor: pointer;
             transition: all 0.3s ease;
             border: 1px solid transparent;
-            animation: slideInLeft 0.3s ease-out;
-        }
-
-        @keyframes slideInLeft {
-            from {
-                opacity: 0;
-                transform: translateX(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        .chat-item:active {
-            transform: scale(0.98);
         }
 
         .chat-item:hover {
@@ -456,11 +389,6 @@ HTML_TEMPLATE = '''
             font-size: 0.9rem;
         }
 
-        .message-input:focus {
-            outline: none;
-            border-color: var(--neon);
-        }
-
         .send-btn {
             padding: 12px 20px;
             background: linear-gradient(135deg, var(--accent), var(--accent-glow));
@@ -468,16 +396,6 @@ HTML_TEMPLATE = '''
             border: none;
             border-radius: 15px;
             cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .send-btn:active {
-            transform: scale(0.95);
-        }
-
-        .send-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 5px 15px rgba(107, 43, 217, 0.4);
         }
 
         /* Стили для видеозвонков */
@@ -495,18 +413,6 @@ HTML_TEMPLATE = '''
 
         .call-container.active {
             display: flex;
-            animation: callAppear 0.4s ease-out;
-        }
-
-        @keyframes callAppear {
-            from {
-                opacity: 0;
-                transform: scale(1.1);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
         }
 
         .video-grid {
@@ -524,18 +430,6 @@ HTML_TEMPLATE = '''
             overflow: hidden;
             border: 2px solid var(--accent);
             min-height: 200px;
-            transition: all 0.3s ease;
-        }
-
-        .video-container.speaking {
-            border-color: var(--neon);
-            box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
-            animation: pulseGlow 2s infinite;
-        }
-
-        @keyframes pulseGlow {
-            0%, 100% { box-shadow: 0 0 20px rgba(0, 255, 136, 0.4); }
-            50% { box-shadow: 0 0 30px rgba(0, 255, 136, 0.8); }
         }
 
         .video-element {
@@ -553,7 +447,6 @@ HTML_TEMPLATE = '''
             padding: 5px 10px;
             border-radius: 10px;
             font-size: 0.9rem;
-            backdrop-filter: blur(5px);
         }
 
         .call-controls {
@@ -563,7 +456,6 @@ HTML_TEMPLATE = '''
             justify-content: center;
             gap: 15px;
             border-top: 2px solid var(--accent);
-            backdrop-filter: blur(10px);
         }
 
         .control-btn {
@@ -577,22 +469,11 @@ HTML_TEMPLATE = '''
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-
-        .control-btn:active {
-            transform: scale(0.9);
         }
 
         .control-btn.call-end {
             background: var(--danger);
             color: white;
-            animation: pulseDanger 2s infinite;
-        }
-
-        @keyframes pulseDanger {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
         }
 
         .control-btn.mic-toggle {
@@ -623,30 +504,13 @@ HTML_TEMPLATE = '''
             display: flex;
             align-items: center;
             gap: 10px;
-            backdrop-filter: blur(5px);
             z-index: 10;
-            animation: slideInDown 0.5s ease-out;
-        }
-
-        @keyframes slideInDown {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
         }
 
         .call-link {
             color: var(--neon);
             font-family: monospace;
             font-size: 0.9rem;
-            max-width: 200px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
         }
 
         .copy-link-btn {
@@ -657,11 +521,6 @@ HTML_TEMPLATE = '''
             border-radius: 5px;
             cursor: pointer;
             font-size: 0.8rem;
-            transition: all 0.3s ease;
-        }
-
-        .copy-link-btn:active {
-            transform: scale(0.95);
         }
 
         .call-invite {
@@ -676,14 +535,6 @@ HTML_TEMPLATE = '''
             z-index: 3000;
             text-align: center;
             display: none;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            animation: invitePulse 2s infinite;
-        }
-
-        @keyframes invitePulse {
-            0%, 100% { transform: translate(-50%, -50%) scale(1); }
-            50% { transform: translate(-50%, -50%) scale(1.05); }
         }
 
         .call-invite.active {
@@ -702,7 +553,6 @@ HTML_TEMPLATE = '''
             transition: right 0.3s ease;
             padding: 20px;
             overflow-y: auto;
-            backdrop-filter: blur(10px);
         }
 
         .settings-panel.active {
@@ -721,7 +571,6 @@ HTML_TEMPLATE = '''
             transition: left 0.3s ease;
             padding: 20px;
             overflow-y: auto;
-            backdrop-filter: blur(10px);
         }
 
         .donate-panel.active {
@@ -737,8 +586,6 @@ HTML_TEMPLATE = '''
             padding: 12px 20px;
             border-radius: 10px;
             z-index: 4000;
-            backdrop-filter: blur(5px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
             animation: slideIn 0.3s ease;
         }
 
@@ -760,12 +607,6 @@ HTML_TEMPLATE = '''
             color: var(--text);
             font-size: 1.2rem;
             cursor: pointer;
-            padding: 5px;
-            border-radius: 5px;
-        }
-
-        .mobile-menu-btn:active {
-            transform: scale(0.9);
         }
 
         .join-call-container {
@@ -774,8 +615,6 @@ HTML_TEMPLATE = '''
             border-radius: 15px;
             margin: 15px 0;
             border: 1px solid var(--accent);
-            backdrop-filter: blur(5px);
-            animation: cardAppear 0.4s ease-out;
         }
 
         .join-input {
@@ -786,7 +625,6 @@ HTML_TEMPLATE = '''
             border-radius: 10px;
             color: var(--text);
             margin: 10px 0;
-            font-size: 0.9rem;
         }
 
         .feature-grid {
@@ -802,24 +640,11 @@ HTML_TEMPLATE = '''
             border-radius: 10px;
             text-align: center;
             border: 1px solid var(--accent);
-            backdrop-filter: blur(5px);
-            transition: all 0.3s ease;
-            animation: cardAppear 0.4s ease-out;
-        }
-
-        .feature-card:active {
-            transform: scale(0.98);
         }
 
         .feature-icon {
             font-size: 2rem;
             margin-bottom: 10px;
-            animation: iconBounce 2s infinite;
-        }
-
-        @keyframes iconBounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-5px); }
         }
 
         .security-badge {
@@ -830,13 +655,6 @@ HTML_TEMPLATE = '''
             border-radius: 8px;
             font-size: 0.7rem;
             font-weight: bold;
-            margin-left: 8px;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
         }
 
         .encryption-status {
@@ -846,65 +664,35 @@ HTML_TEMPLATE = '''
             gap: 8px;
             margin: 10px 0;
             color: var(--neon);
-            font-size: 0.9rem;
         }
 
-        .floating-particles {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 1;
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(0,255,136,0.1);
+            border: 1px solid var(--neon);
+            border-radius: 8px;
+            margin: 10px 0;
         }
 
-        .particle {
-            position: absolute;
-            width: 4px;
-            height: 4px;
-            background: var(--neon);
+        .status-dot {
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
-            animation: float 6s infinite linear;
-            opacity: 0.3;
+            background: var(--neon);
         }
 
-        @keyframes float {
-            0% {
-                transform: translateY(100vh) translateX(0);
-                opacity: 0;
-            }
-            10% {
-                opacity: 0.3;
-            }
-            90% {
-                opacity: 0.3;
-            }
-            100% {
-                transform: translateY(-100px) translateX(20px);
-                opacity: 0;
-            }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
         }
 
-        .connection-wave {
-            position: relative;
-            overflow: hidden;
-        }
-
-        .connection-wave::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.2), transparent);
-            animation: wave 2s infinite;
-        }
-
-        @keyframes wave {
-            0% { left: -100%; }
-            100% { left: 100%; }
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
         }
 
         @media (max-width: 768px) {
@@ -928,7 +716,6 @@ HTML_TEMPLATE = '''
             .video-grid {
                 grid-template-columns: 1fr;
                 padding: 10px;
-                gap: 5px;
             }
 
             .video-container {
@@ -945,12 +732,6 @@ HTML_TEMPLATE = '''
                 top: 10px;
                 left: 10px;
                 right: 10px;
-                padding: 8px 12px;
-            }
-
-            .call-link {
-                max-width: 150px;
-                font-size: 0.8rem;
             }
 
             .settings-panel,
@@ -966,115 +747,16 @@ HTML_TEMPLATE = '''
             .feature-grid {
                 grid-template-columns: 1fr;
             }
-
-            .call-controls {
-                padding: 15px;
-                gap: 10px;
-            }
-
-            /* Мобильная оптимизация для звонков */
-            .mobile-call-layout .video-container.local {
-                position: fixed;
-                top: 10px;
-                right: 10px;
-                width: 120px;
-                height: 160px;
-                z-index: 10;
-                border: 2px solid var(--neon);
-            }
-
-            .mobile-call-layout .video-container.remote {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                z-index: 1;
-            }
-
-            .mobile-call-layout .call-controls {
-                position: fixed;
-                bottom: 0;
-                left: 0;
-                width: 100%;
-                background: rgba(26, 26, 74, 0.95);
-                z-index: 20;
-            }
-
-            .mobile-call-layout .call-link-container {
-                top: 180px;
-                left: 10px;
-                right: 10px;
-            }
-        }
-
-        /* Анимации защиты */
-        .shield-animation {
-            animation: shield-pulse 3s ease-in-out infinite;
-        }
-
-        @keyframes shield-pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-
-        .connection-status {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 12px;
-            background: rgba(0,255,136,0.1);
-            border: 1px solid var(--neon);
-            border-radius: 8px;
-            margin: 10px 0;
-            font-size: 0.8rem;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--neon);
-            animation: status-pulse 2s infinite;
-        }
-
-        @keyframes status-pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .ripple-effect {
-            position: absolute;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.6);
-            transform: scale(0);
-            animation: ripple 0.6s linear;
-            pointer-events: none;
-        }
-
-        @keyframes ripple {
-            to {
-                transform: scale(4);
-                opacity: 0;
-            }
         }
     </style>
 </head>
 <body>
-    <div class="floating-particles" id="particlesContainer"></div>
-
     <!-- Экран загрузки -->
     <div id="loadingScreen" class="screen">
         <div class="cosmic-card">
             <div class="logo">TrollexDL</div>
             <div style="margin: 20px 0; font-size: 1.2rem; min-height: 60px; display: flex; align-items: center; justify-content: center;">
-                <div class="typing-animation" id="typingText">Инициализация защищённого канала...</div>
-            </div>
-            <div class="quantum-loader">
-                <div class="quantum-dot"></div>
-                <div class="quantum-dot"></div>
-                <div class="quantum-dot"></div>
-                <div class="quantum-dot"></div>
+                <div id="typingText">Инициализация защищённого канала...</div>
             </div>
             <div class="encryption-status">
                 <span>🔒</span>
@@ -1092,7 +774,7 @@ HTML_TEMPLATE = '''
                 Премиум мессенджер с квантовым шифрованием
             </div>
             
-            <div class="connection-status connection-wave">
+            <div class="connection-status">
                 <div class="status-dot"></div>
                 <span>Защищённое соединение установлено</span>
             </div>
@@ -1120,7 +802,7 @@ HTML_TEMPLATE = '''
             </div>
 
             <div class="encryption-status">
-                <span class="shield-animation">🛡️</span>
+                <span>🛡️</span>
                 <span>Профиль будет защищён</span>
             </div>
             
@@ -1149,11 +831,11 @@ HTML_TEMPLATE = '''
             </div>
 
             <div class="nav-tabs">
-                <div class="nav-tab active" onclick="switchTab('chats')">💬</div>
-                <div class="nav-tab" onclick="switchTab('users')">👥</div>
-                <div class="nav-tab" onclick="switchTab('calls')">📞</div>
-                <div class="nav-tab" onclick="showDonatePanel()">💎</div>
-                <div class="nav-tab" onclick="showSettings()">⚙️</div>
+                <div class="nav-tab active" onclick="switchTab('chats')">💬 Чаты</div>
+                <div class="nav-tab" onclick="switchTab('users')">👥 Контакты</div>
+                <div class="nav-tab" onclick="switchTab('calls')">📞 Звонки</div>
+                <div class="nav-tab" onclick="showDonatePanel()">💎 Донат</div>
+                <div class="nav-tab" onclick="showSettings()">⚙️ Настройки</div>
             </div>
 
             <div class="search-box">
@@ -1177,8 +859,8 @@ HTML_TEMPLATE = '''
             </div>
 
             <div class="messages-container" id="messagesContainer">
-                <div style="text-align: center; padding: 40px 20px; color: var(--text-secondary);">
-                    <div style="font-size: 3rem; margin-bottom: 15px;">🌌</div>
+                <div class="empty-state">
+                    <div class="empty-state-icon">🌌</div>
                     <h3>Добро пожаловать в TrollexDL!</h3>
                     <p>Начните общение с квантовым шифрованием</p>
                     <button class="btn btn-primary" onclick="createCallRoom()" style="margin-top: 20px;">
@@ -1208,8 +890,13 @@ HTML_TEMPLATE = '''
                 <div class="video-label">Вы (🔴 Live)</div>
             </div>
             <div class="video-container remote" id="remoteVideoContainer">
-                <video id="remoteVideo" autoplay playsinline class="video-element"></video>
-                <div class="video-label">Ожидание участника...</div>
+                <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--secondary);color:var(--text-secondary);">
+                    <div style="text-align:center;">
+                        <div style="font-size:3rem;">👤</div>
+                        <div>Ожидание участника...</div>
+                    </div>
+                </div>
+                <div class="video-label">Участник</div>
             </div>
         </div>
         
@@ -1230,7 +917,7 @@ HTML_TEMPLATE = '''
             <p style="color: var(--text-secondary);">приглашает вас на видеозвонок</p>
         </div>
         <div class="encryption-status">
-            <span class="shield-animation">🛡️</span>
+            <span>🛡️</span>
             <span>Звонок будет защищён</span>
         </div>
         <button class="btn btn-primary" onclick="acceptCall()">✅ Принять</button>
@@ -1245,19 +932,26 @@ HTML_TEMPLATE = '''
         </div>
         
         <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-            <h4>🌟 VIP - 299 ₽</h4>
-            <p>Цветные сообщения, специальный значок</p>
+            <h4>🌟 VIP - 299 ₽/мес</h4>
+            <p>• Цветные сообщения<br>• Специальный значок<br>• Приоритет в поддержке</p>
             <button class="btn btn-primary" onclick="selectTier('vip')">Выбрать VIP</button>
         </div>
 
         <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-            <h4>💫 Premium - 599 ₽</h4>
-            <p>Все функции VIP + расширенные темы</p>
+            <h4>💫 Premium - 599 ₽/мес</h4>
+            <p>• Все функции VIP<br>• Расширенные темы<br>• Неограниченный облачный архив</p>
             <button class="btn btn-primary" onclick="selectTier('premium')">Выбрать Premium</button>
         </div>
 
+        <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+            <h4>🚀 Ultimate - 999 ₽/мес</h4>
+            <p>• Все функции Premium<br>• Персональный менеджер<br>• Кастомные функции</p>
+            <button class="btn btn-primary" onclick="selectTier('ultimate')">Выбрать Ultimate</button>
+        </div>
+
         <div style="text-align: center; margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 10px;">
-            <p>Напишите в Telegram: <strong>@trollex_official</strong></p>
+            <p>💬 Напишите в Telegram: <strong>@trollex_official</strong></p>
+            <p style="margin-top: 10px; font-size: 0.9rem; color: var(--text-secondary);">Для оплаты и активации премиум-статуса</p>
         </div>
     </div>
 
@@ -1292,9 +986,9 @@ HTML_TEMPLATE = '''
             <span>End-to-End шифрование активно</span>
         </div>
 
-        <button class="btn btn-primary" onclick="saveSettings()">💾 Сохранить</button>
+        <button class="btn btn-primary" onclick="saveSettings()">💾 Сохранить настройки</button>
         <button class="btn btn-secondary" onclick="logout()" style="background: rgba(255,68,68,0.2); color: var(--danger); border-color: var(--danger); margin-top: 10px;">
-            🚪 Выйти
+            🚪 Выйти из аккаунта
         </button>
     </div>
 
@@ -1309,68 +1003,20 @@ HTML_TEMPLATE = '''
         
         // Переменные для видеозвонков
         let localStream = null;
-        let remoteStream = null;
-        let peerConnection = null;
         let currentCallId = null;
         let isInCall = false;
         let isMicMuted = false;
         let isCamOff = false;
         let isScreenSharing = false;
-        let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        let participantTimeout = null;
 
         // Инициализация
         document.addEventListener('DOMContentLoaded', function() {
-            createParticles();
-            startTypingAnimation();
-            
-            setTimeout(() => {
-                hideLoadingScreen();
-                checkAutoLogin();
-            }, 4000);
-            
-            // Проверяем URL на наличие приглашения на звонок
-            checkCallInvite();
-            
-            // Добавляем ripple эффект для кнопок
-            addRippleEffect();
+            initializeApp();
         });
 
-        function createParticles() {
-            const container = document.getElementById('particlesContainer');
-            for (let i = 0; i < 20; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'particle';
-                particle.style.left = Math.random() * 100 + 'vw';
-                particle.style.animationDelay = Math.random() * 6 + 's';
-                particle.style.animationDuration = (3 + Math.random() * 3) + 's';
-                container.appendChild(particle);
-            }
-        }
-
-        function addRippleEffect() {
-            document.addEventListener('click', function(e) {
-                if (e.target.classList.contains('btn') || e.target.classList.contains('control-btn') || e.target.classList.contains('feature-card')) {
-                    const ripple = document.createElement('span');
-                    ripple.className = 'ripple-effect';
-                    const rect = e.target.getBoundingClientRect();
-                    const size = Math.max(rect.width, rect.height);
-                    const x = e.clientX - rect.left - size / 2;
-                    const y = e.clientY - rect.top - size / 2;
-                    
-                    ripple.style.width = ripple.style.height = size + 'px';
-                    ripple.style.left = x + 'px';
-                    ripple.style.top = y + 'px';
-                    
-                    e.target.appendChild(ripple);
-                    
-                    setTimeout(() => {
-                        ripple.remove();
-                    }, 600);
-                }
-            });
-        }
-
-        function startTypingAnimation() {
+        function initializeApp() {
+            // Симуляция загрузки
             const texts = [
                 "Инициализация квантового интерфейса...",
                 "Загрузка защищённого канала...", 
@@ -1378,17 +1024,18 @@ HTML_TEMPLATE = '''
                 "Активация протокола шифрования...",
                 "Готово! Запускаем TrollexDL..."
             ];
+            
             let currentIndex = 0;
             const typingElement = document.getElementById('typingText');
             
             function typeNextText() {
                 if (currentIndex < texts.length) {
                     typingElement.textContent = texts[currentIndex];
-                    typingElement.style.animation = 'none';
-                    void typingElement.offsetWidth;
-                    typingElement.style.animation = 'typing 2s steps(40, end), blink-caret 0.75s step-end infinite';
                     currentIndex++;
-                    setTimeout(typeNextText, 2000);
+                    setTimeout(typeNextText, 1000);
+                } else {
+                    hideLoadingScreen();
+                    checkAutoLogin();
                 }
             }
             
@@ -1430,23 +1077,19 @@ HTML_TEMPLATE = '''
         }
 
         function generateUsername() {
-            const adjectives = ['Quantum', 'Neon', 'Cyber', 'Digital'];
-            const nouns = ['Phoenix', 'Dragon', 'Wolf', 'Tiger'];
+            const adjectives = ['Quantum', 'Neon', 'Cyber', 'Digital', 'Alpha', 'Beta', 'Gamma', 'Omega'];
+            const nouns = ['Phoenix', 'Dragon', 'Wolf', 'Tiger', 'Eagle', 'Hawk', 'Lion', 'Panther'];
             const numbers = Math.floor(Math.random() * 9000) + 1000;
             return `${adjectives[Math.floor(Math.random() * adjectives.length)]}_${nouns[Math.floor(Math.random() * nouns.length)]}${numbers}`;
         }
 
         function generateEmail(username) {
-            const domains = ['quantum.io', 'cosmic.com', 'trollex.ai'];
+            const domains = ['quantum.io', 'cosmic.com', 'trollex.ai', 'nebula.org'];
             return `${username.toLowerCase()}@${domains[Math.floor(Math.random() * domains.length)]}`;
         }
 
         function generateUserId() {
             return 'user_' + Math.random().toString(36).substr(2, 8).toUpperCase();
-        }
-
-        function generateSessionToken() {
-            return Math.random().toString(36).substr(2) + Math.random().toString(36).substr(2);
         }
 
         function registerUser() {
@@ -1463,30 +1106,37 @@ HTML_TEMPLATE = '''
                 settings: {}
             };
             
-            // Генерируем сессионный токен
             sessionToken = generateSessionToken();
             
             localStorage.setItem('trollexUser', JSON.stringify(currentUser));
             localStorage.setItem('sessionToken', sessionToken);
             
-            // Создаем тестовых пользователей
-            initializeSampleUsers();
+            // Загружаем тестовых пользователей
+            loadSampleUsers();
             
             showMainApp();
             showNotification('Профиль создан успешно! 🎉');
         }
 
-        function initializeSampleUsers() {
-            allUsers = [
-                {id: 'user1', name: 'Alex_Quantum', avatar: '👨‍💻', online: true},
-                {id: 'user2', name: 'Sarah_Cyber', avatar: '👩‍🎨', online: true},
-                {id: 'user3', name: 'Mike_Neon', avatar: '👨‍🚀', online: false},
-                {id: 'user4', name: 'Emma_Digital', avatar: '👩‍💼', online: true},
-                {id: 'user5', name: 'Max_Virtual', avatar: '🤖', online: true},
-                {id: 'user6', name: 'Luna_Hyper', avatar: '👽', online: false}
-            ];
-            
-            localStorage.setItem('allUsers', JSON.stringify(allUsers));
+        function generateSessionToken() {
+            return Math.random().toString(36).substr(2) + Math.random().toString(36).substr(2);
+        }
+
+        function loadSampleUsers() {
+            // Используем данные с сервера
+            allUsers = JSON.parse(localStorage.getItem('allUsers')) || [];
+            if (allUsers.length === 0) {
+                // Если нет данных, создаем тестовых пользователей
+                allUsers = [
+                    {id: 'user1', name: 'Alex_Quantum', avatar: '👨‍💻', online: true, last_seen: 'только что'},
+                    {id: 'user2', name: 'Sarah_Cyber', avatar: '👩‍🎨', online: true, last_seen: '2 мин назад'},
+                    {id: 'user3', name: 'Mike_Neon', avatar: '👨‍🚀', online: false, last_seen: '1 час назад'},
+                    {id: 'user4', name: 'Emma_Digital', avatar: '👩‍💼', online: true, last_seen: 'только что'},
+                    {id: 'user5', name: 'Max_Virtual', avatar: '🤖', online: false, last_seen: '30 мин назад'},
+                    {id: 'user6', name: 'Luna_Hyper', avatar: '👽', online: true, last_seen: '5 мин назад'}
+                ];
+                localStorage.setItem('allUsers', JSON.stringify(allUsers));
+            }
         }
 
         function quickStart() {
@@ -1496,8 +1146,7 @@ HTML_TEMPLATE = '''
             if (savedUser && savedToken) {
                 currentUser = JSON.parse(savedUser);
                 sessionToken = savedToken;
-                const savedAllUsers = localStorage.getItem('allUsers');
-                if (savedAllUsers) allUsers = JSON.parse(savedAllUsers);
+                loadSampleUsers();
                 showMainApp();
                 showNotification('С возвращением! 🚀');
             } else {
@@ -1512,8 +1161,7 @@ HTML_TEMPLATE = '''
             if (savedUser && savedToken) {
                 currentUser = JSON.parse(savedUser);
                 sessionToken = savedToken;
-                const savedAllUsers = localStorage.getItem('allUsers');
-                if (savedAllUsers) allUsers = JSON.parse(savedAllUsers);
+                loadSampleUsers();
                 showMainApp();
             } else {
                 showWelcomeScreen();
@@ -1548,20 +1196,13 @@ HTML_TEMPLATE = '''
                 const callLink = `${window.location.origin}?call=${currentCallId}&inviter=${currentUser.id}`;
                 document.getElementById('callLink').textContent = callLink;
                 
-                // Применяем мобильную оптимизацию
-                if (isMobile) {
-                    document.getElementById('callContainer').classList.add('mobile-call-layout');
-                }
-                
                 // Показываем интерфейс звонка
                 document.getElementById('callContainer').classList.add('active');
                 
-                showNotification('Защищённая комната создана! 🔒');
+                showNotification('Защищённая комната создана! Отправьте ссылку друзьям 🔒');
                 
-                // Симуляция подключения участника через 3 секунды
-                setTimeout(() => {
-                    simulateParticipantJoin();
-                }, 3000);
+                // Убираем автоматическое подключение участника
+                clearTimeout(participantTimeout);
                 
             } catch (error) {
                 console.error('Ошибка создания комнаты:', error);
@@ -1569,38 +1210,13 @@ HTML_TEMPLATE = '''
             }
         }
 
-        function simulateParticipantJoin() {
-            const remoteContainer = document.getElementById('remoteVideoContainer');
-            const remoteLabel = remoteContainer.querySelector('.video-label');
-            
-            remoteLabel.textContent = 'Участник подключился 🟢';
-            remoteContainer.classList.add('speaking');
-            
-            // Создаем fake видео для демонстрации
-            const fakeVideo = document.createElement('div');
-            fakeVideo.style.width = '100%';
-            fakeVideo.style.height = '100%';
-            fakeVideo.style.background = 'linear-gradient(135deg, var(--accent), var(--accent-glow))';
-            fakeVideo.style.display = 'flex';
-            fakeVideo.style.alignItems = 'center';
-            fakeVideo.style.justifyContent = 'center';
-            fakeVideo.style.fontSize = '2rem';
-            fakeVideo.innerHTML = '🎥';
-            
-            document.getElementById('remoteVideo').style.display = 'none';
-            remoteContainer.appendChild(fakeVideo);
-            
-            showNotification('Участник присоединился к звонку! 👥');
-        }
-
         async function getLocalStream() {
             try {
                 const constraints = {
                     video: {
-                        width: { ideal: isMobile ? 640 : 1280 },
-                        height: { ideal: isMobile ? 480 : 720 },
-                        frameRate: { ideal: isMobile ? 24 : 30 },
-                        facingMode: isMobile ? 'user' : 'environment'
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        frameRate: { ideal: 30 }
                     },
                     audio: {
                         echoCancellation: true,
@@ -1617,18 +1233,11 @@ HTML_TEMPLATE = '''
                 console.error('Ошибка доступа к медиаустройствам:', error);
                 // Пробуем без видео
                 try {
-                    const audioConstraints = {
-                        audio: {
-                            echoCancellation: true,
-                            noiseSuppression: true,
-                            autoGainControl: true
-                        }
-                    };
-                    localStream = await navigator.mediaDevices.getUserMedia(audioConstraints);
-                    document.getElementById('localVideo').srcObject = null;
+                    localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    document.getElementById('localVideo').style.display = 'none';
                     document.getElementById('localVideoContainer').innerHTML = `
-                        <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg, var(--accent), var(--accent-glow));">
-                            <div style="text-align:center;color:white;">
+                        <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg, var(--accent), var(--accent-glow));color:white;">
+                            <div style="text-align:center;">
                                 <div style="font-size:2rem;">🎤</div>
                                 <div>Аудио-звонок</div>
                             </div>
@@ -1641,44 +1250,6 @@ HTML_TEMPLATE = '''
                     showNotification('Не удалось получить доступ к медиаустройствам ❌');
                     throw audioError;
                 }
-            }
-        }
-
-        async function toggleScreenShare() {
-            try {
-                if (!isScreenSharing) {
-                    const screenStream = await navigator.mediaDevices.getDisplayMedia({
-                        video: true,
-                        audio: true
-                    });
-                    
-                    // Заменяем видеотрек
-                    const videoTrack = screenStream.getVideoTracks()[0];
-                    const sender = peerConnection ? peerConnection.getSenders().find(s => s.track && s.track.kind === 'video') : null;
-                    
-                    if (sender) {
-                        await sender.replaceTrack(videoTrack);
-                    }
-                    
-                    // Обновляем локальное видео
-                    document.getElementById('localVideo').srcObject = screenStream;
-                    
-                    isScreenSharing = true;
-                    showNotification('Демонстрация экрана запущена 🖥️');
-                    
-                    // Обработка остановки демонстрации
-                    videoTrack.onended = () => {
-                        toggleScreenShare();
-                    };
-                } else {
-                    // Возвращаем камеру
-                    await getLocalStream();
-                    isScreenSharing = false;
-                    showNotification('Демонстрация экрана остановлена 📹');
-                }
-            } catch (error) {
-                console.error('Ошибка демонстрации экрана:', error);
-                showNotification('Ошибка демонстрации экрана ❌');
             }
         }
 
@@ -1719,7 +1290,6 @@ HTML_TEMPLATE = '''
             navigator.clipboard.writeText(callLink).then(() => {
                 showNotification('Ссылка скопирована в буфер! 📋');
             }).catch(() => {
-                // Fallback для старых браузеров
                 const textArea = document.createElement('textarea');
                 textArea.value = callLink;
                 document.body.appendChild(textArea);
@@ -1730,61 +1300,15 @@ HTML_TEMPLATE = '''
             });
         }
 
-        function shareCallLink() {
-            const callLink = document.getElementById('callLink').textContent;
-            if (navigator.share) {
-                navigator.share({
-                    title: 'Присоединяйтесь к видеозвонку TrollexDL',
-                    text: 'Присоединяйтесь к моему защищённому видеозвонку',
-                    url: callLink
-                });
-            } else {
-                copyCallLink();
-            }
-        }
-
-        function joinCallByLink() {
-            const callLink = document.getElementById('joinCallInput').value.trim();
-            if (callLink) {
-                try {
-                    // Извлекаем ID звонка из ссылки
-                    const url = new URL(callLink);
-                    const callId = url.searchParams.get('call');
-                    const inviterId = url.searchParams.get('inviter');
-                    
-                    if (callId && inviterId) {
-                        currentCallId = callId;
-                        acceptCall();
-                    } else {
-                        showNotification('Неверная ссылка на звонок ❌');
-                    }
-                } catch (error) {
-                    showNotification('Неверный формат ссылки ❌');
-                }
-            } else {
-                showNotification('Введите ссылку на звонок 📝');
-            }
-        }
-
         function endCall() {
-            // Останавливаем все медиапотоки
             if (localStream) {
                 localStream.getTracks().forEach(track => track.stop());
                 localStream = null;
             }
             
-            // Скрываем интерфейс звонка
             document.getElementById('callContainer').classList.remove('active');
-            document.getElementById('callInvite').classList.remove('active');
-            document.getElementById('callContainer').classList.remove('mobile-call-layout');
-            
             isInCall = false;
             currentCallId = null;
-            isScreenSharing = false;
-            
-            // Сбрасываем состояние кнопок
-            document.getElementById('micToggle').classList.remove('muted');
-            document.getElementById('camToggle').classList.remove('off');
             
             showNotification('Звонок завершен 📞');
         }
@@ -1792,12 +1316,10 @@ HTML_TEMPLATE = '''
         function checkCallInvite() {
             const urlParams = new URLSearchParams(window.location.search);
             const callId = urlParams.get('call');
-            const inviterId = url.searchParams.get('inviter');
+            const inviterId = urlParams.get('inviter');
             
             if (callId && inviterId) {
-                // Находим информацию о звонящем
-                const inviter = allUsers.find(user => user.id === inviterId) || 
-                               { name: 'Unknown User', avatar: '👤' };
+                const inviter = allUsers.find(user => user.id === inviterId) || { name: 'Unknown User', avatar: '👤' };
                 
                 document.getElementById('callerName').textContent = inviter.name;
                 document.getElementById('callerAvatar').textContent = inviter.avatar;
@@ -1810,25 +1332,11 @@ HTML_TEMPLATE = '''
         async function acceptCall() {
             try {
                 document.getElementById('callInvite').classList.remove('active');
-                
-                // Получаем медиапоток
                 await getLocalStream();
-                
-                // Применяем мобильную оптимизацию
-                if (isMobile) {
-                    document.getElementById('callContainer').classList.add('mobile-call-layout');
-                }
-                
-                // Показываем интерфейс звонка
                 document.getElementById('callContainer').classList.add('active');
                 document.getElementById('callLink').textContent = 'Присоединились к звонку';
                 
                 showNotification('Вы присоединились к защищённому звонку! 🎥');
-                
-                // Симуляция существующего участника
-                setTimeout(() => {
-                    simulateParticipantJoin();
-                }, 1000);
                 
             } catch (error) {
                 console.error('Ошибка подключения к звонку:', error);
@@ -1867,38 +1375,14 @@ HTML_TEMPLATE = '''
             }
         }
 
-        function startVideoCall() {
-            if (currentChat) {
-                createCallRoom();
-            } else {
-                showNotification('Выберите чат для начала звонка 💬');
-            }
-        }
-
         function switchTab(tabName) {
             currentTab = tabName;
             
-            // Обновляем активную вкладку
             document.querySelectorAll('.nav-tab').forEach(tab => {
                 tab.classList.remove('active');
             });
             
-            // Находим активную вкладку
-            const tabs = document.querySelectorAll('.nav-tab');
-            let tabIndex = -1;
-            
-            switch(tabName) {
-                case 'chats': tabIndex = 0; break;
-                case 'users': tabIndex = 1; break;
-                case 'calls': tabIndex = 2; break;
-                case 'donate': tabIndex = 3; break;
-                case 'settings': tabIndex = 4; break;
-            }
-            
-            if (tabIndex !== -1 && tabs[tabIndex]) {
-                tabs[tabIndex].classList.add('active');
-            }
-            
+            event.target.classList.add('active');
             loadContent();
         }
 
@@ -1920,42 +1404,70 @@ HTML_TEMPLATE = '''
         }
 
         function getChatsContent(searchTerm) {
-            return `
-                <div style="text-align: center; padding: 20px; color: var(--text-secondary);">
-                    <div style="font-size: 3rem; margin-bottom: 10px;">💬</div>
-                    <h3>Чаты</h3>
-                    <p>Начните новый чат с пользователем</p>
-                </div>
-            `;
-        }
-
-        function getUsersContent(searchTerm) {
-            let usersHTML = '<h4 style="padding: 10px;">👥 Пользователи онлайн</h4>';
+            // Загружаем чаты из localStorage
+            const userChats = JSON.parse(localStorage.getItem(`chats_${currentUser.id}`)) || [];
             
-            const onlineUsers = allUsers.filter(user => user.online && user.id !== currentUser.id);
-            const offlineUsers = allUsers.filter(user => !user.online && user.id !== currentUser.id);
+            if (userChats.length === 0) {
+                return `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">💬</div>
+                        <h3>Нет чатов</h3>
+                        <p>Начните общение с пользователями</p>
+                    </div>
+                `;
+            }
             
-            // Показываем онлайн пользователей
-            onlineUsers.forEach(user => {
-                if (searchTerm === '' || user.name.toLowerCase().includes(searchTerm)) {
-                    usersHTML += `
-                        <div class="chat-item" onclick="selectUser('${user.id}')">
-                            <div class="item-avatar">${user.avatar}</div>
+            let chatsHTML = '';
+            userChats.forEach(chat => {
+                if (searchTerm === '' || chat.userName.toLowerCase().includes(searchTerm)) {
+                    chatsHTML += `
+                        <div class="chat-item" onclick="selectUser('${chat.userId}')">
+                            <div class="item-avatar">${chat.userAvatar}</div>
                             <div style="flex: 1;">
-                                <h4>${user.name}</h4>
-                                <p style="color: var(--success); font-size: 0.8rem;">
-                                    🟢 Online
+                                <h4>${chat.userName}</h4>
+                                <p style="color: var(--text-secondary); font-size: 0.8rem;">
+                                    ${chat.lastMessage || 'Нет сообщений'}
                                 </p>
                             </div>
-                            <button class="control-btn" onclick="startCallWithUser('${user.id}')" style="background: var(--success); width: 35px; height: 35px; font-size: 0.8rem;">📞</button>
                         </div>
                     `;
                 }
             });
             
-            // Показываем оффлайн пользователей
+            return chatsHTML;
+        }
+
+        function getUsersContent(searchTerm) {
+            let usersHTML = '';
+            let hasResults = false;
+            
+            // Онлайн пользователи
+            const onlineUsers = allUsers.filter(user => user.online && user.id !== currentUser.id);
+            if (onlineUsers.length > 0) {
+                usersHTML += '<h4 style="padding: 10px; color: var(--success);">🟢 Онлайн</h4>';
+                onlineUsers.forEach(user => {
+                    if (searchTerm === '' || user.name.toLowerCase().includes(searchTerm)) {
+                        usersHTML += `
+                            <div class="chat-item" onclick="selectUser('${user.id}')">
+                                <div class="item-avatar">${user.avatar}</div>
+                                <div style="flex: 1;">
+                                    <h4>${user.name}</h4>
+                                    <p style="color: var(--success); font-size: 0.8rem;">
+                                        Online • ${user.last_seen}
+                                    </p>
+                                </div>
+                                <button class="control-btn" onclick="event.stopPropagation(); startCallWithUser('${user.id}')" style="background: var(--success); width: 35px; height: 35px; font-size: 0.8rem;">📞</button>
+                            </div>
+                        `;
+                        hasResults = true;
+                    }
+                });
+            }
+            
+            // Оффлайн пользователи
+            const offlineUsers = allUsers.filter(user => !user.online && user.id !== currentUser.id);
             if (offlineUsers.length > 0) {
-                usersHTML += '<h4 style="padding: 10px; margin-top: 20px;">⚫ Оффлайн</h4>';
+                usersHTML += '<h4 style="padding: 10px; margin-top: 20px; color: var(--text-secondary);">⚫ Оффлайн</h4>';
                 offlineUsers.forEach(user => {
                     if (searchTerm === '' || user.name.toLowerCase().includes(searchTerm)) {
                         usersHTML += `
@@ -1964,13 +1476,34 @@ HTML_TEMPLATE = '''
                                 <div style="flex: 1;">
                                     <h4>${user.name}</h4>
                                     <p style="color: var(--text-secondary); font-size: 0.8rem;">
-                                        ⚫ Offline
+                                        Offline • ${user.last_seen}
                                     </p>
                                 </div>
                             </div>
                         `;
+                        hasResults = true;
                     }
                 });
+            }
+            
+            if (!hasResults && searchTerm !== '') {
+                return `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🔍</div>
+                        <h3>Ничего не найдено</h3>
+                        <p>Попробуйте изменить запрос</p>
+                    </div>
+                `;
+            }
+            
+            if (!hasResults) {
+                return `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">👥</div>
+                        <h3>Нет контактов</h3>
+                        <p>Пользователи появятся здесь</p>
+                    </div>
+                `;
             }
             
             return usersHTML;
@@ -1991,7 +1524,7 @@ HTML_TEMPLATE = '''
                     <h4>🔗 Присоединиться по ссылке</h4>
                     <input type="text" class="join-input" id="joinCallInput" placeholder="Вставьте ссылку на звонок...">
                     <button class="btn btn-primary" onclick="joinCallByLink()" style="width: 100%;">
-                        ✅ Присоединиться
+                        ✅ Присоединиться к звонку
                     </button>
                 </div>
 
@@ -2008,33 +1541,38 @@ HTML_TEMPLATE = '''
                         <div class="feature-icon">🖥️</div>
                         <div>Демонстрация экрана</div>
                     </div>
-                    <div class="feature-card" onclick="showFeatureInfo('mobile')">
-                        <div class="feature-icon">📱</div>
-                        <div>На всех устройствах</div>
+                    <div class="feature-card" onclick="showFeatureInfo('group')">
+                        <div class="feature-icon">👥</div>
+                        <div>Групповые звонки</div>
                     </div>
-                </div>
-
-                <div class="user-card">
-                    <h4>📞 Быстрый доступ</h4>
-                    <button class="btn btn-secondary" onclick="testVideoCall()" style="margin-top: 10px; width: 100%;">
-                        🎬 Тестовый звонок
-                    </button>
                 </div>
             `;
         }
 
-        function showFeatureInfo(feature) {
-            const messages = {
-                'video': '🎥 Full HD видеозвонки с адаптивным битрейтом',
-                'security': '🔒 End-to-End шифрование AES-256 + TLS 1.3',
-                'screen': '🖥️ Демонстрация экрана с защитой от перехвата',
-                'mobile': '📱 Полная поддержка мобильных устройств'
-            };
-            showNotification(messages[feature] || 'Функция активирована ✅');
-        }
-
-        function testVideoCall() {
-            createCallRoom();
+        function joinCallByLink() {
+            const callLink = document.getElementById('joinCallInput').value.trim();
+            if (callLink) {
+                try {
+                    const url = new URL(callLink);
+                    const callId = url.searchParams.get('call');
+                    const inviterId = url.searchParams.get('inviter');
+                    
+                    if (callId && inviterId) {
+                        currentCallId = callId;
+                        // Симулируем приглашение
+                        const inviter = allUsers.find(user => user.id === inviterId) || { name: 'Друг', avatar: '👤' };
+                        document.getElementById('callerName').textContent = inviter.name;
+                        document.getElementById('callerAvatar').textContent = inviter.avatar;
+                        document.getElementById('callInvite').classList.add('active');
+                    } else {
+                        showNotification('Неверная ссылка на звонок ❌');
+                    }
+                } catch (error) {
+                    showNotification('Неверный формат ссылки ❌');
+                }
+            } else {
+                showNotification('Введите ссылку на звонок 📝');
+            }
         }
 
         function selectUser(userId) {
@@ -2045,23 +1583,35 @@ HTML_TEMPLATE = '''
                 document.getElementById('currentChatAvatar').textContent = user.avatar;
                 document.getElementById('currentChatStatus').textContent = user.online ? '🟢 Online' : '⚫ Offline';
                 
-                // Очищаем сообщения
-                document.getElementById('messagesContainer').innerHTML = `
-                    <div style="text-align: center; padding: 20px; color: var(--text-secondary);">
-                        <div style="font-size: 2rem; margin-bottom: 10px;">👋</div>
-                        <h3>Начните общение с ${user.name}</h3>
-                        <p>Отправьте первое сообщение</p>
-                    </div>
-                `;
+                // Загружаем сообщения
+                loadMessages(userId);
             }
         }
 
-        function startCallWithUser(userId) {
-            const user = allUsers.find(u => u.id === userId);
-            if (user) {
-                showNotification(`Начинаем звонок с ${user.name}... 📞`);
-                createCallRoom();
+        function loadMessages(userId) {
+            const messagesContainer = document.getElementById('messagesContainer');
+            const chatMessages = JSON.parse(localStorage.getItem(`messages_${currentUser.id}_${userId}`)) || [];
+            
+            if (chatMessages.length === 0) {
+                messagesContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">👋</div>
+                        <h3>Начните общение с ${currentChat.name}</h3>
+                        <p>Отправьте первое сообщение</p>
+                    </div>
+                `;
+                return;
             }
+            
+            messagesContainer.innerHTML = '';
+            chatMessages.forEach(msg => {
+                const messageElement = document.createElement('div');
+                messageElement.className = `message ${msg.sender === currentUser.id ? 'sent' : 'received'}`;
+                messageElement.textContent = msg.text;
+                messagesContainer.appendChild(messageElement);
+            });
+            
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
         function sendMessage() {
@@ -2071,15 +1621,51 @@ HTML_TEMPLATE = '''
             if (message && currentChat) {
                 const messagesContainer = document.getElementById('messagesContainer');
                 
-                // Создаем элемент сообщения
+                // Сохраняем сообщение
+                const chatKey = `messages_${currentUser.id}_${currentChat.id}`;
+                const chatMessages = JSON.parse(localStorage.getItem(chatKey)) || [];
+                
+                const newMessage = {
+                    id: Date.now(),
+                    text: message,
+                    sender: currentUser.id,
+                    timestamp: new Date().toISOString()
+                };
+                
+                chatMessages.push(newMessage);
+                localStorage.setItem(chatKey, JSON.stringify(chatMessages));
+                
+                // Сохраняем чат в список
+                const chatsKey = `chats_${currentUser.id}`;
+                let userChats = JSON.parse(localStorage.getItem(chatsKey)) || [];
+                
+                const existingChat = userChats.find(chat => chat.userId === currentChat.id);
+                if (existingChat) {
+                    existingChat.lastMessage = message;
+                    existingChat.timestamp = new Date().toISOString();
+                } else {
+                    userChats.push({
+                        userId: currentChat.id,
+                        userName: currentChat.name,
+                        userAvatar: currentChat.avatar,
+                        lastMessage: message,
+                        timestamp: new Date().toISOString()
+                    });
+                }
+                
+                localStorage.setItem(chatsKey, JSON.stringify(userChats));
+                
+                // Отображаем сообщение
+                if (messagesContainer.querySelector('.empty-state')) {
+                    messagesContainer.innerHTML = '';
+                }
+                
                 const messageElement = document.createElement('div');
                 messageElement.className = 'message sent';
                 messageElement.textContent = message;
-                
                 messagesContainer.appendChild(messageElement);
-                messageInput.value = '';
                 
-                // Прокручиваем вниз
+                messageInput.value = '';
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
                 
                 // Симуляция ответа через 1-3 секунды
@@ -2090,9 +1676,31 @@ HTML_TEMPLATE = '''
                             'Отличное сообщение! 🚀',
                             'Я тоже об этом думал!',
                             'Согласен с тобой!',
-                            'Интересная мысль! 💫'
+                            'Интересная мысль! 💫',
+                            'Спасибо за сообщение!',
+                            'Очень познавательно!',
+                            'Давай обсудим это подробнее!'
                         ];
                         const response = responses[Math.floor(Math.random() * responses.length)];
+                        
+                        // Сохраняем ответ
+                        const responseMessage = {
+                            id: Date.now() + 1,
+                            text: response,
+                            sender: currentChat.id,
+                            timestamp: new Date().toISOString()
+                        };
+                        
+                        chatMessages.push(responseMessage);
+                        localStorage.setItem(chatKey, JSON.stringify(chatMessages));
+                        
+                        // Обновляем последнее сообщение в чате
+                        const existingChat = userChats.find(chat => chat.userId === currentChat.id);
+                        if (existingChat) {
+                            existingChat.lastMessage = response;
+                            existingChat.timestamp = new Date().toISOString();
+                            localStorage.setItem(chatsKey, JSON.stringify(userChats));
+                        }
                         
                         const responseElement = document.createElement('div');
                         responseElement.className = 'message received';
@@ -2106,6 +1714,33 @@ HTML_TEMPLATE = '''
             } else if (!currentChat) {
                 showNotification('Выберите чат для отправки сообщения 💬');
             }
+        }
+
+        function startCallWithUser(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (user) {
+                showNotification(`Начинаем звонок с ${user.name}... 📞`);
+                createCallRoom();
+            }
+        }
+
+        function startVideoCall() {
+            if (currentChat) {
+                startCallWithUser(currentChat.id);
+            } else {
+                showNotification('Выберите чат для начала звонка 💬');
+            }
+        }
+
+        function showFeatureInfo(feature) {
+            const messages = {
+                'video': '🎥 Full HD видеозвонки с адаптивным битрейтом',
+                'security': '🔒 End-to-End шифрование AES-256 + TLS 1.3',
+                'screen': '🖥️ Демонстрация экрана с защитой от перехвата',
+                'group': '👥 Групповые звонки до 10 участников',
+                'mobile': '📱 Полная поддержка мобильных устройств'
+            };
+            showNotification(messages[feature] || 'Функция активирована ✅');
         }
 
         function handleKeyPress(event) {
@@ -2139,7 +1774,7 @@ HTML_TEMPLATE = '''
         }
 
         function selectTier(tier) {
-            showNotification(`Выбран тариф ${tier.toUpperCase()}! 💎`);
+            showNotification(`Выбран тариф ${tier.toUpperCase()}! Обратитесь в Telegram для оплаты 💎`);
             hideDonatePanel();
         }
 
@@ -2157,7 +1792,6 @@ HTML_TEMPLATE = '''
         function logout() {
             localStorage.removeItem('trollexUser');
             localStorage.removeItem('sessionToken');
-            localStorage.removeItem('allUsers');
             currentUser = null;
             sessionToken = null;
             hideSettings();
@@ -2166,14 +1800,12 @@ HTML_TEMPLATE = '''
         }
 
         function showNotification(message) {
-            // Создаем элемент уведомления
             const notification = document.createElement('div');
             notification.className = 'notification';
             notification.textContent = message;
             
             document.body.appendChild(notification);
             
-            // Удаляем уведомление через 3 секунды
             setTimeout(() => {
                 if (notification.parentNode) {
                     notification.parentNode.removeChild(notification);
@@ -2187,6 +1819,7 @@ HTML_TEMPLATE = '''
 
 @app.route('/')
 def index():
+    initialize_sample_data()
     return render_template_string(HTML_TEMPLATE)
 
 @app.route('/api/create_call', methods=['POST'])
@@ -2196,7 +1829,6 @@ def api_create_call():
         user_id = data.get('user_id')
         session_token = data.get('session_token')
         
-        # Проверка сессии
         if not verify_session(user_id, session_token):
             return jsonify({'success': False, 'error': 'Invalid session'}), 401
             
