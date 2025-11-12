@@ -1,5 +1,5 @@
 # app.py
-from flask import Flask, render_template_string, request, jsonify, session, redirect, url_for
+from flask import Flask, render_template_string, request, jsonify
 import datetime
 import random
 import os
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'trollexdl-premium-2024')
 
-# Хранилища данных в памяти (в продакшене используйте БД)
+# Хранилища данных
 active_calls = {}
 user_sessions = {}
 user_messages = {}
@@ -25,11 +25,6 @@ all_users = []
 friendships = {}
 friend_requests = {}
 user_profiles = {}
-
-def get_days_until_new_year():
-    now = datetime.datetime.now()
-    new_year = datetime.datetime(now.year + 1, 1, 1)
-    return (new_year - now).days
 
 def generate_username():
     adjectives = ['Quantum', 'Neon', 'Cyber', 'Digital', 'Virtual', 'Hyper', 'Mega', 'Ultra', 'Super', 'Alpha']
@@ -48,17 +43,15 @@ def generate_call_id():
     return f"call_{uuid.uuid4().hex[:12]}"
 
 def generate_friend_code():
-    return f"TRLX-{uuid.uuid4().hex[:8].upper()}"
+    return f"TRLX-{uuid.uuid4().hex[:4].upper()}-{uuid.uuid4().hex[:4].upper()}"
 
 def generate_session_token():
     return hashlib.sha256(f"{uuid.uuid4()}{time.time()}".encode()).hexdigest()
 
 def verify_session(user_id, session_token):
-    """Проверка валидности сессии"""
     return user_id in user_sessions and session_token == user_sessions.get(user_id)
 
 def initialize_sample_data():
-    """Инициализация тестовых данных"""
     global all_users, user_profiles
     
     sample_users = [
@@ -74,7 +67,6 @@ def initialize_sample_data():
     
     all_users = sample_users
     
-    # Инициализируем профили
     for user in sample_users:
         user_profiles[user['id']] = {
             'friend_code': generate_friend_code(),
@@ -87,20 +79,17 @@ def initialize_sample_data():
             'created_at': datetime.datetime.now().isoformat()
         }
     
-    # Создаем несколько тестовых дружеских связей
     friendships['user1'] = ['user2', 'user3']
     friendships['user2'] = ['user1']
     friendships['user3'] = ['user1']
 
 def ensure_user_chat(user_id, target_user_id):
-    """Создает структуру чата если её нет"""
     if user_id not in user_messages:
         user_messages[user_id] = {}
     
     if target_user_id not in user_messages[user_id]:
         user_messages[user_id][target_user_id] = []
         
-        # Добавляем приветственное сообщение
         welcome_msg = {
             'id': str(uuid.uuid4()),
             'sender': target_user_id,
@@ -111,15 +100,13 @@ def ensure_user_chat(user_id, target_user_id):
         user_messages[user_id][target_user_id].append(welcome_msg)
 
 def get_user_by_friend_code(friend_code):
-    """Находит пользователя по friend code"""
     for user_id, profile in user_profiles.items():
         if profile.get('friend_code') == friend_code:
             return user_id
     return None
 
 def validate_friend_code(friend_code):
-    """Проверяет валидность friend code"""
-    pattern = r'^TRLX-[A-F0-9]{8}$'
+    pattern = r'^TRLX-[A-F0-9]{4}-[A-F0-9]{4}$'
     return re.match(pattern, friend_code) is not None
 
 HTML_TEMPLATE = '''
@@ -130,12 +117,131 @@ HTML_TEMPLATE = '''
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TrollexDL 🚀 Ultimate Messenger</title>
     <style>
-        /* Все существующие стили остаются без изменений */
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
-        :root { --primary: #0a0a2a; --secondary: #1a1a4a; --accent: #6c2bd9; --accent-glow: #8b5cf6; --neon: #00ff88; --text: #ffffff; --text-secondary: #b0b0ff; --danger: #ff4444; --success: #00ff88; --warning: #ffaa00; --cyber: #00ffff; }
-        body { background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); color: var(--text); min-height: 100vh; }
-        
-        /* Добавляем новые стили для улучшенного интерфейса */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --primary: #0a0a2a;
+            --secondary: #1a1a4a;
+            --accent: #6c2bd9;
+            --accent-glow: #8b5cf6;
+            --neon: #00ff88;
+            --text: #ffffff;
+            --text-secondary: #b0b0ff;
+            --danger: #ff4444;
+            --success: #00ff88;
+            --warning: #ffaa00;
+            --cyber: #00ffff;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 1000;
+            background: var(--primary);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .cosmic-card {
+            background: rgba(26, 26, 74, 0.95);
+            border: 2px solid var(--accent);
+            border-radius: 20px;
+            padding: 30px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            animation: cardAppear 0.6s ease-out;
+        }
+
+        @keyframes cardAppear {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .logo {
+            font-size: 2.5rem;
+            font-weight: 900;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, var(--neon), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(107, 43, 217, 0.5);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 8px 0;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), var(--accent-glow));
+            color: white;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text);
+            border: 2px solid var(--accent);
+        }
+
+        .user-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 15px 0;
+            border: 1px solid var(--accent);
+        }
+
+        .user-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-glow));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin: 0 auto 10px;
+        }
+
         .friend-code-display {
             background: rgba(255,255,255,0.1);
             padding: 10px;
@@ -144,22 +250,203 @@ HTML_TEMPLATE = '''
             text-align: center;
             border: 1px solid var(--accent);
         }
-        
+
         .friend-code {
             font-family: monospace;
             font-size: 1.1rem;
             color: var(--neon);
             margin: 5px 0;
         }
-        
-        .add-friend-container {
-            background: rgba(255,255,255,0.1);
-            padding: 20px;
-            border-radius: 15px;
-            margin: 15px 0;
-            border: 1px solid var(--accent);
+
+        .app {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            position: relative;
         }
-        
+
+        .sidebar {
+            width: 300px;
+            background: rgba(26, 26, 74, 0.95);
+            border-right: 2px solid var(--accent);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-header {
+            padding: 20px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-glow));
+            text-align: center;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 5px;
+            margin: 10px;
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .nav-tab.active {
+            background: var(--accent);
+        }
+
+        .search-box {
+            padding: 10px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid var(--accent);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 0.9rem;
+        }
+
+        .content-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .chat-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .chat-item:hover {
+            background: rgba(107, 43, 217, 0.3);
+            border-color: var(--accent);
+        }
+
+        .item-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-glow));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--primary);
+            position: relative;
+        }
+
+        .chat-header {
+            padding: 15px;
+            background: rgba(26, 26, 74, 0.9);
+            border-bottom: 2px solid var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .messages-container {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 15px;
+            position: relative;
+            word-wrap: break-word;
+            animation: messageSlide 0.3s ease-out;
+        }
+
+        @keyframes messageSlide {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.received {
+            background: rgba(107, 43, 217, 0.3);
+            align-self: flex-start;
+            border-bottom-left-radius: 5px;
+        }
+
+        .message.sent {
+            background: linear-gradient(135deg, var(--accent), var(--accent-glow));
+            align-self: flex-end;
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+
+        .message-input-container {
+            padding: 15px;
+            background: rgba(26, 26, 74, 0.9);
+            border-top: 2px solid var(--accent);
+            display: flex;
+            gap: 10px;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid var(--accent);
+            border-radius: 20px;
+            color: var(--text);
+            font-size: 0.9rem;
+        }
+
+        .send-btn {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-glow));
+            color: white;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
         .friend-request-item {
             display: flex;
             justify-content: space-between;
@@ -170,100 +457,69 @@ HTML_TEMPLATE = '''
             margin: 10px 0;
             border: 1px solid var(--accent);
         }
-        
-        .request-actions {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .friend-item {
-            display: flex;
-            align-items: center;
-            padding: 12px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 10px;
-            margin: 8px 0;
+
+        .control-btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s ease;
         }
-        
-        .friend-item:hover {
-            background: rgba(107, 43, 217, 0.3);
-        }
-        
-        .online-indicator {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--success);
-            margin-right: 10px;
-        }
-        
-        .offline-indicator {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--text-secondary);
-            margin-right: 10px;
-        }
-        
-        .typing-indicator {
-            display: none;
-            color: var(--neon);
-            font-style: italic;
-            font-size: 0.8rem;
-            margin: 5px 0;
-        }
-        
-        .message-status {
-            font-size: 0.7rem;
-            margin-left: 5px;
-            opacity: 0.7;
-        }
-        
-        .message-time {
-            font-size: 0.7rem;
-            opacity: 0.7;
-            margin-top: 5px;
-        }
-        
-        .unread-badge {
-            background: var(--success);
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-glow));
             color: white;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.7rem;
-            margin-left: auto;
-        }
-        
-        .context-menu {
-            position: absolute;
-            background: var(--secondary);
-            border: 1px solid var(--accent);
+            padding: 12px 20px;
             border-radius: 10px;
-            padding: 10px;
-            z-index: 1000;
+            z-index: 4000;
+            animation: slideIn 0.3s ease;
+            max-width: 300px;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .mobile-menu-btn {
             display: none;
-        }
-        
-        .context-menu-item {
-            padding: 8px 12px;
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 1.2rem;
             cursor: pointer;
-            border-radius: 5px;
         }
-        
-        .context-menu-item:hover {
-            background: rgba(107, 43, 217, 0.3);
+
+        @media (max-width: 768px) {
+            .sidebar {
+                position: absolute;
+                height: 100%;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                z-index: 200;
+                width: 280px;
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .mobile-menu-btn {
+                display: block;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="overlay" id="overlay" onclick="hideAllPanels()"></div>
-
     <!-- Экран загрузки -->
     <div id="loadingScreen" class="screen">
         <div class="cosmic-card">
@@ -271,10 +527,10 @@ HTML_TEMPLATE = '''
             <div style="margin: 20px 0; font-size: 1.2rem; min-height: 60px; display: flex; align-items: center; justify-content: center;">
                 <div id="typingText">Инициализация защищённого канала...</div>
             </div>
-            <div class="encryption-status">
+            <div style="color: var(--neon); margin: 10px 0;">
                 <span>🔒</span>
                 <span>Квантовое шифрование активировано</span>
-                <span class="security-badge">AES-256</span>
+                <span style="background: var(--neon); color: var(--primary); padding: 2px 6px; border-radius: 5px; font-size: 0.8rem; margin-left: 5px;">AES-256</span>
             </div>
         </div>
     </div>
@@ -287,8 +543,8 @@ HTML_TEMPLATE = '''
                 Премиум мессенджер с квантовым шифрованием
             </div>
             
-            <div class="connection-status">
-                <div class="status-dot"></div>
+            <div style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: rgba(0,255,136,0.1); border: 1px solid var(--neon); border-radius: 8px; margin: 10px 0;">
+                <div style="width: 8px; height: 8px; border-radius: 50%; background: var(--neon);"></div>
                 <span>Защищённое соединение установлено</span>
             </div>
             
@@ -316,7 +572,7 @@ HTML_TEMPLATE = '''
 
             <div class="friend-code-display">
                 <div style="font-size: 0.9rem; color: var(--text-secondary);">Ваш Friend Code:</div>
-                <div class="friend-code" id="registerFriendCode">TRLX-XXXXXXX</div>
+                <div class="friend-code" id="registerFriendCode">TRLX-XXXX-XXXX</div>
                 <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 5px;">
                     Поделитесь этим кодом для добавления в друзья
                 </div>
@@ -346,7 +602,7 @@ HTML_TEMPLATE = '''
                 <p>ID: <span id="userId">...</span></p>
                 <div class="friend-code-display" style="margin: 10px 0; padding: 8px;">
                     <div style="font-size: 0.8rem;">Friend Code:</div>
-                    <div class="friend-code" id="userFriendCode">TRLX-XXXXXXX</div>
+                    <div class="friend-code" id="userFriendCode">TRLX-XXXX-XXXX</div>
                 </div>
             </div>
 
@@ -354,7 +610,6 @@ HTML_TEMPLATE = '''
                 <div class="nav-tab active" onclick="switchTab('chats')">💬 Чаты</div>
                 <div class="nav-tab" onclick="switchTab('friends')">👥 Друзья</div>
                 <div class="nav-tab" onclick="switchTab('discover')">🌐 Найти</div>
-                <div class="nav-tab" onclick="switchTab('calls')">📞 Звонки</div>
                 <div class="nav-tab" onclick="showDonatePanel()">💎 Донат</div>
                 <div class="nav-tab" onclick="showSettings()">⚙️ Настройки</div>
             </div>
@@ -375,12 +630,9 @@ HTML_TEMPLATE = '''
                 <div style="flex: 1;">
                     <h3 id="currentChatName">TrollexDL</h3>
                     <p style="color: var(--text-secondary);" id="currentChatStatus">Выберите чат для начала общения</p>
-                    <div class="typing-indicator" id="typingIndicator">Печатает...</div>
                 </div>
-                <button class="control-btn" onclick="startVideoCall()" style="background: var(--success); width: 40px; height: 40px; font-size: 1rem;">📞</button>
-                <button class="control-btn" onclick="showFileShare()" style="background: var(--warning); width: 40px; height: 40px; font-size: 1rem;">📎</button>
-                <button class="control-btn" onclick="toggleStickers()" style="background: var(--cyber); width: 40px; height: 40px; font-size: 1rem;">😊</button>
-                <button class="control-btn" onclick="showChatInfo()" style="background: var(--accent); width: 40px; height: 40px; font-size: 1rem;">ℹ️</button>
+                <button class="control-btn" onclick="startVideoCall()" style="background: var(--success);">📞</button>
+                <button class="control-btn" onclick="showFileShare()" style="background: var(--warning);">📎</button>
             </div>
 
             <div class="messages-container" id="messagesContainer">
@@ -394,74 +646,25 @@ HTML_TEMPLATE = '''
                 </div>
             </div>
 
-            <div class="sticker-picker" id="stickerPicker">
-                <div class="sticker" onclick="sendSticker('😊')">😊</div>
-                <div class="sticker" onclick="sendSticker('😂')">😂</div>
-                <div class="sticker" onclick="sendSticker('🥰')">🥰</div>
-                <div class="sticker" onclick="sendSticker('😎')">😎</div>
-                <div class="sticker" onclick="sendSticker('🤔')">🤔</div>
-                <div class="sticker" onclick="sendSticker('🎉')">🎉</div>
-                <div class="sticker" onclick="sendSticker('🚀')">🚀</div>
-                <div class="sticker" onclick="sendSticker('💫')">💫</div>
-                <div class="sticker" onclick="sendSticker('❤️')">❤️</div>
-                <div class="sticker" onclick="sendSticker('🔥')">🔥</div>
-                <div class="sticker" onclick="sendSticker('⭐')">⭐</div>
-                <div class="sticker" onclick="sendSticker('🌈')">🌈</div>
-            </div>
-
             <div class="message-input-container">
-                <input type="text" class="message-input" placeholder="Введите сообщение..." id="messageInput" 
-                       onkeypress="handleKeyPress(event)" oninput="handleTyping()">
-                <button class="voice-message-btn" onclick="startVoiceMessage()" title="Голосовое сообщение">🎤</button>
+                <input type="text" class="message-input" placeholder="Введите сообщение..." id="messageInput" onkeypress="handleKeyPress(event)">
                 <button class="send-btn" onclick="sendMessage()">🚀</button>
             </div>
         </div>
     </div>
 
-    <!-- Контекстное меню -->
-    <div class="context-menu" id="contextMenu">
-        <div class="context-menu-item" onclick="contextMenuAction('profile')">👤 Профиль</div>
-        <div class="context-menu-item" onclick="contextMenuAction('call')">📞 Позвонить</div>
-        <div class="context-menu-item" onclick="contextMenuAction('remove')">❌ Удалить</div>
-        <div class="context-menu-item" onclick="contextMenuAction('block')">🚫 Заблокировать</div>
-    </div>
-
-    <!-- Модальное окно добавления друга -->
-    <div id="addFriendModal" class="call-invite" style="display: none;">
-        <div class="logo">👥 Добавить друга</div>
-        <div class="add-friend-container">
-            <input type="text" class="join-input" id="friendCodeInput" placeholder="Введите Friend Code (TRLX-XXXXXXX)">
-            <button class="btn btn-primary" onclick="sendFriendRequest()" style="width: 100%; margin: 10px 0;">
-                📤 Отправить запрос
-            </button>
-            <div style="text-align: center; color: var(--text-secondary); font-size: 0.9rem;">
-                Или поделитесь своим кодом:
-            </div>
-            <div class="friend-code-display" style="margin: 10px 0;">
-                <div class="friend-code" id="shareFriendCode">TRLX-XXXXXXX</div>
-                <button class="btn btn-secondary" onclick="copyFriendCode()" style="width: 100%; margin-top: 10px;">
-                    📋 Скопировать код
-                </button>
-            </div>
-        </div>
-        <button class="btn btn-secondary" onclick="hideAddFriendModal()">❌ Закрыть</button>
-    </div>
-
-    <!-- Остальные элементы (звонки, настройки и т.д.) остаются без изменений -->
+    <!-- Уведомления -->
+    <div id="notification" class="notification hidden"></div>
 
     <script>
-        // Глобальные переменные
         let currentUser = null;
         let currentTab = 'chats';
         let currentChat = null;
-        let messages = {};
+        let sessionToken = null;
         let allUsers = [];
         let friends = [];
         let friendRequests = [];
-        let sessionToken = null;
-        let typingTimer = null;
-        
-        // Инициализация
+
         document.addEventListener('DOMContentLoaded', function() {
             initializeApp();
         });
@@ -482,10 +685,10 @@ HTML_TEMPLATE = '''
                 if (currentIndex < texts.length) {
                     typingElement.textContent = texts[currentIndex];
                     currentIndex++;
-                    setTimeout(typeNextText, 1000);
+                    setTimeout(typeNextText, 800);
                 } else {
                     setTimeout(() => {
-                        hideLoadingScreen();
+                        document.getElementById('loadingScreen').classList.add('hidden');
                         checkAutoLogin();
                     }, 500);
                 }
@@ -494,29 +697,415 @@ HTML_TEMPLATE = '''
             typeNextText();
         }
 
-        // Функции для работы с друзьями
-        function showAddFriendModal() {
-            document.getElementById('addFriendModal').style.display = 'block';
-            document.getElementById('shareFriendCode').textContent = currentUser.friendCode;
+        function hideLoadingScreen() {
+            document.getElementById('loadingScreen').classList.add('hidden');
         }
 
-        function hideAddFriendModal() {
-            document.getElementById('addFriendModal').style.display = 'none';
+        function showWelcomeScreen() {
+            hideAllScreens();
+            document.getElementById('welcomeScreen').classList.remove('hidden');
         }
 
-        function copyFriendCode() {
-            navigator.clipboard.writeText(currentUser.friendCode);
-            showNotification('Friend Code скопирован! 📋');
+        function showRegisterScreen() {
+            hideAllScreens();
+            document.getElementById('registerScreen').classList.remove('hidden');
+            generateNewUser();
         }
 
-        function sendFriendRequest() {
-            const friendCode = document.getElementById('friendCodeInput').value.trim();
+        function hideAllScreens() {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.add('hidden');
+            });
+            document.getElementById('mainApp').classList.add('hidden');
+        }
+
+        function generateNewUser() {
+            const name = generateUsername();
+            const email = generateEmail(name);
+            const userId = generateUserId();
+            const friendCode = generateFriendCode();
+            const avatars = ['🚀', '👨‍🚀', '👩‍🚀', '🛸', '🌌'];
             
-            if (!friendCode) {
-                showNotification('Введите Friend Code ❌');
-                return;
+            document.getElementById('registerAvatar').textContent = avatars[Math.floor(Math.random() * avatars.length)];
+            document.getElementById('registerName').textContent = name;
+            document.getElementById('registerId').textContent = userId;
+            document.getElementById('registerEmail').textContent = email;
+            document.getElementById('registerFriendCode').textContent = friendCode;
+        }
+
+        function generateUsername() {
+            const adjectives = ['Quantum', 'Neon', 'Cyber', 'Digital', 'Alpha', 'Beta', 'Gamma', 'Omega'];
+            const nouns = ['Phoenix', 'Dragon', 'Wolf', 'Tiger', 'Eagle', 'Hawk', 'Lion', 'Panther'];
+            const numbers = Math.floor(Math.random() * 9000) + 1000;
+            return `${adjectives[Math.floor(Math.random() * adjectives.length)]}_${nouns[Math.floor(Math.random() * nouns.length)]}${numbers}`;
+        }
+
+        function generateEmail(username) {
+            const domains = ['quantum.io', 'cosmic.com', 'trollex.ai', 'nebula.org'];
+            return `${username.toLowerCase()}@${domains[Math.floor(Math.random() * domains.length)]}`;
+        }
+
+        function generateUserId() {
+            return 'user_' + Math.random().toString(36).substr(2, 8).toUpperCase();
+        }
+
+        function generateFriendCode() {
+            const part1 = Math.random().toString(36).substr(2, 4).toUpperCase();
+            const part2 = Math.random().toString(36).substr(2, 4).toUpperCase();
+            return `TRLX-${part1}-${part2}`;
+        }
+
+        function registerUser() {
+            const name = document.getElementById('registerName').textContent;
+            const avatar = document.getElementById('registerAvatar').textContent;
+            const userId = document.getElementById('registerId').textContent;
+            const email = document.getElementById('registerEmail').textContent;
+            const friendCode = document.getElementById('registerFriendCode').textContent;
+            
+            currentUser = {
+                id: userId,
+                name: name,
+                avatar: avatar,
+                email: email,
+                friendCode: friendCode
+            };
+            
+            sessionToken = generateSessionToken();
+            
+            localStorage.setItem('trollexUser', JSON.stringify(currentUser));
+            localStorage.setItem('sessionToken', sessionToken);
+            
+            fetch('/api/register_user', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(currentUser)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadSampleUsers();
+                    showMainApp();
+                    showNotification('Профиль создан успешно! 🎉');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Ошибка регистрации ❌');
+            });
+        }
+
+        function generateSessionToken() {
+            return Math.random().toString(36).substr(2) + Math.random().toString(36).substr(2);
+        }
+
+        function loadSampleUsers() {
+            fetch('/api/get_users')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        allUsers = data.users;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading users:', error);
+                });
+        }
+
+        function quickStart() {
+            const savedUser = localStorage.getItem('trollexUser');
+            const savedToken = localStorage.getItem('sessionToken');
+            
+            if (savedUser && savedToken) {
+                currentUser = JSON.parse(savedUser);
+                sessionToken = savedToken;
+                loadSampleUsers();
+                showMainApp();
+                showNotification('С возвращением! 🚀');
+            } else {
+                showRegisterScreen();
+            }
+        }
+
+        function checkAutoLogin() {
+            const savedUser = localStorage.getItem('trollexUser');
+            const savedToken = localStorage.getItem('sessionToken');
+            
+            if (savedUser && savedToken) {
+                currentUser = JSON.parse(savedUser);
+                sessionToken = savedToken;
+                loadSampleUsers();
+                showMainApp();
+            } else {
+                showWelcomeScreen();
+            }
+        }
+
+        function showMainApp() {
+            hideAllScreens();
+            document.getElementById('mainApp').classList.remove('hidden');
+            
+            document.getElementById('userName').textContent = currentUser.name;
+            document.getElementById('userAvatar').textContent = currentUser.avatar;
+            document.getElementById('userId').textContent = currentUser.id;
+            document.getElementById('userFriendCode').textContent = currentUser.friendCode;
+            
+            loadContent();
+            loadFriends();
+            loadFriendRequests();
+        }
+
+        function switchTab(tabName) {
+            currentTab = tabName;
+            
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            event.target.classList.add('active');
+            loadContent();
+        }
+
+        function loadContent() {
+            const contentList = document.getElementById('contentList');
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            let contentHTML = '';
+            
+            switch(currentTab) {
+                case 'chats':
+                    contentHTML = getChatsContent(searchTerm);
+                    break;
+                case 'friends':
+                    contentHTML = getFriendsContent(searchTerm);
+                    break;
+                case 'discover':
+                    contentHTML = getDiscoverContent(searchTerm);
+                    break;
+                default:
+                    contentHTML = '<div class="empty-state">Выберите вкладку</div>';
             }
             
+            contentList.innerHTML = contentHTML;
+        }
+
+        function getChatsContent(searchTerm) {
+            const userChats = JSON.parse(localStorage.getItem(`chats_${currentUser.id}`)) || [];
+            
+            if (userChats.length === 0) {
+                return `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">💬</div>
+                        <h3>Нет чатов</h3>
+                        <p>Начните общение с пользователями</p>
+                        <button class="btn btn-primary" onclick="switchTab('friends')" style="margin-top: 15px;">
+                            👥 Найти друзей
+                        </button>
+                    </div>
+                `;
+            }
+            
+            let chatsHTML = '';
+            userChats.forEach(chat => {
+                if (searchTerm === '' || chat.userName.toLowerCase().includes(searchTerm)) {
+                    chatsHTML += `
+                        <div class="chat-item" onclick="selectUser('${chat.userId}')">
+                            <div class="item-avatar">${chat.userAvatar}</div>
+                            <div style="flex: 1;">
+                                <h4>${chat.userName}</h4>
+                                <p style="color: var(--text-secondary); font-size: 0.8rem;">
+                                    ${chat.lastMessage || 'Нет сообщений'}
+                                </p>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            
+            return chatsHTML;
+        }
+
+        function getFriendsContent(searchTerm) {
+            let friendsHTML = '';
+            
+            if (friendRequests.length > 0) {
+                friendsHTML += '<h4 style="padding: 10px; color: var(--warning);">📥 Запросы в друзья</h4>';
+                friendRequests.forEach(request => {
+                    if (searchTerm === '' || request.name.toLowerCase().includes(searchTerm)) {
+                        friendsHTML += `
+                            <div class="friend-request-item">
+                                <div>
+                                    <div class="item-avatar" style="display: inline-block; margin-right: 10px;">${request.avatar}</div>
+                                    <div style="display: inline-block; vertical-align: middle;">
+                                        <h4>${request.name}</h4>
+                                        <p style="color: var(--text-secondary); font-size: 0.8rem;">
+                                            Хочет добавить вас в друзья
+                                        </p>
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 10px;">
+                                    <button class="control-btn" onclick="respondToFriendRequest('${request.id}', true)" style="background: var(--success);">✓</button>
+                                    <button class="control-btn" onclick="respondToFriendRequest('${request.id}', false)" style="background: var(--danger);">✕</button>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+            }
+            
+            if (friends.length > 0) {
+                friendsHTML += '<h4 style="padding: 10px; margin-top: 20px; color: var(--success);">👥 Мои друзья</h4>';
+                friends.forEach(friend => {
+                    if (searchTerm === '' || friend.name.toLowerCase().includes(searchTerm)) {
+                        friendsHTML += `
+                            <div class="chat-item" onclick="selectUser('${friend.id}')">
+                                <div class="item-avatar">${friend.avatar}</div>
+                                <div style="flex: 1;">
+                                    <h4>${friend.name}</h4>
+                                    <p style="color: var(--text-secondary); font-size: 0.8rem;">
+                                        ${friend.online ? '🟢 Online' : '⚫ Offline'} • ${friend.last_seen}
+                                    </p>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+            }
+            
+            if (friendsHTML === '') {
+                friendsHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">👥</div>
+                        <h3>Нет друзей</h3>
+                        <p>Добавьте друзей чтобы начать общение</p>
+                        <button class="btn btn-primary" onclick="showAddFriendModal()" style="margin-top: 15px;">
+                            👥 Добавить друга
+                        </button>
+                    </div>
+                `;
+            }
+            
+            return friendsHTML;
+        }
+
+        function getDiscoverContent(searchTerm) {
+            return `
+                <div style="text-align: center; padding: 20px;">
+                    <button class="btn btn-primary" onclick="showAddFriendModal()" style="margin-bottom: 15px;">
+                        👥 Добавить по коду
+                    </button>
+                    <div style="color: var(--text-secondary); font-size: 0.9rem;">
+                        Используйте Friend Code для добавления в друзья
+                    </div>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin: 15px 0;">
+                    <h4>🔍 Рекомендованные пользователи</h4>
+                    <div id="recommendedUsers">
+                        ${getRecommendedUsers()}
+                    </div>
+                </div>
+            `;
+        }
+
+        function getRecommendedUsers() {
+            const recommended = allUsers.filter(user => user.id !== currentUser.id).slice(0, 3);
+            if (recommended.length === 0) {
+                return '<div style="text-align: center; padding: 20px; color: var(--text-secondary);">Нет рекомендаций</div>';
+            }
+            
+            let html = '';
+            recommended.forEach(user => {
+                html += `
+                    <div class="chat-item" onclick="selectUser('${user.id}')">
+                        <div class="item-avatar">${user.avatar}</div>
+                        <div style="flex: 1;">
+                            <h4>${user.name}</h4>
+                            <p style="color: var(--text-secondary); font-size: 0.8rem;">
+                                ${user.status || 'Пользователь TrollexDL'}
+                            </p>
+                        </div>
+                        <button class="control-btn" onclick="event.stopPropagation(); sendFriendRequestToUser('${user.id}')" style="background: var(--accent);">
+                            📤
+                        </button>
+                    </div>
+                `;
+            });
+            return html;
+        }
+
+        function selectUser(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (user) {
+                currentChat = user;
+                document.getElementById('currentChatName').textContent = user.name;
+                document.getElementById('currentChatAvatar').textContent = user.avatar;
+                document.getElementById('currentChatStatus').textContent = user.online ? '🟢 Online' : '⚫ Offline';
+                
+                loadMessages(userId);
+                showNotification(`Чат с ${user.name} открыт 💬`);
+            }
+        }
+
+        function loadMessages(userId) {
+            const messagesContainer = document.getElementById('messagesContainer');
+            messagesContainer.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">💬</div>
+                    <h3>Начните общение</h3>
+                    <p>Отправьте первое сообщение</p>
+                </div>
+            `;
+        }
+
+        function sendMessage() {
+            if (!currentChat) {
+                showNotification('Выберите чат для отправки сообщения 💬');
+                return;
+            }
+
+            const messageInput = document.getElementById('messageInput');
+            const messageText = messageInput.value.trim();
+            
+            if (messageText === '') return;
+
+            const messagesContainer = document.getElementById('messagesContainer');
+            
+            // Убираем empty-state если он есть
+            if (messagesContainer.querySelector('.empty-state')) {
+                messagesContainer.innerHTML = '';
+            }
+
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message sent';
+            messageElement.innerHTML = `
+                <div>${messageText}</div>
+                <div style="font-size: 0.7rem; opacity: 0.7; margin-top: 5px; text-align: right;">
+                    ${new Date().toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'})}
+                </div>
+            `;
+            messagesContainer.appendChild(messageElement);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            messageInput.value = '';
+            showNotification('Сообщение отправлено! 📤');
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function showAddFriendModal() {
+            const friendCode = prompt('Введите Friend Code пользователя (формат: TRLX-XXXX-XXXX):');
+            if (friendCode) {
+                sendFriendRequestByCode(friendCode);
+            }
+        }
+
+        function sendFriendRequestByCode(friendCode) {
             fetch('/api/send_friend_request', {
                 method: 'POST',
                 headers: {
@@ -532,8 +1121,7 @@ HTML_TEMPLATE = '''
             .then(data => {
                 if (data.success) {
                     showNotification('Запрос дружбы отправлен! 📤');
-                    hideAddFriendModal();
-                    loadFriendRequests();
+                loadFriendRequests();
                 } else {
                     showNotification(data.error || 'Ошибка отправки запроса ❌');
                 }
@@ -541,6 +1129,57 @@ HTML_TEMPLATE = '''
             .catch(error => {
                 console.error('Error:', error);
                 showNotification('Ошибка сети ❌');
+            });
+        }
+
+        function sendFriendRequestToUser(userId) {
+            fetch('/api/send_friend_request_to_user', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_id: currentUser.id,
+                    session_token: sessionToken,
+                    target_user_id: userId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Запрос дружбы отправлен! 📤');
+                } else {
+                    showNotification(data.error || 'Ошибка отправки запроса ❌');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Ошибка сети ❌');
+            });
+        }
+
+        function loadFriends() {
+            fetch('/api/get_friends', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_id: currentUser.id,
+                    session_token: sessionToken
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    friends = data.friends;
+                    if (currentTab === 'friends') {
+                        loadContent();
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
             });
         }
 
@@ -598,8 +1237,27 @@ HTML_TEMPLATE = '''
             });
         }
 
-        function loadFriends() {
-            fetch('/api/get_friends', {
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.classList.remove('hidden');
+            
+            setTimeout(() => {
+                notification.classList.add('hidden');
+            }, 3000);
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('active');
+        }
+
+        function searchContent() {
+            loadContent();
+        }
+
+        function createCallRoom() {
+            fetch('/api/create_call', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -612,347 +1270,46 @@ HTML_TEMPLATE = '''
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    friends = data.friends;
-                    if (currentTab === 'friends') {
-                        loadContent();
-                    }
+                    showNotification('Комната для звонка создана! 🎥');
+                    // Здесь можно добавить логику для присоединения к звонку
+                } else {
+                    showNotification('Ошибка создания комнаты ❌');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
+                showNotification('Ошибка сети ❌');
             });
         }
 
-        // Обновленная функция loadContent
-        function loadContent() {
-            const contentList = document.getElementById('contentList');
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            
-            let contentHTML = '';
-            
-            switch(currentTab) {
-                case 'chats':
-                    contentHTML = getChatsContent(searchTerm);
-                    break;
-                case 'friends':
-                    contentHTML = getFriendsContent(searchTerm);
-                    break;
-                case 'discover':
-                    contentHTML = getDiscoverContent(searchTerm);
-                    break;
-                case 'calls':
-                    contentHTML = getCallsContent(searchTerm);
-                    break;
-                default:
-                    contentHTML = '<div class="empty-state">Выберите вкладку</div>';
+        function startVideoCall() {
+            if (!currentChat) {
+                showNotification('Выберите чат для звонка 📞');
+                return;
             }
-            
-            contentList.innerHTML = contentHTML;
+            showNotification(`Звонок пользователю ${currentChat.name}... 📞`);
         }
 
-        function getFriendsContent(searchTerm) {
-            let friendsHTML = '';
-            
-            // Запросы в друзья
-            if (friendRequests.length > 0) {
-                friendsHTML += '<h4 style="padding: 10px; color: var(--warning);">📥 Запросы в друзья</h4>';
-                friendRequests.forEach(request => {
-                    if (searchTerm === '' || request.name.toLowerCase().includes(searchTerm)) {
-                        friendsHTML += `
-                            <div class="friend-request-item">
-                                <div>
-                                    <div class="item-avatar" style="display: inline-block; margin-right: 10px;">${request.avatar}</div>
-                                    <div style="display: inline-block; vertical-align: middle;">
-                                        <h4>${request.name}</h4>
-                                        <p style="color: var(--text-secondary); font-size: 0.8rem;">
-                                            Хочет добавить вас в друзья
-                                        </p>
-                                    </div>
-                                </div>
-                                <div class="request-actions">
-                                    <button class="control-btn" onclick="respondToFriendRequest('${request.id}', true)" style="background: var(--success); width: 35px; height: 35px; font-size: 0.8rem;">✓</button>
-                                    <button class="control-btn" onclick="respondToFriendRequest('${request.id}', false)" style="background: var(--danger); width: 35px; height: 35px; font-size: 0.8rem;">✕</button>
-                                </div>
-                            </div>
-                        `;
-                    }
-                });
+        function showFileShare() {
+            showNotification('Функция обмена файлами скоро будет доступна 📎');
+        }
+
+        function showDonatePanel() {
+            showNotification('Премиум функции скоро будут доступны 💎');
+        }
+
+        function showSettings() {
+            showNotification('Настройки скоро будут доступны ⚙️');
+        }
+
+        // Закрываем sidebar при клике вне его на мобильных
+        document.addEventListener('click', function(event) {
+            const sidebar = document.getElementById('sidebar');
+            if (window.innerWidth <= 768 && sidebar.classList.contains('active') && 
+                !sidebar.contains(event.target) && !event.target.classList.contains('mobile-menu-btn')) {
+                sidebar.classList.remove('active');
             }
-            
-            // Друзья онлайн
-            const onlineFriends = friends.filter(friend => friend.online);
-            if (onlineFriends.length > 0) {
-                friendsHTML += '<h4 style="padding: 10px; color: var(--success); margin-top: 20px;">🟢 Друзья онлайн</h4>';
-                onlineFriends.forEach(friend => {
-                    if (searchTerm === '' || friend.name.toLowerCase().includes(searchTerm)) {
-                        friendsHTML += `
-                            <div class="friend-item" onclick="selectUser('${friend.id}')" oncontextmenu="showContextMenu(event, '${friend.id}')">
-                                <div class="online-indicator"></div>
-                                <div class="item-avatar">${friend.avatar}</div>
-                                <div style="flex: 1;">
-                                    <h4>${friend.name}</h4>
-                                    <p style="color: var(--text-secondary); font-size: 0.8rem;">
-                                        ${friend.status || 'Online'} • ${friend.last_seen}
-                                    </p>
-                                </div>
-                                <button class="control-btn" onclick="event.stopPropagation(); startCallWithUser('${friend.id}')" style="background: var(--success); width: 35px; height: 35px; font-size: 0.8rem;">📞</button>
-                            </div>
-                        `;
-                    }
-                });
-            }
-            
-            // Друзья оффлайн
-            const offlineFriends = friends.filter(friend => !friend.online);
-            if (offlineFriends.length > 0) {
-                friendsHTML += '<h4 style="padding: 10px; margin-top: 20px; color: var(--text-secondary);">⚫ Друзья оффлайн</h4>';
-                offlineFriends.forEach(friend => {
-                    if (searchTerm === '' || friend.name.toLowerCase().includes(searchTerm)) {
-                        friendsHTML += `
-                            <div class="friend-item" onclick="selectUser('${friend.id}')" oncontextmenu="showContextMenu(event, '${friend.id}')">
-                                <div class="offline-indicator"></div>
-                                <div class="item-avatar">${friend.avatar}</div>
-                                <div style="flex: 1;">
-                                    <h4>${friend.name}</h4>
-                                    <p style="color: var(--text-secondary); font-size: 0.8rem;">
-                                        ${friend.status || 'Offline'} • ${friend.last_seen}
-                                    </p>
-                                </div>
-                            </div>
-                        `;
-                    }
-                });
-            }
-            
-            if (friendsHTML === '') {
-                friendsHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">👥</div>
-                        <h3>Нет друзей</h3>
-                        <p>Добавьте друзей чтобы начать общение</p>
-                        <button class="btn btn-primary" onclick="showAddFriendModal()" style="margin-top: 15px;">
-                            👥 Добавить друга
-                        </button>
-                    </div>
-                `;
-            }
-            
-            return friendsHTML;
-        }
-
-        function getDiscoverContent(searchTerm) {
-            return `
-                <div style="text-align: center; padding: 20px;">
-                    <button class="btn btn-primary" onclick="showAddFriendModal()" style="margin-bottom: 15px;">
-                        👥 Добавить по коду
-                    </button>
-                    <div style="color: var(--text-secondary); font-size: 0.9rem;">
-                        Используйте Friend Code для добавления в друзья
-                    </div>
-                </div>
-
-                <div class="add-friend-container">
-                    <h4>🔍 Рекомендованные пользователи</h4>
-                    <div id="recommendedUsers">
-                        <!-- Динамически заполняется -->
-                    </div>
-                </div>
-
-                <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-top: 20px;">
-                    <h4>📊 Статистика</h4>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
-                        <div style="text-align: center; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 8px;">
-                            <div style="font-size: 1.5rem;">${friends.length}</div>
-                            <div style="font-size: 0.8rem; color: var(--text-secondary);">Друзей</div>
-                        </div>
-                        <div style="text-align: center; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 8px;">
-                            <div style="font-size: 1.5rem;">${getChatsCount()}</div>
-                            <div style="font-size: 0.8rem; color: var(--text-secondary);">Чатов</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Новые функции для улучшения UX
-        function handleTyping() {
-            if (currentChat) {
-                // Отправляем серверу информацию о печатании
-                clearTimeout(typingTimer);
-                // Здесь можно добавить отправку события typing на сервер
-                typingTimer = setTimeout(() => {
-                    // Таймаут печатания
-                }, 1000);
-            }
-        }
-
-        function showContextMenu(event, userId) {
-            event.preventDefault();
-            const contextMenu = document.getElementById('contextMenu');
-            contextMenu.style.display = 'block';
-            contextMenu.style.left = event.pageX + 'px';
-            contextMenu.style.top = event.pageY + 'px';
-            contextMenu.dataset.userId = userId;
-        }
-
-        function contextMenuAction(action) {
-            const userId = document.getElementById('contextMenu').dataset.userId;
-            const contextMenu = document.getElementById('contextMenu');
-            contextMenu.style.display = 'none';
-            
-            switch(action) {
-                case 'profile':
-                    showUserProfile(userId);
-                    break;
-                case 'call':
-                    startCallWithUser(userId);
-                    break;
-                case 'remove':
-                    removeFriend(userId);
-                    break;
-                case 'block':
-                    blockUser(userId);
-                    break;
-            }
-        }
-
-        function showUserProfile(userId) {
-            const user = friends.find(f => f.id === userId) || allUsers.find(u => u.id === userId);
-            if (user) {
-                alert(`Профиль пользователя:\n\n👤 Имя: ${user.name}\n🆔 ID: ${user.id}\n📧 Статус: ${user.status || 'Не установлен'}\n⏰ Был(а): ${user.last_seen}`);
-            }
-        }
-
-        function removeFriend(userId) {
-            if (confirm('Вы уверены, что хотите удалить этого пользователя из друзей?')) {
-                fetch('/api/remove_friend', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        user_id: currentUser.id,
-                        session_token: sessionToken,
-                        friend_id: userId
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showNotification('Пользователь удален из друзей ❌');
-                        loadFriends();
-                    } else {
-                        showNotification(data.error || 'Ошибка удаления ❌');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    showNotification('Ошибка сети ❌');
-                });
-            }
-        }
-
-        function blockUser(userId) {
-            if (confirm('Вы уверены, что хотите заблокировать этого пользователя?')) {
-                showNotification('Пользователь заблокирован 🚫');
-            }
-        }
-
-        function getChatsCount() {
-            const userChats = JSON.parse(localStorage.getItem(`chats_${currentUser.id}`)) || [];
-            return userChats.length;
-        }
-
-        // Обновляем функцию регистрации
-        function registerUser() {
-            const name = document.getElementById('registerName').textContent;
-            const avatar = document.getElementById('registerAvatar').textContent;
-            const userId = document.getElementById('registerId').textContent;
-            const email = document.getElementById('registerEmail').textContent;
-            const friendCode = document.getElementById('registerFriendCode').textContent;
-            
-            currentUser = {
-                id: userId,
-                name: name,
-                avatar: avatar,
-                email: email,
-                friendCode: friendCode,
-                settings: {}
-            };
-            
-            sessionToken = generateSessionToken();
-            
-            localStorage.setItem('trollexUser', JSON.stringify(currentUser));
-            localStorage.setItem('sessionToken', sessionToken);
-            
-            // Инициализируем данные на сервере
-            fetch('/api/register_user', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(currentUser)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    loadSampleUsers();
-                    showMainApp();
-                    showNotification('Профиль создан успешно! 🎉');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showNotification('Ошибка регистрации ❌');
-            });
-        }
-
-        // Обновляем функцию генерации пользователя
-        function generateNewUser() {
-            const name = generateUsername();
-            const email = generateEmail(name);
-            const userId = generateUserId();
-            const friendCode = generateFriendCode();
-            const avatars = ['🚀', '👨‍🚀', '👩‍🚀', '🛸', '🌌'];
-            
-            document.getElementById('registerAvatar').textContent = avatars[Math.floor(Math.random() * avatars.length)];
-            document.getElementById('registerName').textContent = name;
-            document.getElementById('registerId').textContent = userId;
-            document.getElementById('registerEmail').textContent = email;
-            document.getElementById('registerFriendCode').textContent = friendCode;
-        }
-
-        function generateFriendCode() {
-            return 'TRLX-' + Math.random().toString(36).substr(2, 8).toUpperCase();
-        }
-
-        // Обновляем showMainApp для загрузки данных о друзьях
-        function showMainApp() {
-            hideAllScreens();
-            document.getElementById('mainApp').classList.remove('hidden');
-            
-            // Заполняем данные пользователя
-            document.getElementById('userName').textContent = currentUser.name;
-            document.getElementById('userAvatar').textContent = currentUser.avatar;
-            document.getElementById('userId').textContent = currentUser.id;
-            document.getElementById('userFriendCode').textContent = currentUser.friendCode;
-            
-            loadContent();
-            loadMediaDevices();
-            loadSettings();
-            loadFriends();
-            loadFriendRequests();
-            
-            // Проверяем приглашение в звонок
-            checkCallInvite();
-        }
-
-        // Закрываем контекстное меню при клике вне его
-        document.addEventListener('click', function() {
-            document.getElementById('contextMenu').style.display = 'none';
         });
-
-        // Остальные функции остаются без изменений...
     </script>
 </body>
 </html>
@@ -963,17 +1320,14 @@ def index():
     initialize_sample_data()
     return render_template_string(HTML_TEMPLATE)
 
-# Новые API endpoints
-
 @app.route('/api/register_user', methods=['POST'])
 def api_register_user():
     try:
         data = request.json
         user_id = data.get('id')
         
-        # Сохраняем пользователя
         user_profiles[user_id] = {
-            'friend_code': data.get('friend_code', generate_friend_code()),
+            'friend_code': data.get('friend_code'),
             'friends': [],
             'settings': {
                 'theme': 'dark',
@@ -983,6 +1337,8 @@ def api_register_user():
             'created_at': datetime.datetime.now().isoformat()
         }
         
+        user_sessions[user_id] = generate_session_token()
+        
         logger.info(f"Зарегистрирован новый пользователь: {user_id}")
         return jsonify({'success': True, 'message': 'User registered successfully'})
         
@@ -990,22 +1346,24 @@ def api_register_user():
         logger.error(f"Ошибка регистрации пользователя: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/api/get_users', methods=['GET'])
+def api_get_users():
+    try:
+        return jsonify({'success': True, 'users': all_users})
+    except Exception as e:
+        logger.error(f"Ошибка получения пользователей: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.route('/api/send_friend_request', methods=['POST'])
 def api_send_friend_request():
     try:
         data = request.json
         user_id = data.get('user_id')
-        session_token = data.get('session_token')
         friend_code = data.get('friend_code')
         
-        if not verify_session(user_id, session_token):
-            return jsonify({'success': False, 'error': 'Invalid session'}), 401
-            
-        # Проверяем валидность friend code
         if not validate_friend_code(friend_code):
             return jsonify({'success': False, 'error': 'Invalid friend code format'})
         
-        # Находим пользователя по friend code
         target_user_id = get_user_by_friend_code(friend_code)
         if not target_user_id:
             return jsonify({'success': False, 'error': 'User not found'})
@@ -1013,11 +1371,31 @@ def api_send_friend_request():
         if target_user_id == user_id:
             return jsonify({'success': False, 'error': 'Cannot add yourself'})
         
-        # Проверяем, не отправили ли уже запрос
-        if user_id not in friend_requests:
-            friend_requests[user_id] = []
-            
-        # Добавляем запрос
+        request_id = str(uuid.uuid4())
+        friend_requests.setdefault(target_user_id, []).append({
+            'id': request_id,
+            'from_user_id': user_id,
+            'timestamp': datetime.datetime.now().isoformat(),
+            'status': 'pending'
+        })
+        
+        logger.info(f"Запрос дружбы отправлен от {user_id} к {target_user_id}")
+        return jsonify({'success': True, 'message': 'Friend request sent'})
+        
+    except Exception as e:
+        logger.error(f"Ошибка отправки запроса дружбы: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/send_friend_request_to_user', methods=['POST'])
+def api_send_friend_request_to_user():
+    try:
+        data = request.json
+        user_id = data.get('user_id')
+        target_user_id = data.get('target_user_id')
+        
+        if target_user_id == user_id:
+            return jsonify({'success': False, 'error': 'Cannot add yourself'})
+        
         request_id = str(uuid.uuid4())
         friend_requests.setdefault(target_user_id, []).append({
             'id': request_id,
@@ -1038,17 +1416,12 @@ def api_get_friend_requests():
     try:
         data = request.json
         user_id = data.get('user_id')
-        session_token = data.get('session_token')
         
-        if not verify_session(user_id, session_token):
-            return jsonify({'success': False, 'error': 'Invalid session'}), 401
-            
         user_requests = friend_requests.get(user_id, [])
         requests_data = []
         
         for req in user_requests:
             if req.get('status') == 'pending':
-                # Находим информацию о пользователе
                 from_user = next((u for u in all_users if u['id'] == req['from_user_id']), None)
                 if from_user:
                     requests_data.append({
@@ -1069,14 +1442,9 @@ def api_respond_friend_request():
     try:
         data = request.json
         user_id = data.get('user_id')
-        session_token = data.get('session_token')
         request_id = data.get('request_id')
         accept = data.get('accept')
         
-        if not verify_session(user_id, session_token):
-            return jsonify({'success': False, 'error': 'Invalid session'}), 401
-            
-        # Находим запрос
         user_requests = friend_requests.get(user_id, [])
         request_found = None
         
@@ -1091,11 +1459,9 @@ def api_respond_friend_request():
         from_user_id = request_found['from_user_id']
         
         if accept:
-            # Добавляем в друзья
             friendships.setdefault(user_id, []).append(from_user_id)
             friendships.setdefault(from_user_id, []).append(user_id)
             
-            # Создаем чат между пользователями
             ensure_user_chat(user_id, from_user_id)
             ensure_user_chat(from_user_id, user_id)
             
@@ -1116,11 +1482,7 @@ def api_get_friends():
     try:
         data = request.json
         user_id = data.get('user_id')
-        session_token = data.get('session_token')
         
-        if not verify_session(user_id, session_token):
-            return jsonify({'success': False, 'error': 'Invalid session'}), 401
-            
         user_friends_ids = friendships.get(user_id, [])
         friends_data = []
         
@@ -1135,41 +1497,12 @@ def api_get_friends():
         logger.error(f"Ошибка получения списка друзей: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/api/remove_friend', methods=['POST'])
-def api_remove_friend():
-    try:
-        data = request.json
-        user_id = data.get('user_id')
-        session_token = data.get('session_token')
-        friend_id = data.get('friend_id')
-        
-        if not verify_session(user_id, session_token):
-            return jsonify({'success': False, 'error': 'Invalid session'}), 401
-            
-        # Удаляем из друзей
-        if user_id in friendships and friend_id in friendships[user_id]:
-            friendships[user_id].remove(friend_id)
-            
-        if friend_id in friendships and user_id in friendships[friend_id]:
-            friendships[friend_id].remove(user_id)
-            
-        logger.info(f"Пользователь {friend_id} удален из друзей {user_id}")
-        return jsonify({'success': True, 'message': 'Friend removed'})
-        
-    except Exception as e:
-        logger.error(f"Ошибка удаления друга: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
 @app.route('/api/create_call', methods=['POST'])
 def api_create_call():
     try:
         data = request.json
         user_id = data.get('user_id')
-        session_token = data.get('session_token')
         
-        if not verify_session(user_id, session_token):
-            return jsonify({'success': False, 'error': 'Invalid session'}), 401
-            
         call_id = generate_call_id()
         active_calls[call_id] = {
             'creator': user_id,
@@ -1182,70 +1515,11 @@ def api_create_call():
         logger.info(f"Создан защищённый звонок: {call_id}")
         return jsonify({
             'success': True, 
-            'call_id': call_id, 
-            'call_link': f'{request.host_url}call/{call_id}',
+            'call_id': call_id,
             'security_level': 'high'
         })
     except Exception as e:
         logger.error(f"Ошибка создания звонка: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/api/send_message', methods=['POST'])
-def api_send_message():
-    try:
-        data = request.json
-        user_id = data.get('user_id')
-        session_token = data.get('session_token')
-        target_user_id = data.get('target_user_id')
-        message_text = data.get('message')
-        message_type = data.get('type', 'text')
-        
-        if not verify_session(user_id, session_token):
-            return jsonify({'success': False, 'error': 'Invalid session'}), 401
-            
-        ensure_user_chat(user_id, target_user_id)
-        
-        message = {
-            'id': str(uuid.uuid4()),
-            'sender': user_id,
-            'text': message_text,
-            'timestamp': datetime.datetime.now().isoformat(),
-            'type': message_type,
-            'status': 'sent'
-        }
-        
-        user_messages[user_id][target_user_id].append(message)
-        
-        # Если пользователи друзья, добавляем сообщение и в их чат
-        if target_user_id in friendships.get(user_id, []):
-            ensure_user_chat(target_user_id, user_id)
-            user_messages[target_user_id][user_id].append(message)
-        
-        logger.info(f"Сообщение отправлено от {user_id} к {target_user_id}")
-        return jsonify({'success': True, 'message_id': message['id']})
-        
-    except Exception as e:
-        logger.error(f"Ошибка отправки сообщения: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/api/get_messages', methods=['POST'])
-def api_get_messages():
-    try:
-        data = request.json
-        user_id = data.get('user_id')
-        session_token = data.get('session_token')
-        target_user_id = data.get('target_user_id')
-        
-        if not verify_session(user_id, session_token):
-            return jsonify({'success': False, 'error': 'Invalid session'}), 401
-            
-        ensure_user_chat(user_id, target_user_id)
-        messages = user_messages[user_id].get(target_user_id, [])
-        
-        return jsonify({'success': True, 'messages': messages})
-        
-    except Exception as e:
-        logger.error(f"Ошибка получения сообщений: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
