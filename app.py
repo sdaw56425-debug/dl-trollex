@@ -43,6 +43,10 @@ def generate_call_id():
 def generate_session_token():
     return hashlib.sha256(f"{uuid.uuid4()}{time.time()}".encode()).hexdigest()
 
+def verify_session(user_id, session_token):
+    """Проверка валидности сессии"""
+    return user_id in user_sessions and session_token == user_sessions.get(user_id)
+
 HTML_TEMPLATE = '''
 <!DOCTYPE html>
 <html lang="ru">
@@ -1213,6 +1217,10 @@ HTML_TEMPLATE = '''
             return 'user_' + Math.random().toString(36).substr(2, 8).toUpperCase();
         }
 
+        function generateSessionToken() {
+            return Math.random().toString(36).substr(2) + Math.random().toString(36).substr(2);
+        }
+
         function registerUser() {
             const name = document.getElementById('registerName').textContent;
             const avatar = document.getElementById('registerAvatar').textContent;
@@ -1247,14 +1255,6 @@ HTML_TEMPLATE = '''
                 {id: 'user3', name: 'Mike_Neon', avatar: '👨‍🚀', online: false},
                 {id: 'user4', name: 'Emma_Digital', avatar: '👩‍💼', online: true}
             ];
-            
-            // Добавляем текущего пользователя
-            allUsers.push({
-                id: currentUser.id,
-                name: currentUser.name,
-                avatar: currentUser.avatar,
-                online: true
-            });
             
             localStorage.setItem('allUsers', JSON.stringify(allUsers));
         }
@@ -1620,6 +1620,41 @@ HTML_TEMPLATE = '''
             contentList.innerHTML = contentHTML;
         }
 
+        function getChatsContent(searchTerm) {
+            return `
+                <div style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                    <div style="font-size: 3rem; margin-bottom: 10px;">💬</div>
+                    <h3>Чаты</h3>
+                    <p>Начните новый чат с пользователем</p>
+                </div>
+            `;
+        }
+
+        function getUsersContent(searchTerm) {
+            let usersHTML = '<h4 style="padding: 10px;">👥 Пользователи</h4>';
+            
+            allUsers.forEach(user => {
+                if (user.id !== currentUser.id) {
+                    const displayName = user.name.toLowerCase().includes(searchTerm) ? user.name : user.name;
+                    if (searchTerm === '' || displayName.toLowerCase().includes(searchTerm)) {
+                        usersHTML += `
+                            <div class="chat-item" onclick="selectUser('${user.id}')">
+                                <div class="item-avatar">${user.avatar}</div>
+                                <div style="flex: 1;">
+                                    <h4>${user.name}</h4>
+                                    <p style="color: var(--text-secondary); font-size: 0.8rem;">
+                                        ${user.online ? '🟢 Online' : '⚫ Offline'}
+                                    </p>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+            });
+            
+            return usersHTML;
+        }
+
         function getCallsContent(searchTerm) {
             return `
                 <div style="text-align: center; padding: 20px;">
@@ -1681,8 +1716,115 @@ HTML_TEMPLATE = '''
             createCallRoom();
         }
 
-        // Остальные функции...
+        function selectUser(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (user) {
+                currentChat = user;
+                document.getElementById('currentChatName').textContent = user.name;
+                document.getElementById('currentChatAvatar').textContent = user.avatar;
+                document.getElementById('currentChatStatus').textContent = user.online ? '🟢 Online' : '⚫ Offline';
+                
+                // Очищаем сообщения
+                document.getElementById('messagesContainer').innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                        <div style="font-size: 2rem; margin-bottom: 10px;">👋</div>
+                        <h3>Начните общение с ${user.name}</h3>
+                        <p>Отправьте первое сообщение</p>
+                    </div>
+                `;
+            }
+        }
 
+        function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            
+            if (message && currentChat) {
+                const messagesContainer = document.getElementById('messagesContainer');
+                
+                // Создаем элемент сообщения
+                const messageElement = document.createElement('div');
+                messageElement.className = 'message sent';
+                messageElement.textContent = message;
+                
+                messagesContainer.appendChild(messageElement);
+                messageInput.value = '';
+                
+                // Прокручиваем вниз
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                
+                showNotification('Сообщение отправлено! ✨');
+            } else if (!currentChat) {
+                showNotification('Выберите чат для отправки сообщения 💬');
+            }
+        }
+
+        function searchContent() {
+            loadContent();
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('active');
+        }
+
+        function showDonatePanel() {
+            document.getElementById('donatePanel').classList.add('active');
+        }
+
+        function hideDonatePanel() {
+            document.getElementById('donatePanel').classList.remove('active');
+        }
+
+        function showSettings() {
+            document.getElementById('settingsPanel').classList.add('active');
+        }
+
+        function hideSettings() {
+            document.getElementById('settingsPanel').classList.remove('active');
+        }
+
+        function selectTier(tier) {
+            showNotification(`Выбран тариф ${tier.toUpperCase()}! 💎`);
+            hideDonatePanel();
+        }
+
+        function saveSettings() {
+            const newName = document.getElementById('settingsName').value.trim();
+            if (newName) {
+                currentUser.name = newName;
+                localStorage.setItem('trollexUser', JSON.stringify(currentUser));
+                document.getElementById('userName').textContent = newName;
+                showNotification('Настройки сохранены! ✅');
+            }
+            hideSettings();
+        }
+
+        function logout() {
+            localStorage.removeItem('trollexUser');
+            localStorage.removeItem('sessionToken');
+            localStorage.removeItem('allUsers');
+            currentUser = null;
+            sessionToken = null;
+            hideSettings();
+            showWelcomeScreen();
+            showNotification('Вы вышли из системы 👋');
+        }
+
+        function showNotification(message) {
+            // Создаем элемент уведомления
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // Удаляем уведомление через 3 секунды
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 3000);
+        }
     </script>
 </body>
 </html>
@@ -1720,10 +1862,6 @@ def api_create_call():
     except Exception as e:
         logger.error(f"Ошибка создания звонка: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
-
-def verify_session(user_id, session_token):
-    """Проверка валидности сессии"""
-    return session_token in user_sessions.get(user_id, [])
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
