@@ -1398,12 +1398,157 @@ HTML_TEMPLATE = '''
                     currentIndex++;
                     setTimeout(typeNextText, 1000);
                 } else {
-                    hideLoadingScreen();
-                    checkAutoLogin();
+                    setTimeout(() => {
+                        hideLoadingScreen();
+                        checkAutoLogin();
+                    }, 500);
                 }
             }
             
             typeNextText();
+        }
+
+        function hideLoadingScreen() {
+            document.getElementById('loadingScreen').classList.add('hidden');
+        }
+
+        function showWelcomeScreen() {
+            hideAllScreens();
+            document.getElementById('welcomeScreen').classList.remove('hidden');
+        }
+
+        function showRegisterScreen() {
+            hideAllScreens();
+            document.getElementById('registerScreen').classList.remove('hidden');
+            generateNewUser();
+        }
+
+        function hideAllScreens() {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.add('hidden');
+            });
+            document.getElementById('mainApp').classList.add('hidden');
+        }
+
+        function generateNewUser() {
+            const name = generateUsername();
+            const email = generateEmail(name);
+            const userId = generateUserId();
+            const avatars = ['🚀', '👨‍🚀', '👩‍🚀', '🛸', '🌌'];
+            
+            document.getElementById('registerAvatar').textContent = avatars[Math.floor(Math.random() * avatars.length)];
+            document.getElementById('registerName').textContent = name;
+            document.getElementById('registerId').textContent = userId;
+            document.getElementById('registerEmail').textContent = email;
+        }
+
+        function generateUsername() {
+            const adjectives = ['Quantum', 'Neon', 'Cyber', 'Digital', 'Alpha', 'Beta', 'Gamma', 'Omega'];
+            const nouns = ['Phoenix', 'Dragon', 'Wolf', 'Tiger', 'Eagle', 'Hawk', 'Lion', 'Panther'];
+            const numbers = Math.floor(Math.random() * 9000) + 1000;
+            return `${adjectives[Math.floor(Math.random() * adjectives.length)]}_${nouns[Math.floor(Math.random() * nouns.length)]}${numbers}`;
+        }
+
+        function generateEmail(username) {
+            const domains = ['quantum.io', 'cosmic.com', 'trollex.ai', 'nebula.org'];
+            return `${username.toLowerCase()}@${domains[Math.floor(Math.random() * domains.length)]}`;
+        }
+
+        function generateUserId() {
+            return 'user_' + Math.random().toString(36).substr(2, 8).toUpperCase();
+        }
+
+        function registerUser() {
+            const name = document.getElementById('registerName').textContent;
+            const avatar = document.getElementById('registerAvatar').textContent;
+            const userId = document.getElementById('registerId').textContent;
+            const email = document.getElementById('registerEmail').textContent;
+            
+            currentUser = {
+                id: userId,
+                name: name,
+                avatar: avatar,
+                email: email,
+                settings: {}
+            };
+            
+            sessionToken = generateSessionToken();
+            
+            localStorage.setItem('trollexUser', JSON.stringify(currentUser));
+            localStorage.setItem('sessionToken', sessionToken);
+            
+            // Загружаем тестовых пользователей
+            loadSampleUsers();
+            
+            showMainApp();
+            showNotification('Профиль создан успешно! 🎉');
+        }
+
+        function generateSessionToken() {
+            return Math.random().toString(36).substr(2) + Math.random().toString(36).substr(2);
+        }
+
+        function loadSampleUsers() {
+            // Используем данные с сервера
+            allUsers = JSON.parse(localStorage.getItem('allUsers')) || [];
+            if (allUsers.length === 0) {
+                // Если нет данных, создаем тестовых пользователей
+                allUsers = [
+                    {id: 'user1', name: 'Alex_Quantum', avatar: '👨‍💻', online: true, last_seen: 'только что'},
+                    {id: 'user2', name: 'Sarah_Cyber', avatar: '👩‍🎨', online: true, last_seen: '2 мин назад'},
+                    {id: 'user3', name: 'Mike_Neon', avatar: '👨‍🚀', online: false, last_seen: '1 час назад'},
+                    {id: 'user4', name: 'Emma_Digital', avatar: '👩‍💼', online: true, last_seen: 'только что'},
+                    {id: 'user5', name: 'Max_Virtual', avatar: '🤖', online: false, last_seen: '30 мин назад'},
+                    {id: 'user6', name: 'Luna_Hyper', avatar: '👽', online: true, last_seen: '5 мин назад'}
+                ];
+                localStorage.setItem('allUsers', JSON.stringify(allUsers));
+            }
+        }
+
+        function quickStart() {
+            const savedUser = localStorage.getItem('trollexUser');
+            const savedToken = localStorage.getItem('sessionToken');
+            
+            if (savedUser && savedToken) {
+                currentUser = JSON.parse(savedUser);
+                sessionToken = savedToken;
+                loadSampleUsers();
+                showMainApp();
+                showNotification('С возвращением! 🚀');
+            } else {
+                showRegisterScreen();
+            }
+        }
+
+        function checkAutoLogin() {
+            const savedUser = localStorage.getItem('trollexUser');
+            const savedToken = localStorage.getItem('sessionToken');
+            
+            if (savedUser && savedToken) {
+                currentUser = JSON.parse(savedUser);
+                sessionToken = savedToken;
+                loadSampleUsers();
+                showMainApp();
+            } else {
+                showWelcomeScreen();
+            }
+        }
+
+        function showMainApp() {
+            hideAllScreens();
+            document.getElementById('mainApp').classList.remove('hidden');
+            
+            // Заполняем данные пользователя
+            document.getElementById('userName').textContent = currentUser.name;
+            document.getElementById('userAvatar').textContent = currentUser.avatar;
+            document.getElementById('userId').textContent = currentUser.id;
+            
+            loadContent();
+            loadMediaDevices();
+            loadSettings();
+            
+            // Проверяем приглашение в звонок
+            checkCallInvite();
         }
 
         // Функции для вкладок
@@ -1723,13 +1868,7 @@ HTML_TEMPLATE = '''
             return date.toLocaleDateString('ru-RU');
         }
 
-        // Остальные функции (initializeApp, hideLoadingScreen, showWelcomeScreen, showRegisterScreen, 
-        // hideAllScreens, generateNewUser, registerUser, quickStart, checkAutoLogin, showMainApp, 
-        // createCallRoom, getLocalStream, toggleMicrophone, toggleCamera, copyCallLink, endCall, 
-        // checkCallInvite, acceptCall, declineCall, joinCallByLink, loadMediaDevices, loadMessages, 
-        // sendMessage, startCallWithUser, startVideoCall, showFeatureInfo, handleKeyPress, searchContent, 
-        // toggleSidebar, showDonatePanel, hideDonatePanel, showSettings, hideSettings, selectTier, 
-        // saveSettings, exportData, logout, showNotification) остаются без изменений...
+        // Остальные функции остаются без изменений...
 
     </script>
 </body>
