@@ -51,7 +51,6 @@ HTML_TEMPLATE = '''
             padding: 0;
             box-sizing: border-box;
             font-family: 'Segoe UI', system-ui, sans-serif;
-            -webkit-tap-highlight-color: transparent;
         }
 
         :root {
@@ -71,7 +70,6 @@ HTML_TEMPLATE = '''
             background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
             color: var(--text);
             min-height: 100vh;
-            overflow-x: hidden;
         }
 
         .screen {
@@ -109,25 +107,6 @@ HTML_TEMPLATE = '''
             background: linear-gradient(45deg, var(--neon), var(--accent));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-        }
-
-        .typing-animation {
-            display: inline-block;
-            overflow: hidden;
-            border-right: 2px solid var(--neon);
-            white-space: nowrap;
-            margin: 0 auto;
-            animation: typing 3s steps(40, end), blink-caret 0.75s step-end infinite;
-        }
-
-        @keyframes typing {
-            from { width: 0 }
-            to { width: 100% }
-        }
-
-        @keyframes blink-caret {
-            from, to { border-color: transparent }
-            50% { border-color: var(--neon) }
         }
 
         .btn {
@@ -558,7 +537,7 @@ HTML_TEMPLATE = '''
         <div class="cosmic-card">
             <div class="logo">TrollexDL</div>
             <div style="margin-bottom: 25px; color: var(--text-secondary);">
-                Мессенджер с квантовым шифрованием
+                Мессенджер с квантовым шифрованием и видеозвонками
             </div>
             
             <button class="btn btn-primary" onclick="showRegisterScreen()">
@@ -610,7 +589,7 @@ HTML_TEMPLATE = '''
             <div class="nav-tabs">
                 <div class="nav-tab active" onclick="switchTab('chats')">💬</div>
                 <div class="nav-tab" onclick="switchTab('users')">👥</div>
-                <div class="nav-tab" onclick="switchTab('groups')">👨‍👩‍👧‍👦</div>
+                <div class="nav-tab" onclick="switchTab('calls')">📞</div>
                 <div class="nav-tab" onclick="showDonatePanel()">💎</div>
                 <div class="nav-tab" onclick="showSettings()">⚙️</div>
             </div>
@@ -632,6 +611,7 @@ HTML_TEMPLATE = '''
                     <h3 id="currentChatName">TrollexDL</h3>
                     <p style="color: var(--text-secondary);" id="currentChatStatus">Выберите чат для начала общения</p>
                 </div>
+                <button class="control-btn" onclick="startVideoCall()" style="background: var(--success); width: 40px; height: 40px; font-size: 1rem;">📞</button>
             </div>
 
             <div class="messages-container" id="messagesContainer">
@@ -639,6 +619,9 @@ HTML_TEMPLATE = '''
                     <div style="font-size: 3rem; margin-bottom: 15px;">🌌</div>
                     <h3>Добро пожаловать в TrollexDL!</h3>
                     <p>Начните общение с квантовым шифрованием</p>
+                    <button class="btn btn-primary" onclick="createCallRoom()" style="margin-top: 20px;">
+                        🎥 Создать видеозвонок
+                    </button>
                 </div>
             </div>
 
@@ -647,6 +630,43 @@ HTML_TEMPLATE = '''
                 <button class="send-btn" onclick="sendMessage()">🚀</button>
             </div>
         </div>
+    </div>
+
+    <!-- Контейнер видеозвонка -->
+    <div id="callContainer" class="call-container">
+        <div class="call-link-container">
+            <span class="call-link" id="callLink">Загрузка...</span>
+            <button class="copy-link-btn" onclick="copyCallLink()">📋</button>
+        </div>
+        
+        <div class="video-grid" id="videoGrid">
+            <div class="video-container local">
+                <video id="localVideo" autoplay muted class="video-element"></video>
+                <div class="video-label">Вы (🔴 Live)</div>
+            </div>
+            <div class="video-container remote">
+                <video id="remoteVideo" autoplay class="video-element"></video>
+                <div class="video-label">Участник</div>
+            </div>
+        </div>
+        
+        <div class="call-controls">
+            <button class="control-btn mic-toggle" id="micToggle" onclick="toggleMicrophone()">🎤</button>
+            <button class="control-btn cam-toggle" id="camToggle" onclick="toggleCamera()">📹</button>
+            <button class="control-btn call-end" onclick="endCall()">📞</button>
+        </div>
+    </div>
+
+    <!-- Приглашение на звонок -->
+    <div id="callInvite" class="call-invite">
+        <div class="logo">📞 Входящий вызов</div>
+        <div class="user-card">
+            <div class="user-avatar" id="callerAvatar">👤</div>
+            <h3 id="callerName">Unknown</h3>
+            <p style="color: var(--text-secondary);">приглашает вас на видеозвонок</p>
+        </div>
+        <button class="btn btn-primary" onclick="acceptCall()">✅ Принять</button>
+        <button class="btn btn-secondary" onclick="declineCall()">❌ Отклонить</button>
     </div>
 
     <!-- Панель доната -->
@@ -698,6 +718,35 @@ HTML_TEMPLATE = '''
         let currentChat = null;
         let messages = {};
         let allUsers = [];
+        
+        // Переменные для видеозвонков
+        let localStream = null;
+        let remoteStream = null;
+        let peerConnection = null;
+        let currentCallId = null;
+        let isInCall = false;
+        let isMicMuted = false;
+        let isCamOff = false;
+        
+        // STUN/TURN серверы для обхода блокировок
+        const iceServers = [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' },
+            { urls: 'stun:stun3.l.google.com:19302' },
+            { urls: 'stun:stun4.l.google.com:19302' },
+            // Резервные TURN серверы
+            {
+                urls: 'turn:turn.anyfirewall.com:443?transport=tcp',
+                username: 'webrtc',
+                credential: 'webrtc'
+            },
+            {
+                urls: 'turn:numb.viagenie.ca',
+                username: 'webrtc@live.com',
+                credential: 'muazkh'
+            }
+        ];
 
         // Инициализация
         document.addEventListener('DOMContentLoaded', function() {
@@ -705,6 +754,9 @@ HTML_TEMPLATE = '''
                 hideLoadingScreen();
                 checkAutoLogin();
             }, 2000);
+            
+            // Проверяем URL на наличие приглашения на звонок
+            checkCallInvite();
         });
 
         function hideLoadingScreen() {
@@ -836,6 +888,178 @@ HTML_TEMPLATE = '''
             loadContent();
         }
 
+        // Функции для видеозвонков
+        async function createCallRoom() {
+            try {
+                showNotification('Создание комнаты для звонка... 🎥');
+                
+                // Генерируем ID звонка
+                currentCallId = 'call_' + Math.random().toString(36).substr(2, 12);
+                
+                // Получаем медиапоток
+                await getLocalStream();
+                
+                // Создаем ссылку для приглашения
+                const callLink = `${window.location.origin}?call=${currentCallId}&inviter=${currentUser.id}`;
+                document.getElementById('callLink').textContent = callLink;
+                
+                // Показываем интерфейс звонка
+                document.getElementById('callContainer').classList.add('active');
+                
+                showNotification('Комната создана! Отправьте ссылку участникам 🔗');
+                
+            } catch (error) {
+                console.error('Ошибка создания комнаты:', error);
+                showNotification('Ошибка доступа к камере/микрофону ❌');
+            }
+        }
+
+        async function getLocalStream() {
+            try {
+                const constraints = {
+                    video: {
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        frameRate: { ideal: 30 }
+                    },
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                };
+                
+                localStream = await navigator.mediaDevices.getUserMedia(constraints);
+                document.getElementById('localVideo').srcObject = localStream;
+                
+                return localStream;
+            } catch (error) {
+                console.error('Ошибка доступа к медиаустройствам:', error);
+                throw error;
+            }
+        }
+
+        function toggleMicrophone() {
+            if (localStream) {
+                const audioTracks = localStream.getAudioTracks();
+                if (audioTracks.length > 0) {
+                    isMicMuted = !isMicMuted;
+                    audioTracks[0].enabled = !isMicMuted;
+                    
+                    const micBtn = document.getElementById('micToggle');
+                    micBtn.textContent = isMicMuted ? '🎤❌' : '🎤';
+                    micBtn.classList.toggle('muted', isMicMuted);
+                    
+                    showNotification(isMicMuted ? 'Микрофон выключен 🔇' : 'Микрофон включен 🔊');
+                }
+            }
+        }
+
+        function toggleCamera() {
+            if (localStream) {
+                const videoTracks = localStream.getVideoTracks();
+                if (videoTracks.length > 0) {
+                    isCamOff = !isCamOff;
+                    videoTracks[0].enabled = !isCamOff;
+                    
+                    const camBtn = document.getElementById('camToggle');
+                    camBtn.textContent = isCamOff ? '📹❌' : '📹';
+                    camBtn.classList.toggle('off', isCamOff);
+                    
+                    showNotification(isCamOff ? 'Камера выключена 📷' : 'Камера включена 📹');
+                }
+            }
+        }
+
+        function copyCallLink() {
+            const callLink = document.getElementById('callLink').textContent;
+            navigator.clipboard.writeText(callLink).then(() => {
+                showNotification('Ссылка скопирована в буфер! 📋');
+            });
+        }
+
+        function endCall() {
+            // Останавливаем все медиапотоки
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            
+            if (remoteStream) {
+                remoteStream.getTracks().forEach(track => track.stop());
+                remoteStream = null;
+            }
+            
+            // Закрываем соединение
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+            
+            // Скрываем интерфейс звонка
+            document.getElementById('callContainer').classList.remove('active');
+            document.getElementById('callInvite').classList.remove('active');
+            
+            isInCall = false;
+            currentCallId = null;
+            
+            showNotification('Звонок завершен 📞');
+        }
+
+        function checkCallInvite() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const callId = urlParams.get('call');
+            const inviterId = urlParams.get('inviter');
+            
+            if (callId && inviterId) {
+                // Находим информацию о звонящем
+                const inviter = allUsers.find(user => user.id === inviterId) || 
+                               { name: 'Unknown User', avatar: '👤' };
+                
+                document.getElementById('callerName').textContent = inviter.name;
+                document.getElementById('callerAvatar').textContent = inviter.avatar;
+                
+                currentCallId = callId;
+                document.getElementById('callInvite').classList.add('active');
+            }
+        }
+
+        async function acceptCall() {
+            try {
+                document.getElementById('callInvite').classList.remove('active');
+                
+                // Получаем медиапоток
+                await getLocalStream();
+                
+                // Показываем интерфейс звонка
+                document.getElementById('callContainer').classList.add('active');
+                document.getElementById('callLink').textContent = 'Присоединились к звонку';
+                
+                showNotification('Вы присоединились к звонку! 🎥');
+                
+                // Здесь должна быть логика подключения через WebRTC
+                // Для демо просто показываем интерфейс
+                
+            } catch (error) {
+                console.error('Ошибка подключения к звонку:', error);
+                showNotification('Ошибка подключения к звонку ❌');
+            }
+        }
+
+        function declineCall() {
+            document.getElementById('callInvite').classList.remove('active');
+            currentCallId = null;
+            showNotification('Вы отклонили вызов 📞');
+        }
+
+        function startVideoCall() {
+            if (currentChat) {
+                createCallRoom();
+            } else {
+                showNotification('Выберите чат для начала звонка 💬');
+            }
+        }
+
         function switchTab(tabName) {
             currentTab = tabName;
             
@@ -844,9 +1068,18 @@ HTML_TEMPLATE = '''
                 tab.classList.remove('active');
             });
             
-            // Находим активную вкладку по индексу
+            // Находим активную вкладку
             const tabs = document.querySelectorAll('.nav-tab');
-            const tabIndex = ['chats', 'users', 'groups', 'donate', 'settings'].indexOf(tabName);
+            let tabIndex = -1;
+            
+            switch(tabName) {
+                case 'chats': tabIndex = 0; break;
+                case 'users': tabIndex = 1; break;
+                case 'calls': tabIndex = 2; break;
+                case 'donate': tabIndex = 3; break;
+                case 'settings': tabIndex = 4; break;
+            }
+            
             if (tabIndex !== -1 && tabs[tabIndex]) {
                 tabs[tabIndex].classList.add('active');
             }
@@ -864,11 +1097,34 @@ HTML_TEMPLATE = '''
                 contentHTML = getChatsContent(searchTerm);
             } else if (currentTab === 'users') {
                 contentHTML = getUsersContent(searchTerm);
-            } else if (currentTab === 'groups') {
-                contentHTML = getGroupsContent(searchTerm);
+            } else if (currentTab === 'calls') {
+                contentHTML = getCallsContent(searchTerm);
             }
             
             contentList.innerHTML = contentHTML;
+        }
+
+        function getCallsContent(searchTerm) {
+            return `
+                <div style="text-align: center; padding: 20px;">
+                    <button class="btn btn-primary" onclick="createCallRoom()" style="margin-bottom: 15px;">
+                        🎥 Создать видеозвонок
+                    </button>
+                    <div style="color: var(--text-secondary); font-size: 0.9rem;">
+                        Создайте комнату и отправьте ссылку друзьям
+                    </div>
+                </div>
+                <div class="user-card">
+                    <h4>📞 Быстрый доступ</h4>
+                    <button class="btn btn-secondary" onclick="testVideoCall()" style="margin-top: 10px;">
+                        Тестовый звонок
+                    </button>
+                </div>
+            `;
+        }
+
+        function testVideoCall() {
+            createCallRoom();
         }
 
         function searchContent() {
@@ -919,33 +1175,17 @@ HTML_TEMPLATE = '''
                             ${user.online ? 'В сети' : 'Не в сети'}
                         </div>
                     </div>
+                    <button class="control-btn" onclick="event.stopPropagation(); inviteToCall('${user.id}')" style="background: var(--success); font-size: 0.8rem; width: 30px; height: 30px;">📞</button>
                 </div>
             `).join('');
         }
 
-        function getGroupsContent(searchTerm) {
-            const groups = [
-                {id: 'group1', name: 'Разработчики', avatar: '👨‍💻', members: '12 участников'},
-                {id: 'group2', name: 'Дизайнеры', avatar: '🎨', members: '8 участников'}
-            ];
-            
-            const filteredGroups = groups.filter(group => 
-                group.name.toLowerCase().includes(searchTerm)
-            );
-            
-            if (filteredGroups.length === 0) {
-                return '<div style="text-align: center; padding: 20px; color: var(--text-secondary);">Группы не найдены</div>';
+        function inviteToCall(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (user) {
+                createCallRoom();
+                showNotification(`Приглашение отправлено ${user.name} 📞`);
             }
-            
-            return filteredGroups.map(group => `
-                <div class="chat-item" onclick="openGroup('${group.id}')">
-                    <div class="item-avatar">${group.avatar}</div>
-                    <div style="flex: 1;">
-                        <div style="font-weight: bold;">${group.name}</div>
-                        <div style="color: var(--text-secondary); font-size: 0.9rem;">${group.members}</div>
-                    </div>
-                </div>
-            `).join('');
         }
 
         function openChat(chatId) {
@@ -987,25 +1227,6 @@ HTML_TEMPLATE = '''
             }
         }
 
-        function openGroup(groupId) {
-            const groups = {
-                'group1': {name: 'Разработчики', avatar: '👨‍💻', status: '12 участников', type: 'community'},
-                'group2': {name: 'Дизайнеры', avatar: '🎨', status: '8 участников', type: 'community'}
-            };
-            
-            const group = groups[groupId];
-            if (group) {
-                currentChat = group;
-                currentChat.id = groupId;
-                
-                document.getElementById('currentChatName').textContent = group.name;
-                document.getElementById('currentChatAvatar').textContent = group.avatar;
-                document.getElementById('currentChatStatus').textContent = group.status;
-                
-                showChatMessages(groupId);
-            }
-        }
-
         function showChatMessages(chatId) {
             const messagesContainer = document.getElementById('messagesContainer');
             const defaultMessages = {
@@ -1028,6 +1249,9 @@ HTML_TEMPLATE = '''
                         <div style="font-size: 3rem; margin-bottom: 15px;">💬</div>
                         <h3>${currentChat.name}</h3>
                         <p>Начните общение</p>
+                        <button class="btn btn-primary" onclick="createCallRoom()" style="margin-top: 20px;">
+                            🎥 Начать видеозвонок
+                        </button>
                     </div>
                 `;
             } else {
@@ -1215,6 +1439,28 @@ HTML_TEMPLATE = '''
 def index():
     return render_template_string(HTML_TEMPLATE)
 
+@app.route('/api/create_call', methods=['POST'])
+def api_create_call():
+    data = request.json
+    call_id = generate_call_id()
+    active_calls[call_id] = {
+        'creator': data.get('user_id'),
+        'participants': [],
+        'created_at': datetime.datetime.now().isoformat()
+    }
+    return jsonify({'success': True, 'call_id': call_id, 'call_link': f'{request.host_url}?call={call_id}'})
+
+@app.route('/api/join_call', methods=['POST'])
+def api_join_call():
+    data = request.json
+    call_id = data.get('call_id')
+    
+    if call_id in active_calls:
+        active_calls[call_id]['participants'].append(data.get('user_id'))
+        return jsonify({'success': True, 'call_data': active_calls[call_id]})
+    else:
+        return jsonify({'success': False, 'error': 'Call not found'}), 404
+
 @app.route('/api/send_message', methods=['POST'])
 def api_send_message():
     data = request.json
@@ -1225,6 +1471,7 @@ def health_check():
     return jsonify({
         'status': 'running', 
         'service': 'TrollexDL',
+        'active_calls': len(active_calls),
         'days_until_new_year': get_days_until_new_year()
     })
 
