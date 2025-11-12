@@ -51,6 +51,7 @@ HTML_TEMPLATE = '''
             padding: 0;
             box-sizing: border-box;
             font-family: 'Segoe UI', system-ui, sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
 
         :root {
@@ -64,6 +65,7 @@ HTML_TEMPLATE = '''
             --danger: #ff4444;
             --success: #00ff88;
             --warning: #ffaa00;
+            --glass: rgba(255, 255, 255, 0.1);
         }
 
         body {
@@ -94,18 +96,19 @@ HTML_TEMPLATE = '''
         .cosmic-card {
             background: rgba(26, 26, 74, 0.95);
             border: 2px solid var(--accent);
-            border-radius: 20px;
-            padding: 30px;
+            border-radius: 25px;
+            padding: 40px 30px;
             width: 100%;
-            max-width: 400px;
+            max-width: 420px;
             text-align: center;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
         }
 
         .logo {
-            font-size: 2.5rem;
+            font-size: 3rem;
             font-weight: 900;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             background: linear-gradient(45deg, var(--neon), var(--accent));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -115,10 +118,15 @@ HTML_TEMPLATE = '''
         .typing-animation {
             display: inline-block;
             overflow: hidden;
-            border-right: 2px solid var(--neon);
+            border-right: 3px solid var(--neon);
             white-space: nowrap;
             margin: 0 auto;
-            animation: typing 3s steps(40, end), blink-caret 0.75s step-end infinite;
+            animation: typing 2.5s steps(40, end), blink-caret 0.75s step-end infinite;
+            font-size: 1.2rem;
+            min-height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         @keyframes typing {
@@ -140,62 +148,76 @@ HTML_TEMPLATE = '''
                 box-shadow: 0 0 20px rgba(107, 43, 217, 0.5);
             }
             to {
-                box-shadow: 0 0 30px rgba(107, 43, 217, 0.8), 0 0 40px rgba(0, 255, 136, 0.3);
+                box-shadow: 0 0 40px rgba(107, 43, 217, 0.8), 0 0 60px rgba(0, 255, 136, 0.4);
             }
         }
 
         .btn {
             width: 100%;
-            padding: 15px;
+            padding: 18px;
             border: none;
-            border-radius: 10px;
-            font-size: 1rem;
-            font-weight: 600;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            font-weight: 700;
             cursor: pointer;
-            margin: 8px 0;
-            transition: all 0.3s ease;
+            margin: 12px 0;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
         }
 
         .btn-primary {
             background: linear-gradient(135deg, var(--accent), var(--accent-glow));
             color: white;
+            box-shadow: 0 8px 25px rgba(107, 43, 217, 0.4);
         }
 
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(107, 43, 217, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(107, 43, 217, 0.6);
         }
 
         .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
+            background: var(--glass);
             color: var(--text);
             border: 2px solid var(--accent);
+            backdrop-filter: blur(10px);
         }
 
         .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(107, 43, 217, 0.3);
         }
 
         .user-card {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 20px;
-            border-radius: 15px;
-            margin: 15px 0;
+            background: var(--glass);
+            padding: 25px;
+            border-radius: 20px;
+            margin: 20px 0;
             border: 1px solid var(--accent);
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(15px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
         }
 
         .user-avatar {
-            width: 60px;
-            height: 60px;
-            border-radius: 15px;
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
             background: linear-gradient(135deg, var(--accent), var(--accent-glow));
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
-            margin: 0 auto 10px;
-            box-shadow: 0 4px 15px rgba(107, 43, 217, 0.3);
+            font-size: 2rem;
+            margin: 0 auto 15px;
+            box-shadow: 0 8px 25px rgba(107, 43, 217, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.2);
         }
 
         .app {
@@ -205,99 +227,119 @@ HTML_TEMPLATE = '''
         }
 
         .sidebar {
-            width: 300px;
+            width: 320px;
             background: rgba(26, 26, 74, 0.95);
             border-right: 2px solid var(--accent);
             display: flex;
             flex-direction: column;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(20px);
+            box-shadow: 5px 0 25px rgba(0, 0, 0, 0.3);
         }
 
         .user-header {
-            padding: 20px;
+            padding: 25px;
             background: linear-gradient(135deg, var(--accent), var(--accent-glow));
             text-align: center;
+            border-bottom: 2px solid var(--accent);
         }
 
         .nav-tabs {
             display: flex;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            padding: 5px;
-            margin: 10px;
+            background: var(--glass);
+            border-radius: 15px;
+            padding: 8px;
+            margin: 15px;
+            border: 1px solid var(--accent);
+            backdrop-filter: blur(10px);
         }
 
         .nav-tab {
             flex: 1;
-            padding: 10px;
+            padding: 12px 8px;
             text-align: center;
             cursor: pointer;
-            border-radius: 8px;
+            border-radius: 12px;
             transition: all 0.3s ease;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border: none;
+            background: transparent;
+            color: var(--text);
         }
 
         .nav-tab.active {
             background: var(--accent);
+            box-shadow: 0 4px 15px rgba(107, 43, 217, 0.4);
         }
 
-        .nav-tab:hover {
-            background: rgba(107, 43, 217, 0.3);
+        .nav-tab:not(.active):hover {
+            background: rgba(107, 43, 217, 0.2);
         }
 
         .search-box {
-            padding: 10px;
+            padding: 15px;
         }
 
         .search-input {
             width: 100%;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.1);
+            padding: 15px 20px;
+            background: var(--glass);
             border: 2px solid var(--accent);
-            border-radius: 10px;
+            border-radius: 15px;
             color: var(--text);
-            font-size: 0.9rem;
+            font-size: 1rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
         }
 
         .search-input:focus {
             outline: none;
             border-color: var(--neon);
-            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+            background: rgba(255, 255, 255, 0.15);
         }
 
         .content-list {
             flex: 1;
             overflow-y: auto;
-            padding: 10px;
+            padding: 15px;
         }
 
         .chat-item {
             display: flex;
             align-items: center;
-            padding: 12px;
-            margin-bottom: 8px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: var(--glass);
+            border-radius: 15px;
             cursor: pointer;
             transition: all 0.3s ease;
             border: 1px solid transparent;
+            backdrop-filter: blur(10px);
+        }
+
+        .chat-item:active {
+            transform: scale(0.98);
         }
 
         .chat-item:hover {
             background: rgba(107, 43, 217, 0.3);
             border-color: var(--accent);
+            box-shadow: 0 5px 15px rgba(107, 43, 217, 0.2);
         }
 
         .item-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
             background: linear-gradient(135deg, var(--accent), var(--accent-glow));
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-right: 10px;
+            margin-right: 15px;
             flex-shrink: 0;
+            font-size: 1.2rem;
+            border: 2px solid rgba(255, 255, 255, 0.2);
         }
 
         .chat-area {
@@ -309,82 +351,109 @@ HTML_TEMPLATE = '''
         }
 
         .chat-header {
-            padding: 15px;
-            background: rgba(26, 26, 74, 0.9);
+            padding: 20px;
+            background: rgba(26, 26, 74, 0.95);
             border-bottom: 2px solid var(--accent);
             display: flex;
             align-items: center;
-            gap: 10px;
-            backdrop-filter: blur(10px);
+            gap: 15px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
         }
 
         .messages-container {
             flex: 1;
-            padding: 15px;
+            padding: 20px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
+            background: linear-gradient(180deg, rgba(10, 10, 42, 0.8) 0%, rgba(26, 26, 74, 0.6) 100%);
         }
 
         .message {
-            max-width: 70%;
-            padding: 10px 15px;
-            border-radius: 15px;
+            max-width: 75%;
+            padding: 15px 20px;
+            border-radius: 20px;
             position: relative;
             word-wrap: break-word;
+            backdrop-filter: blur(10px);
+            animation: messageSlide 0.3s ease-out;
+        }
+
+        @keyframes messageSlide {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .message.received {
-            background: rgba(107, 43, 217, 0.3);
+            background: rgba(107, 43, 217, 0.25);
             align-self: flex-start;
-            border-bottom-left-radius: 5px;
+            border-bottom-left-radius: 8px;
+            border: 1px solid rgba(107, 43, 217, 0.3);
         }
 
         .message.sent {
             background: linear-gradient(135deg, var(--accent), var(--accent-glow));
             align-self: flex-end;
             color: white;
-            border-bottom-right-radius: 5px;
+            border-bottom-right-radius: 8px;
+            box-shadow: 0 4px 15px rgba(107, 43, 217, 0.3);
         }
 
         .message-input-container {
-            padding: 15px;
-            background: rgba(26, 26, 74, 0.9);
+            padding: 20px;
+            background: rgba(26, 26, 74, 0.95);
             border-top: 2px solid var(--accent);
             display: flex;
-            gap: 10px;
-            backdrop-filter: blur(10px);
+            gap: 15px;
+            backdrop-filter: blur(20px);
         }
 
         .message-input {
             flex: 1;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.1);
+            padding: 18px 20px;
+            background: var(--glass);
             border: 2px solid var(--accent);
-            border-radius: 20px;
+            border-radius: 25px;
             color: var(--text);
-            font-size: 0.9rem;
+            font-size: 1rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
         }
 
         .message-input:focus {
             outline: none;
             border-color: var(--neon);
+            box-shadow: 0 0 25px rgba(0, 255, 136, 0.3);
         }
 
         .send-btn {
-            padding: 12px 20px;
+            padding: 18px 25px;
             background: linear-gradient(135deg, var(--accent), var(--accent-glow));
             color: white;
             border: none;
-            border-radius: 15px;
+            border-radius: 20px;
             cursor: pointer;
             transition: all 0.3s ease;
+            font-size: 1.1rem;
+            font-weight: 600;
+            box-shadow: 0 5px 20px rgba(107, 43, 217, 0.4);
+        }
+
+        .send-btn:active {
+            transform: scale(0.95);
         }
 
         .send-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 5px 15px rgba(107, 43, 217, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(107, 43, 217, 0.6);
         }
 
         /* Стили для видеозвонков */
@@ -407,9 +476,9 @@ HTML_TEMPLATE = '''
         .video-grid {
             flex: 1;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 15px;
-            padding: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            padding: 25px;
             align-items: center;
             justify-items: center;
         }
@@ -417,20 +486,21 @@ HTML_TEMPLATE = '''
         .video-container {
             position: relative;
             background: var(--secondary);
-            border-radius: 20px;
+            border-radius: 25px;
             overflow: hidden;
             border: 3px solid var(--accent);
-            min-height: 250px;
-            max-width: 500px;
+            min-height: 280px;
+            max-width: 550px;
             width: 100%;
-            transition: all 0.3s ease;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: all 0.4s ease;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+            backdrop-filter: blur(10px);
         }
 
         .video-container.speaking {
             border-color: var(--neon);
-            box-shadow: 0 0 30px rgba(0, 255, 136, 0.5);
-            transform: scale(1.02);
+            box-shadow: 0 0 40px rgba(0, 255, 136, 0.6);
+            transform: scale(1.03);
         }
 
         .video-container.remote {
@@ -443,8 +513,8 @@ HTML_TEMPLATE = '''
 
         .video-container.main-view {
             grid-column: 1 / -1;
-            max-width: 800px;
-            min-height: 400px;
+            max-width: 900px;
+            min-height: 500px;
         }
 
         .video-element {
@@ -456,51 +526,57 @@ HTML_TEMPLATE = '''
 
         .video-label {
             position: absolute;
-            bottom: 15px;
-            left: 15px;
+            bottom: 20px;
+            left: 20px;
             background: rgba(0,0,0,0.8);
-            padding: 8px 15px;
-            border-radius: 15px;
-            font-size: 0.9rem;
-            backdrop-filter: blur(5px);
+            padding: 10px 18px;
+            border-radius: 20px;
+            font-size: 1rem;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
             border: 1px solid rgba(255,255,255,0.2);
         }
 
         .video-status {
             position: absolute;
-            top: 15px;
-            right: 15px;
+            top: 20px;
+            right: 20px;
             background: rgba(0,0,0,0.8);
-            padding: 5px 10px;
-            border-radius: 10px;
-            font-size: 0.8rem;
-            backdrop-filter: blur(5px);
-        }
-
-        .call-controls {
-            padding: 25px;
-            background: rgba(26, 26, 74, 0.95);
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            border-top: 2px solid var(--accent);
+            padding: 8px 15px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            font-weight: 600;
             backdrop-filter: blur(10px);
         }
 
+        .call-controls {
+            padding: 30px;
+            background: rgba(26, 26, 74, 0.95);
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            border-top: 2px solid var(--accent);
+            backdrop-filter: blur(20px);
+        }
+
         .control-btn {
-            width: 70px;
-            height: 70px;
+            width: 80px;
+            height: 80px;
             border-radius: 50%;
             border: none;
-            font-size: 1.5rem;
+            font-size: 1.6rem;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
             position: relative;
             overflow: hidden;
+        }
+
+        .control-btn:active {
+            transform: scale(0.9);
         }
 
         .control-btn::before {
@@ -510,7 +586,7 @@ HTML_TEMPLATE = '''
             left: 0;
             right: 0;
             bottom: 0;
-            background: linear-gradient(135deg, transparent, rgba(255,255,255,0.1), transparent);
+            background: linear-gradient(135deg, transparent, rgba(255,255,255,0.15), transparent);
             opacity: 0;
             transition: opacity 0.3s ease;
         }
@@ -520,8 +596,8 @@ HTML_TEMPLATE = '''
         }
 
         .control-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+            transform: scale(1.15);
+            box-shadow: 0 12px 35px rgba(0,0,0,0.5);
         }
 
         .control-btn.call-end {
@@ -549,38 +625,45 @@ HTML_TEMPLATE = '''
 
         .call-link-container {
             position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(0,0,0,0.8);
-            padding: 12px 18px;
-            border-radius: 15px;
+            top: 25px;
+            left: 25px;
+            background: rgba(0,0,0,0.85);
+            padding: 15px 22px;
+            border-radius: 20px;
             display: flex;
             align-items: center;
-            gap: 12px;
-            backdrop-filter: blur(10px);
+            gap: 15px;
+            backdrop-filter: blur(15px);
             z-index: 10;
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.15);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
         }
 
         .call-link {
             color: var(--neon);
             font-family: 'Courier New', monospace;
-            font-size: 0.9rem;
-            max-width: 200px;
+            font-size: 1rem;
+            max-width: 220px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            font-weight: 600;
         }
 
         .copy-link-btn {
             background: var(--accent);
             color: white;
             border: none;
-            padding: 6px 12px;
-            border-radius: 8px;
+            padding: 8px 15px;
+            border-radius: 12px;
             cursor: pointer;
-            font-size: 0.8rem;
+            font-size: 0.9rem;
+            font-weight: 600;
             transition: all 0.3s ease;
+        }
+
+        .copy-link-btn:active {
+            transform: scale(0.95);
         }
 
         .copy-link-btn:hover {
@@ -595,19 +678,19 @@ HTML_TEMPLATE = '''
             transform: translate(-50%, -50%);
             background: rgba(26, 26, 74, 0.95);
             border: 2px solid var(--accent);
-            border-radius: 25px;
-            padding: 35px;
+            border-radius: 30px;
+            padding: 40px;
             z-index: 3000;
             text-align: center;
             display: none;
-            backdrop-filter: blur(15px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
             animation: invite-pulse 2s infinite;
         }
 
         @keyframes invite-pulse {
-            0%, 100% { box-shadow: 0 0 20px rgba(107, 43, 217, 0.5); }
-            50% { box-shadow: 0 0 30px rgba(107, 43, 217, 0.8), 0 0 50px rgba(0, 255, 136, 0.4); }
+            0%, 100% { box-shadow: 0 0 25px rgba(107, 43, 217, 0.6); }
+            50% { box-shadow: 0 0 40px rgba(107, 43, 217, 0.9), 0 0 60px rgba(0, 255, 136, 0.5); }
         }
 
         .call-invite.active {
@@ -617,16 +700,17 @@ HTML_TEMPLATE = '''
         .settings-panel {
             position: fixed;
             top: 0;
-            right: -400px;
-            width: 400px;
+            right: -450px;
+            width: 450px;
             height: 100%;
             background: rgba(26, 26, 74, 0.98);
             border-left: 2px solid var(--accent);
             z-index: 500;
-            transition: right 0.3s ease;
-            padding: 20px;
+            transition: right 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            padding: 25px;
             overflow-y: auto;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(20px);
+            box-shadow: -5px 0 30px rgba(0,0,0,0.4);
         }
 
         .settings-panel.active {
@@ -636,16 +720,17 @@ HTML_TEMPLATE = '''
         .donate-panel {
             position: fixed;
             top: 0;
-            left: -400px;
-            width: 400px;
+            left: -450px;
+            width: 450px;
             height: 100%;
             background: rgba(26, 26, 74, 0.98);
             border-right: 2px solid var(--accent);
             z-index: 500;
-            transition: left 0.3s ease;
-            padding: 20px;
+            transition: left 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            padding: 25px;
             overflow-y: auto;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(20px);
+            box-shadow: 5px 0 30px rgba(0,0,0,0.4);
         }
 
         .donate-panel.active {
@@ -654,17 +739,18 @@ HTML_TEMPLATE = '''
 
         .notification {
             position: fixed;
-            top: 20px;
-            right: 20px;
+            top: 25px;
+            right: 25px;
             background: linear-gradient(135deg, var(--accent), var(--accent-glow));
             color: white;
-            padding: 15px 25px;
-            border-radius: 15px;
+            padding: 18px 28px;
+            border-radius: 20px;
             z-index: 4000;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
-            animation: slideIn 0.3s ease;
-            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(15px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            animation: slideIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            border: 1px solid rgba(255,255,255,0.15);
+            font-weight: 600;
         }
 
         @keyframes slideIn {
@@ -683,11 +769,15 @@ HTML_TEMPLATE = '''
             background: none;
             border: none;
             color: var(--text);
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             cursor: pointer;
-            padding: 8px;
-            border-radius: 8px;
+            padding: 10px;
+            border-radius: 12px;
             transition: all 0.3s ease;
+        }
+
+        .mobile-menu-btn:active {
+            transform: scale(0.9);
         }
 
         .mobile-menu-btn:hover {
@@ -696,37 +786,39 @@ HTML_TEMPLATE = '''
 
         .empty-state {
             text-align: center;
-            padding: 50px 20px;
+            padding: 60px 25px;
             color: var(--text-secondary);
         }
 
         .empty-state-icon {
-            font-size: 4rem;
-            margin-bottom: 20px;
+            font-size: 5rem;
+            margin-bottom: 25px;
             opacity: 0.7;
             animation: float 3s ease-in-out infinite;
         }
 
         @keyframes float {
             0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
+            50% { transform: translateY(-15px); }
         }
 
         .error-message {
             background: rgba(255,68,68,0.2);
             border: 1px solid var(--danger);
             color: var(--danger);
-            padding: 12px;
-            border-radius: 12px;
-            margin: 10px 0;
+            padding: 15px;
+            border-radius: 15px;
+            margin: 15px 0;
             text-align: center;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
         }
 
         .loading {
             display: inline-block;
-            width: 25px;
-            height: 25px;
-            border: 3px solid rgba(255,255,255,.3);
+            width: 30px;
+            height: 30px;
+            border: 4px solid rgba(255,255,255,.3);
             border-radius: 50%;
             border-top-color: var(--neon);
             animation: spin 1s ease-in-out infinite;
@@ -738,16 +830,18 @@ HTML_TEMPLATE = '''
 
         .call-timer {
             position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(0,0,0,0.8);
+            top: 25px;
+            right: 25px;
+            background: rgba(0,0,0,0.85);
             color: var(--neon);
-            padding: 8px 15px;
-            border-radius: 15px;
+            padding: 10px 18px;
+            border-radius: 20px;
             font-family: 'Courier New', monospace;
-            font-size: 1rem;
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255,255,255,0.1);
+            font-size: 1.1rem;
+            font-weight: 700;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.15);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
         }
 
         @media (max-width: 768px) {
@@ -755,9 +849,9 @@ HTML_TEMPLATE = '''
                 position: absolute;
                 height: 100%;
                 transform: translateX(-100%);
-                transition: transform 0.3s ease;
+                transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
                 z-index: 200;
-                width: 280px;
+                width: 300px;
             }
             
             .sidebar.active {
@@ -770,17 +864,71 @@ HTML_TEMPLATE = '''
 
             .video-grid {
                 grid-template-columns: 1fr;
-                padding: 10px;
-                gap: 10px;
+                padding: 15px;
+                gap: 15px;
             }
 
             .video-container {
-                min-height: 200px;
-                border-radius: 15px;
+                min-height: 220px;
+                border-radius: 20px;
             }
 
             .video-container.main-view {
-                min-height: 300px;
+                min-height: 350px;
+            }
+
+            .control-btn {
+                width: 65px;
+                height: 65px;
+                font-size: 1.4rem;
+            }
+
+            .call-link-container {
+                top: 15px;
+                left: 15px;
+                right: 15px;
+                padding: 12px 18px;
+            }
+
+            .call-link {
+                max-width: 200px;
+                font-size: 0.9rem;
+            }
+
+            .settings-panel,
+            .donate-panel {
+                width: 100%;
+                max-width: 350px;
+            }
+
+            .message {
+                max-width: 85%;
+            }
+
+            .call-controls {
+                padding: 25px;
+                gap: 20px;
+            }
+
+            .btn {
+                padding: 16px;
+                font-size: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .cosmic-card {
+                padding: 30px 20px;
+                margin: 15px;
+            }
+
+            .logo {
+                font-size: 2.5rem;
+            }
+
+            .call-controls {
+                padding: 20px;
+                gap: 15px;
             }
 
             .control-btn {
@@ -789,64 +937,21 @@ HTML_TEMPLATE = '''
                 font-size: 1.3rem;
             }
 
-            .call-link-container {
-                top: 10px;
-                left: 10px;
-                right: 10px;
-                padding: 10px 15px;
-            }
-
-            .call-link {
-                max-width: 180px;
-                font-size: 0.8rem;
-            }
-
-            .settings-panel,
-            .donate-panel {
-                width: 100%;
-                max-width: 320px;
-            }
-
-            .message {
-                max-width: 85%;
-            }
-
-            .call-controls {
-                padding: 20px;
-                gap: 15px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .cosmic-card {
-                padding: 25px;
-                margin: 15px;
-            }
-
-            .logo {
-                font-size: 2rem;
-            }
-
-            .call-controls {
-                padding: 15px;
-                gap: 12px;
-            }
-
-            .control-btn {
-                width: 55px;
-                height: 55px;
-                font-size: 1.2rem;
-            }
-
             .video-container {
-                min-height: 180px;
+                min-height: 200px;
             }
 
             .call-timer {
-                top: 10px;
-                right: 10px;
-                font-size: 0.9rem;
-                padding: 6px 12px;
+                top: 15px;
+                right: 15px;
+                font-size: 1rem;
+                padding: 8px 15px;
+            }
+
+            .user-avatar {
+                width: 70px;
+                height: 70px;
+                font-size: 1.8rem;
             }
         }
 
@@ -859,21 +964,27 @@ HTML_TEMPLATE = '''
             text-align: center;
             color: var(--text);
             z-index: 5;
+            background: rgba(0,0,0,0.8);
+            padding: 25px;
+            border-radius: 20px;
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--accent);
         }
 
         .connecting-dots {
             display: flex;
             justify-content: center;
-            gap: 5px;
-            margin-bottom: 15px;
+            gap: 8px;
+            margin-bottom: 20px;
         }
 
         .connecting-dots span {
-            width: 8px;
-            height: 8px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
             background: var(--neon);
             animation: bounce 1.4s ease-in-out infinite both;
+            box-shadow: 0 0 10px var(--neon);
         }
 
         .connecting-dots span:nth-child(1) { animation-delay: -0.32s; }
@@ -882,10 +993,83 @@ HTML_TEMPLATE = '''
         @keyframes bounce {
             0%, 80%, 100% {
                 transform: scale(0);
+                opacity: 0.5;
             }
             40% {
                 transform: scale(1);
+                opacity: 1;
             }
+        }
+
+        /* Улучшенные hover эффекты */
+        .clickable {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .clickable:active {
+            transform: scale(0.95);
+        }
+
+        .glass-effect {
+            background: var(--glass);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .neon-glow {
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        /* Анимации появления */
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .slide-in-left {
+            animation: slideInLeft 0.4s ease-out;
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Улучшенная прокрутка */
+        .content-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .content-list::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+        }
+
+        .content-list::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 3px;
+        }
+
+        .content-list::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-glow);
         }
     </style>
 </head>
@@ -894,8 +1078,8 @@ HTML_TEMPLATE = '''
     <div id="loadingScreen" class="screen">
         <div class="cosmic-card pulse-glow">
             <div class="logo">TrollexDL</div>
-            <div style="margin: 25px 0; font-size: 1.3rem; min-height: 60px;">
-                <div class="typing-animation" id="typingText">Загрузка квантового интерфейса...</div>
+            <div style="margin: 30px 0; font-size: 1.3rem; min-height: 80px; display: flex; align-items: center; justify-content: center;">
+                <div class="typing-animation" id="typingText">Инициализация квантового интерфейса...</div>
             </div>
             <div class="loading" style="margin: 0 auto;"></div>
         </div>
@@ -905,15 +1089,15 @@ HTML_TEMPLATE = '''
     <div id="welcomeScreen" class="screen hidden">
         <div class="cosmic-card pulse-glow">
             <div class="logo">TrollexDL</div>
-            <div style="margin-bottom: 30px; color: var(--text-secondary); font-size: 1.1rem;">
-                Мессенджер с квантовым шифрованием и видеозвонками
+            <div style="margin-bottom: 35px; color: var(--text-secondary); font-size: 1.2rem; line-height: 1.5;">
+                Премиум мессенджер с видеозвонками<br>и квантовым шифрованием
             </div>
             
-            <button class="btn btn-primary" onclick="showRegisterScreen()">
+            <button class="btn btn-primary clickable" onclick="showRegisterScreen()">
                 🚀 НАЧАТЬ ПУТЕШЕСТВИЕ
             </button>
             
-            <button class="btn btn-secondary" onclick="quickStart()">
+            <button class="btn btn-secondary clickable" onclick="quickStart()">
                 ⚡ МГНОВЕННЫЙ СТАРТ
             </button>
         </div>
@@ -931,15 +1115,15 @@ HTML_TEMPLATE = '''
                 <p style="color: var(--text-secondary);">📧 <span id="registerEmail">...</span></p>
             </div>
             
-            <button class="btn btn-primary" onclick="registerUser()">
+            <button class="btn btn-primary clickable" onclick="registerUser()">
                 ✅ АКТИВИРОВАТЬ ПРОФИЛЬ
             </button>
             
-            <button class="btn btn-secondary" onclick="generateNewUser()">
+            <button class="btn btn-secondary clickable" onclick="generateNewUser()">
                 🔄 ОБНОВИТЬ АВАТАР
             </button>
             
-            <button class="btn btn-secondary" onclick="showWelcomeScreen()">
+            <button class="btn btn-secondary clickable" onclick="showWelcomeScreen()">
                 ← ВЕРНУТЬСЯ
             </button>
         </div>
@@ -949,18 +1133,18 @@ HTML_TEMPLATE = '''
     <div id="mainApp" class="app hidden">
         <div class="sidebar" id="sidebar">
             <div class="user-header">
-                <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+                <button class="mobile-menu-btn clickable" onclick="toggleSidebar()">☰</button>
                 <div class="user-avatar" id="userAvatar">🚀</div>
                 <h3 id="userName">User</h3>
                 <p>ID: <span id="userId">...</span></p>
             </div>
 
             <div class="nav-tabs">
-                <div class="nav-tab active" onclick="switchTab('chats')">💬</div>
-                <div class="nav-tab" onclick="switchTab('users')">👥</div>
-                <div class="nav-tab" onclick="switchTab('calls')">📞</div>
-                <div class="nav-tab" onclick="showDonatePanel()">💎</div>
-                <div class="nav-tab" onclick="showSettings()">⚙️</div>
+                <button class="nav-tab active clickable" onclick="switchTab('chats')">💬</button>
+                <button class="nav-tab clickable" onclick="switchTab('users')">👥</button>
+                <button class="nav-tab clickable" onclick="switchTab('calls')">📞</button>
+                <button class="nav-tab clickable" onclick="showDonatePanel()">💎</button>
+                <button class="nav-tab clickable" onclick="showSettings()">⚙️</button>
             </div>
 
             <div class="search-box">
@@ -974,13 +1158,13 @@ HTML_TEMPLATE = '''
 
         <div class="chat-area">
             <div class="chat-header">
-                <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+                <button class="mobile-menu-btn clickable" onclick="toggleSidebar()">☰</button>
                 <div class="item-avatar" id="currentChatAvatar">💬</div>
                 <div style="flex: 1;">
                     <h3 id="currentChatName">TrollexDL</h3>
                     <p style="color: var(--text-secondary);" id="currentChatStatus">Выберите чат для начала общения</p>
                 </div>
-                <button class="control-btn" onclick="startVideoCall()" style="background: var(--success); width: 45px; height: 45px; font-size: 1.1rem;">📞</button>
+                <button class="control-btn clickable" onclick="startVideoCall()" style="background: var(--success); width: 50px; height: 50px; font-size: 1.2rem;">📞</button>
             </div>
 
             <div class="messages-container" id="messagesContainer">
@@ -988,7 +1172,7 @@ HTML_TEMPLATE = '''
                     <div class="empty-state-icon">🌌</div>
                     <h3>Добро пожаловать в TrollexDL!</h3>
                     <p>Начните общение с квантовым шифрованием</p>
-                    <button class="btn btn-primary" onclick="createCallRoom()" style="margin-top: 25px;">
+                    <button class="btn btn-primary clickable" onclick="createCallRoom()" style="margin-top: 30px;">
                         🎥 СОЗДАТЬ ВИДЕОЗВОНОК
                     </button>
                 </div>
@@ -996,7 +1180,7 @@ HTML_TEMPLATE = '''
 
             <div class="message-input-container">
                 <input type="text" class="message-input" placeholder="Введите сообщение..." id="messageInput">
-                <button class="send-btn" onclick="sendMessage()">🚀</button>
+                <button class="send-btn clickable" onclick="sendMessage()">🚀</button>
             </div>
         </div>
     </div>
@@ -1005,7 +1189,7 @@ HTML_TEMPLATE = '''
     <div id="callContainer" class="call-container">
         <div class="call-link-container">
             <span class="call-link" id="callLink">Загрузка...</span>
-            <button class="copy-link-btn" onclick="copyCallLink()">📋</button>
+            <button class="copy-link-btn clickable" onclick="copyCallLink()">📋</button>
         </div>
         
         <div class="call-timer" id="callTimer">00:00</div>
@@ -1040,9 +1224,9 @@ HTML_TEMPLATE = '''
         </div>
         
         <div class="call-controls">
-            <button class="control-btn mic-toggle" id="micToggle" onclick="toggleMicrophone()">🎤</button>
-            <button class="control-btn cam-toggle" id="camToggle" onclick="toggleCamera()">📹</button>
-            <button class="control-btn call-end" onclick="endCall()">📞</button>
+            <button class="control-btn mic-toggle clickable" id="micToggle" onclick="toggleMicrophone()">🎤</button>
+            <button class="control-btn cam-toggle clickable" id="camToggle" onclick="toggleCamera()">📹</button>
+            <button class="control-btn call-end clickable" onclick="endCall()">📞</button>
         </div>
     </div>
 
@@ -1054,62 +1238,62 @@ HTML_TEMPLATE = '''
             <h3 id="callerName">Unknown</h3>
             <p style="color: var(--text-secondary);">приглашает вас на видеозвонок</p>
         </div>
-        <button class="btn btn-primary" onclick="acceptCall()">✅ ПРИНЯТЬ</button>
-        <button class="btn btn-secondary" onclick="declineCall()">❌ ОТКЛОНИТЬ</button>
+        <button class="btn btn-primary clickable" onclick="acceptCall()">✅ ПРИНЯТЬ</button>
+        <button class="btn btn-secondary clickable" onclick="declineCall()">❌ ОТКЛОНИТЬ</button>
     </div>
 
     <!-- Панель доната -->
     <div class="donate-panel" id="donatePanel">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
             <h3>💎 ПРЕМИУМ ТАРИФЫ</h3>
-            <button class="mobile-menu-btn" onclick="hideDonatePanel()" style="font-size: 1.5rem;">✕</button>
+            <button class="mobile-menu-btn clickable" onclick="hideDonatePanel()" style="font-size: 1.5rem;">✕</button>
         </div>
         
-        <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; margin-bottom: 15px; border: 1px solid var(--accent);">
+        <div class="user-card" style="border-color: var(--accent);">
             <h4>🌟 VIP - 299 ₽</h4>
-            <p>Цветные сообщения, специальный значок</p>
-            <button class="btn btn-primary" onclick="selectTier('vip')">ВЫБРАТЬ VIP</button>
+            <p style="color: var(--text-secondary); margin: 10px 0 15px 0;">Цветные сообщения, специальный значок</p>
+            <button class="btn btn-primary clickable" onclick="selectTier('vip')">ВЫБРАТЬ VIP</button>
         </div>
 
-        <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; margin-bottom: 15px; border: 1px solid var(--neon);">
+        <div class="user-card" style="border-color: var(--neon);">
             <h4>💫 Premium - 599 ₽</h4>
-            <p>Все функции VIP + расширенные темы</p>
-            <button class="btn btn-primary" onclick="selectTier('premium')">ВЫБРАТЬ PREMIUM</button>
+            <p style="color: var(--text-secondary); margin: 10px 0 15px 0;">Все функции VIP + расширенные темы</p>
+            <button class="btn btn-primary clickable" onclick="selectTier('premium')">ВЫБРАТЬ PREMIUM</button>
         </div>
 
-        <div style="text-align: center; margin-top: 25px; padding: 20px; background: rgba(255,255,255,0.1); border-radius: 15px; border: 1px solid var(--accent);">
+        <div style="text-align: center; margin-top: 30px; padding: 25px; background: var(--glass); border-radius: 20px; border: 1px solid var(--accent);">
             <p>Напишите в Telegram: <strong>@trollex_official</strong></p>
         </div>
     </div>
 
     <!-- Панель настроек -->
     <div class="settings-panel" id="settingsPanel">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
             <h3>⚙️ НАСТРОЙКИ</h3>
-            <button class="mobile-menu-btn" onclick="hideSettings()" style="font-size: 1.5rem;">✕</button>
+            <button class="mobile-menu-btn clickable" onclick="hideSettings()" style="font-size: 1.5rem;">✕</button>
         </div>
         
         <div style="margin-bottom: 20px;">
-            <label>👤 Имя пользователя</label>
-            <input type="text" class="search-input" id="settingsName" placeholder="Введите новое имя" style="margin-top: 8px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600;">👤 Имя пользователя</label>
+            <input type="text" class="search-input" id="settingsName" placeholder="Введите новое имя">
         </div>
 
         <div style="margin-bottom: 20px;">
-            <label>🎥 Камера по умолчанию</label>
-            <select class="search-input" id="cameraSelect" style="margin-top: 8px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600;">🎥 Камера по умолчанию</label>
+            <select class="search-input" id="cameraSelect">
                 <option value="">Автовыбор</option>
             </select>
         </div>
 
-        <div style="margin-bottom: 20px;">
-            <label>🎤 Микрофон по умолчанию</label>
-            <select class="search-input" id="microphoneSelect" style="margin-top: 8px;">
+        <div style="margin-bottom: 25px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600;">🎤 Микрофон по умолчанию</label>
+            <select class="search-input" id="microphoneSelect">
                 <option value="">Автовыбор</option>
             </select>
         </div>
 
-        <button class="btn btn-primary" onclick="saveSettings()">💾 СОХРАНИТЬ</button>
-        <button class="btn btn-secondary" onclick="logout()" style="background: rgba(255,68,68,0.2); color: var(--danger); border-color: var(--danger); margin-top: 15px;">
+        <button class="btn btn-primary clickable" onclick="saveSettings()">💾 СОХРАНИТЬ</button>
+        <button class="btn btn-secondary clickable" onclick="logout()" style="background: rgba(255,68,68,0.2); color: var(--danger); border-color: var(--danger); margin-top: 20px;">
             🚪 ВЫЙТИ
         </button>
     </div>
@@ -1163,7 +1347,7 @@ HTML_TEMPLATE = '''
             setTimeout(() => {
                 hideLoadingScreen();
                 checkAutoLogin();
-            }, 3500);
+            }, 4000);
             
             // Проверяем URL на наличие приглашения на звонок
             checkCallInvite();
@@ -1171,9 +1355,10 @@ HTML_TEMPLATE = '''
 
         function startTypingAnimation() {
             const texts = [
-                "Загрузка квантового интерфейса...",
-                "Инициализация защищённого канала...", 
+                "Инициализация квантового интерфейса...",
+                "Загрузка защищённого канала...", 
                 "Подключение к нейросети...",
+                "Оптимизация видеокодека...",
                 "Готово! Запускаем TrollexDL..."
             ];
             let currentIndex = 0;
@@ -1183,7 +1368,7 @@ HTML_TEMPLATE = '''
                 if (currentIndex < texts.length) {
                     typingElement.textContent = texts[currentIndex];
                     typingElement.style.animation = 'none';
-                    void typingElement.offsetWidth; // Trigger reflow
+                    void typingElement.offsetWidth;
                     typingElement.style.animation = 'typing 2s steps(40, end), blink-caret 0.75s step-end infinite';
                     currentIndex++;
                     setTimeout(typeNextText, 2000);
@@ -1650,8 +1835,8 @@ HTML_TEMPLATE = '''
             }
         }
 
-        // Остальные функции (switchTab, loadContent, и т.д.) остаются аналогичными предыдущей версии
-        // ... (они такие же как в предыдущем коде, поэтому не дублирую для экономии места)
+        // Остальные функции остаются аналогичными предыдущей версии
+        // ... (они такие же как в предыдущем коде)
 
     </script>
 </body>
@@ -1684,7 +1869,7 @@ def health_check():
     return jsonify({
         'status': 'running', 
         'service': 'TrollexDL',
-        'version': '2.1.0',
+        'version': '2.2.0',
         'active_calls': len(active_calls),
         'timestamp': datetime.datetime.now().isoformat(),
         'days_until_new_year': get_days_until_new_year()
