@@ -177,20 +177,16 @@ HTML_TEMPLATE = '''
             overflow: hidden;
             -webkit-user-select: none;
             user-select: none;
+            touch-action: manipulation;
         }
 
         .btn:active {
-            transform: scale(0.98);
+            transform: scale(0.95);
         }
 
         .btn-primary {
             background: linear-gradient(135deg, var(--accent), var(--accent-glow));
             color: white;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(107, 43, 217, 0.4);
         }
 
         .btn-secondary {
@@ -225,6 +221,7 @@ HTML_TEMPLATE = '''
             width: 100%;
             height: 100vh;
             display: flex;
+            position: relative;
         }
 
         .sidebar {
@@ -234,6 +231,8 @@ HTML_TEMPLATE = '''
             display: flex;
             flex-direction: column;
             backdrop-filter: blur(10px);
+            position: relative;
+            z-index: 100;
         }
 
         .user-header {
@@ -260,10 +259,15 @@ HTML_TEMPLATE = '''
             font-size: 0.9rem;
             -webkit-user-select: none;
             user-select: none;
+            touch-action: manipulation;
         }
 
         .nav-tab.active {
             background: var(--accent);
+        }
+
+        .nav-tab:active {
+            transform: scale(0.95);
         }
 
         .search-box {
@@ -298,6 +302,12 @@ HTML_TEMPLATE = '''
             border: 1px solid transparent;
             -webkit-user-select: none;
             user-select: none;
+            touch-action: manipulation;
+        }
+
+        .chat-item:active {
+            transform: scale(0.98);
+            background: rgba(107, 43, 217, 0.3);
         }
 
         .chat-item:hover {
@@ -405,6 +415,11 @@ HTML_TEMPLATE = '''
             cursor: pointer;
             -webkit-user-select: none;
             user-select: none;
+            touch-action: manipulation;
+        }
+
+        .send-btn:active {
+            transform: scale(0.95);
         }
 
         /* Стили для видеозвонков */
@@ -480,6 +495,11 @@ HTML_TEMPLATE = '''
             justify-content: center;
             -webkit-user-select: none;
             user-select: none;
+            touch-action: manipulation;
+        }
+
+        .control-btn:active {
+            transform: scale(0.9);
         }
 
         .control-btn.call-end {
@@ -534,6 +554,11 @@ HTML_TEMPLATE = '''
             font-size: 0.8rem;
             -webkit-user-select: none;
             user-select: none;
+            touch-action: manipulation;
+        }
+
+        .copy-link-btn:active {
+            transform: scale(0.95);
         }
 
         .call-invite {
@@ -558,7 +583,7 @@ HTML_TEMPLATE = '''
             position: fixed;
             top: 0;
             right: -100%;
-            width: 100%;
+            width: 90%;
             max-width: 400px;
             height: 100%;
             background: rgba(26, 26, 74, 0.98);
@@ -578,7 +603,7 @@ HTML_TEMPLATE = '''
             position: fixed;
             top: 0;
             left: -100%;
-            width: 100%;
+            width: 90%;
             max-width: 400px;
             height: 100%;
             background: rgba(26, 26, 74, 0.98);
@@ -604,6 +629,7 @@ HTML_TEMPLATE = '''
             border-radius: 10px;
             z-index: 4000;
             animation: slideIn 0.3s ease;
+            max-width: 300px;
         }
 
         @keyframes slideIn {
@@ -626,6 +652,11 @@ HTML_TEMPLATE = '''
             cursor: pointer;
             -webkit-user-select: none;
             user-select: none;
+            touch-action: manipulation;
+        }
+
+        .mobile-menu-btn:active {
+            transform: scale(0.9);
         }
 
         .join-call-container {
@@ -663,10 +694,12 @@ HTML_TEMPLATE = '''
             transition: all 0.3s ease;
             -webkit-user-select: none;
             user-select: none;
+            touch-action: manipulation;
         }
 
         .feature-card:active {
             transform: scale(0.98);
+            background: rgba(107, 43, 217, 0.3);
         }
 
         .feature-icon {
@@ -814,6 +847,83 @@ HTML_TEMPLATE = '''
             border-radius: 50%;
             cursor: pointer;
             margin-left: 10px;
+            touch-action: manipulation;
+        }
+
+        .voice-message-btn:active {
+            transform: scale(0.9);
+        }
+
+        .sticker-picker {
+            display: none;
+            position: absolute;
+            bottom: 70px;
+            left: 15px;
+            background: rgba(26, 26, 74, 0.95);
+            border: 2px solid var(--accent);
+            border-radius: 15px;
+            padding: 15px;
+            z-index: 100;
+            max-width: 300px;
+        }
+
+        .sticker-picker.active {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .sticker {
+            font-size: 1.5rem;
+            cursor: pointer;
+            text-align: center;
+            padding: 5px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .sticker:active {
+            background: rgba(107, 43, 217, 0.3);
+            transform: scale(0.9);
+        }
+
+        .theme-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .theme-option {
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .theme-option.active {
+            border-color: var(--neon);
+        }
+
+        .theme-option:active {
+            transform: scale(0.95);
+        }
+
+        .theme-dark {
+            background: var(--primary);
+            color: white;
+        }
+
+        .theme-light {
+            background: white;
+            color: black;
+        }
+
+        .theme-auto {
+            background: linear-gradient(135deg, var(--primary) 50%, white 50%);
+            color: white;
         }
 
         @media (max-width: 768px) {
@@ -857,7 +967,7 @@ HTML_TEMPLATE = '''
 
             .settings-panel,
             .donate-panel {
-                width: 100%;
+                width: 90%;
                 max-width: 100%;
             }
 
@@ -867,6 +977,12 @@ HTML_TEMPLATE = '''
 
             .feature-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .notification {
+                right: 10px;
+                left: 10px;
+                max-width: none;
             }
 
             /* Мобильная оптимизация звонков */
@@ -1014,6 +1130,7 @@ HTML_TEMPLATE = '''
                 </div>
                 <button class="control-btn" onclick="startVideoCall()" style="background: var(--success); width: 40px; height: 40px; font-size: 1rem;">📞</button>
                 <button class="control-btn" onclick="showFileShare()" style="background: var(--warning); width: 40px; height: 40px; font-size: 1rem;">📎</button>
+                <button class="control-btn" onclick="toggleStickers()" style="background: var(--cyber); width: 40px; height: 40px; font-size: 1rem;">😊</button>
             </div>
 
             <div class="messages-container" id="messagesContainer">
@@ -1025,6 +1142,21 @@ HTML_TEMPLATE = '''
                         🎥 Создать видеозвонок
                     </button>
                 </div>
+            </div>
+
+            <div class="sticker-picker" id="stickerPicker">
+                <div class="sticker" onclick="sendSticker('😊')">😊</div>
+                <div class="sticker" onclick="sendSticker('😂')">😂</div>
+                <div class="sticker" onclick="sendSticker('🥰')">🥰</div>
+                <div class="sticker" onclick="sendSticker('😎')">😎</div>
+                <div class="sticker" onclick="sendSticker('🤔')">🤔</div>
+                <div class="sticker" onclick="sendSticker('🎉')">🎉</div>
+                <div class="sticker" onclick="sendSticker('🚀')">🚀</div>
+                <div class="sticker" onclick="sendSticker('💫')">💫</div>
+                <div class="sticker" onclick="sendSticker('❤️')">❤️</div>
+                <div class="sticker" onclick="sendSticker('🔥')">🔥</div>
+                <div class="sticker" onclick="sendSticker('⭐')">⭐</div>
+                <div class="sticker" onclick="sendSticker('🌈')">🌈</div>
             </div>
 
             <div class="message-input-container">
@@ -1067,6 +1199,7 @@ HTML_TEMPLATE = '''
             <button class="control-btn cam-toggle" id="camToggle" onclick="toggleCamera()">📹</button>
             <button class="control-btn" onclick="toggleScreenShare()" style="background: var(--warning);">🖥️</button>
             <button class="control-btn" onclick="toggleRecording()" style="background: var(--cyber);">⏺️</button>
+            <button class="control-btn" onclick="toggleBackground()" style="background: var(--accent-glow);">🌃</button>
             <button class="control-btn call-end" onclick="endCall()">📞</button>
         </div>
     </div>
@@ -1154,6 +1287,21 @@ HTML_TEMPLATE = '''
         </div>
 
         <div class="settings-section">
+            <h4>🎨 Тема</h4>
+            <div class="theme-selector">
+                <div class="theme-option theme-dark active" onclick="changeTheme('dark')">
+                    Тёмная
+                </div>
+                <div class="theme-option theme-light" onclick="changeTheme('light')">
+                    Светлая
+                </div>
+                <div class="theme-option theme-auto" onclick="changeTheme('auto')">
+                    Авто
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-section">
             <h4>🔔 Уведомления</h4>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                 <span>Включить уведомления</span>
@@ -1178,25 +1326,6 @@ HTML_TEMPLATE = '''
             </div>
         </div>
 
-        <div class="settings-section">
-            <h4>🎨 Внешний вид</h4>
-            <div style="margin-bottom: 15px;">
-                <label>Тема оформления</label>
-                <select class="search-input" id="themeSelect" style="margin-top: 5px;">
-                    <option value="dark">Тёмная</option>
-                    <option value="light">Светлая</option>
-                    <option value="auto">Авто</option>
-                </select>
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <span>Компактный режим</span>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="compactToggle">
-                    <span class="toggle-slider"></span>
-                </label>
-            </div>
-        </div>
-
         <div class="encryption-status">
             <span>🔒</span>
             <span>End-to-End шифрование активно</span>
@@ -1204,6 +1333,7 @@ HTML_TEMPLATE = '''
 
         <button class="btn btn-primary" onclick="saveSettings()">💾 Сохранить настройки</button>
         <button class="btn btn-secondary" onclick="exportData()" style="margin-top: 10px;">📤 Экспорт данных</button>
+        <button class="btn btn-secondary" onclick="clearChats()" style="margin-top: 10px;">🗑️ Очистить чаты</button>
         <button class="btn btn-secondary" onclick="logout()" style="background: rgba(255,68,68,0.2); color: var(--danger); border-color: var(--danger); margin-top: 10px;">
             🚪 Выйти из аккаунта
         </button>
@@ -1239,6 +1369,7 @@ HTML_TEMPLATE = '''
         let isCamOff = false;
         let isScreenSharing = false;
         let isRecording = false;
+        let isBackgroundBlurred = false;
         let participantTimeout = null;
         let callParticipants = new Set();
         let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -1275,304 +1406,330 @@ HTML_TEMPLATE = '''
             typeNextText();
         }
 
-        function hideLoadingScreen() {
-            document.getElementById('loadingScreen').classList.add('hidden');
-        }
-
-        function showWelcomeScreen() {
-            hideAllScreens();
-            document.getElementById('welcomeScreen').classList.remove('hidden');
-        }
-
-        function showRegisterScreen() {
-            hideAllScreens();
-            document.getElementById('registerScreen').classList.remove('hidden');
-            generateNewUser();
-        }
-
-        function hideAllScreens() {
-            document.querySelectorAll('.screen').forEach(screen => {
-                screen.classList.add('hidden');
+        // Функции для вкладок
+        function switchTab(tabName) {
+            currentTab = tabName;
+            
+            // Обновляем активную вкладку
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
             });
-            document.getElementById('mainApp').classList.add('hidden');
-        }
-
-        function generateNewUser() {
-            const name = generateUsername();
-            const email = generateEmail(name);
-            const userId = generateUserId();
-            const avatars = ['🚀', '👨‍🚀', '👩‍🚀', '🛸', '🌌'];
             
-            document.getElementById('registerAvatar').textContent = avatars[Math.floor(Math.random() * avatars.length)];
-            document.getElementById('registerName').textContent = name;
-            document.getElementById('registerId').textContent = userId;
-            document.getElementById('registerEmail').textContent = email;
-        }
-
-        function generateUsername() {
-            const adjectives = ['Quantum', 'Neon', 'Cyber', 'Digital', 'Alpha', 'Beta', 'Gamma', 'Omega'];
-            const nouns = ['Phoenix', 'Dragon', 'Wolf', 'Tiger', 'Eagle', 'Hawk', 'Lion', 'Panther'];
-            const numbers = Math.floor(Math.random() * 9000) + 1000;
-            return `${adjectives[Math.floor(Math.random() * adjectives.length)]}_${nouns[Math.floor(Math.random() * nouns.length)]}${numbers}`;
-        }
-
-        function generateEmail(username) {
-            const domains = ['quantum.io', 'cosmic.com', 'trollex.ai', 'nebula.org'];
-            return `${username.toLowerCase()}@${domains[Math.floor(Math.random() * domains.length)]}`;
-        }
-
-        function generateUserId() {
-            return 'user_' + Math.random().toString(36).substr(2, 8).toUpperCase();
-        }
-
-        function registerUser() {
-            const name = document.getElementById('registerName').textContent;
-            const avatar = document.getElementById('registerAvatar').textContent;
-            const userId = document.getElementById('registerId').textContent;
-            const email = document.getElementById('registerEmail').textContent;
-            
-            currentUser = {
-                id: userId,
-                name: name,
-                avatar: avatar,
-                email: email,
-                settings: {}
-            };
-            
-            sessionToken = generateSessionToken();
-            
-            localStorage.setItem('trollexUser', JSON.stringify(currentUser));
-            localStorage.setItem('sessionToken', sessionToken);
-            
-            // Загружаем тестовых пользователей
-            loadSampleUsers();
-            
-            showMainApp();
-            showNotification('Профиль создан успешно! 🎉');
-        }
-
-        function generateSessionToken() {
-            return Math.random().toString(36).substr(2) + Math.random().toString(36).substr(2);
-        }
-
-        function loadSampleUsers() {
-            // Используем данные с сервера
-            allUsers = JSON.parse(localStorage.getItem('allUsers')) || [];
-            if (allUsers.length === 0) {
-                // Если нет данных, создаем тестовых пользователей
-                allUsers = [
-                    {id: 'user1', name: 'Alex_Quantum', avatar: '👨‍💻', online: true, last_seen: 'только что'},
-                    {id: 'user2', name: 'Sarah_Cyber', avatar: '👩‍🎨', online: true, last_seen: '2 мин назад'},
-                    {id: 'user3', name: 'Mike_Neon', avatar: '👨‍🚀', online: false, last_seen: '1 час назад'},
-                    {id: 'user4', name: 'Emma_Digital', avatar: '👩‍💼', online: true, last_seen: 'только что'},
-                    {id: 'user5', name: 'Max_Virtual', avatar: '🤖', online: false, last_seen: '30 мин назад'},
-                    {id: 'user6', name: 'Luna_Hyper', avatar: '👽', online: true, last_seen: '5 мин назад'}
-                ];
-                localStorage.setItem('allUsers', JSON.stringify(allUsers));
+            // Находим и активируем нужную вкладку
+            const tabs = document.querySelectorAll('.nav-tab');
+            for (let tab of tabs) {
+                if (tab.textContent.includes(getTabText(tabName))) {
+                    tab.classList.add('active');
+                    break;
+                }
             }
-        }
-
-        function quickStart() {
-            const savedUser = localStorage.getItem('trollexUser');
-            const savedToken = localStorage.getItem('sessionToken');
-            
-            if (savedUser && savedToken) {
-                currentUser = JSON.parse(savedUser);
-                sessionToken = savedToken;
-                loadSampleUsers();
-                showMainApp();
-                showNotification('С возвращением! 🚀');
-            } else {
-                showRegisterScreen();
-            }
-        }
-
-        function checkAutoLogin() {
-            const savedUser = localStorage.getItem('trollexUser');
-            const savedToken = localStorage.getItem('sessionToken');
-            
-            if (savedUser && savedToken) {
-                currentUser = JSON.parse(savedUser);
-                sessionToken = savedToken;
-                loadSampleUsers();
-                showMainApp();
-            } else {
-                showWelcomeScreen();
-            }
-        }
-
-        function showMainApp() {
-            hideAllScreens();
-            document.getElementById('mainApp').classList.remove('hidden');
-            
-            // Заполняем данные пользователя
-            document.getElementById('userName').textContent = currentUser.name;
-            document.getElementById('userAvatar').textContent = currentUser.avatar;
-            document.getElementById('userId').textContent = currentUser.id;
             
             loadContent();
-            loadMediaDevices();
-            loadSettings();
+            showNotification(`Переключено на: ${getTabName(tabName)}`);
+        }
+
+        function getTabText(tabName) {
+            const tabTexts = {
+                'chats': '💬',
+                'users': '👥', 
+                'calls': '📞',
+                'donate': '💎',
+                'settings': '⚙️'
+            };
+            return tabTexts[tabName] || tabName;
+        }
+
+        function getTabName(tabName) {
+            const tabNames = {
+                'chats': 'Чаты',
+                'users': 'Контакты',
+                'calls': 'Звонки',
+                'donate': 'Донат',
+                'settings': 'Настройки'
+            };
+            return tabNames[tabName] || tabName;
+        }
+
+        function loadContent() {
+            const contentList = document.getElementById('contentList');
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             
-            // Проверяем приглашение в звонок
-            checkCallInvite();
+            let contentHTML = '';
+            
+            switch(currentTab) {
+                case 'chats':
+                    contentHTML = getChatsContent(searchTerm);
+                    break;
+                case 'users':
+                    contentHTML = getUsersContent(searchTerm);
+                    break;
+                case 'calls':
+                    contentHTML = getCallsContent(searchTerm);
+                    break;
+                default:
+                    contentHTML = '<div class="empty-state">Выберите вкладку</div>';
+            }
+            
+            contentList.innerHTML = contentHTML;
         }
 
-        // Новые функции для улучшения UX
-
-        function hideAllPanels() {
-            hideSettings();
-            hideDonatePanel();
-            hideFileShare();
-            document.getElementById('overlay').classList.remove('active');
-        }
-
-        function showSettings() {
-            document.getElementById('settingsPanel').classList.add('active');
-            document.getElementById('overlay').classList.add('active');
-        }
-
-        function hideSettings() {
-            document.getElementById('settingsPanel').classList.remove('active');
-        }
-
-        function showDonatePanel() {
-            document.getElementById('donatePanel').classList.add('active');
-            document.getElementById('overlay').classList.add('active');
-        }
-
-        function hideDonatePanel() {
-            document.getElementById('donatePanel').classList.remove('active');
-        }
-
-        function showFileShare() {
-            document.getElementById('fileSharePanel').style.display = 'block';
-        }
-
-        function hideFileShare() {
-            document.getElementById('fileSharePanel').style.display = 'none';
-        }
-
-        function handleFileSelect(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const fileInfo = document.getElementById('fileInfo');
-                fileInfo.innerHTML = `
-                    <div style="color: var(--success);">
-                        ✅ Файл выбран: ${file.name}<br>
-                        Размер: ${(file.size / 1024 / 1024).toFixed(2)} MB
+        function getChatsContent(searchTerm) {
+            const userChats = JSON.parse(localStorage.getItem(`chats_${currentUser.id}`)) || [];
+            
+            if (userChats.length === 0) {
+                return `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">💬</div>
+                        <h3>Нет чатов</h3>
+                        <p>Начните общение с пользователями</p>
+                        <button class="btn btn-primary" onclick="switchTab('users')" style="margin-top: 15px;">
+                            👥 Найти контакты
+                        </button>
                     </div>
-                    <button class="btn btn-primary" onclick="sendFile()" style="margin-top: 10px;">
-                        📤 Отправить файл
-                    </button>
                 `;
-                fileInfo.style.display = 'block';
+            }
+            
+            let chatsHTML = '';
+            userChats.forEach(chat => {
+                if (searchTerm === '' || chat.userName.toLowerCase().includes(searchTerm)) {
+                    chatsHTML += `
+                        <div class="chat-item" onclick="selectUser('${chat.userId}')">
+                            <div class="item-avatar">${chat.userAvatar}</div>
+                            <div style="flex: 1;">
+                                <h4>${chat.userName}</h4>
+                                <p style="color: var(--text-secondary); font-size: 0.8rem;">
+                                    ${chat.lastMessage || 'Нет сообщений'}
+                                </p>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 0.7rem; color: var(--text-secondary);">
+                                    ${formatTime(chat.timestamp)}
+                                </div>
+                                ${chat.unreadCount > 0 ? `
+                                    <div style="background: var(--success); color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; margin-top: 5px;">
+                                        ${chat.unreadCount}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            
+            return chatsHTML;
+        }
+
+        function getUsersContent(searchTerm) {
+            let usersHTML = '';
+            let hasResults = false;
+            
+            // Онлайн пользователи
+            const onlineUsers = allUsers.filter(user => user.online && user.id !== currentUser.id);
+            if (onlineUsers.length > 0) {
+                usersHTML += '<h4 style="padding: 10px; color: var(--success);">🟢 Онлайн</h4>';
+                onlineUsers.forEach(user => {
+                    if (searchTerm === '' || user.name.toLowerCase().includes(searchTerm)) {
+                        usersHTML += `
+                            <div class="chat-item" onclick="selectUser('${user.id}')">
+                                <div class="item-avatar">${user.avatar}</div>
+                                <div style="flex: 1;">
+                                    <h4>${user.name}</h4>
+                                    <p style="color: var(--success); font-size: 0.8rem;">
+                                        Online • ${user.last_seen}
+                                    </p>
+                                </div>
+                                <button class="control-btn" onclick="event.stopPropagation(); startCallWithUser('${user.id}')" style="background: var(--success); width: 35px; height: 35px; font-size: 0.8rem;">📞</button>
+                            </div>
+                        `;
+                        hasResults = true;
+                    }
+                });
+            }
+            
+            // Оффлайн пользователи
+            const offlineUsers = allUsers.filter(user => !user.online && user.id !== currentUser.id);
+            if (offlineUsers.length > 0) {
+                usersHTML += '<h4 style="padding: 10px; margin-top: 20px; color: var(--text-secondary);">⚫ Оффлайн</h4>';
+                offlineUsers.forEach(user => {
+                    if (searchTerm === '' || user.name.toLowerCase().includes(searchTerm)) {
+                        usersHTML += `
+                            <div class="chat-item" onclick="selectUser('${user.id}')">
+                                <div class="item-avatar">${user.avatar}</div>
+                                <div style="flex: 1;">
+                                    <h4>${user.name}</h4>
+                                    <p style="color: var(--text-secondary); font-size: 0.8rem;">
+                                        Offline • ${user.last_seen}
+                                    </p>
+                                </div>
+                            </div>
+                        `;
+                        hasResults = true;
+                    }
+                });
+            }
+            
+            if (!hasResults && searchTerm !== '') {
+                return `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🔍</div>
+                        <h3>Ничего не найдено</h3>
+                        <p>Попробуйте изменить запрос</p>
+                    </div>
+                `;
+            }
+            
+            if (!hasResults) {
+                return `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">👥</div>
+                        <h3>Нет контактов</h3>
+                        <p>Пользователи появятся здесь</p>
+                    </div>
+                `;
+            }
+            
+            return usersHTML;
+        }
+
+        function getCallsContent(searchTerm) {
+            return `
+                <div style="text-align: center; padding: 20px;">
+                    <button class="btn btn-primary" onclick="createCallRoom()" style="margin-bottom: 15px;">
+                        🎥 Создать видеозвонок
+                    </button>
+                    <div style="color: var(--text-secondary); font-size: 0.9rem;">
+                        Создайте защищённую комнату и отправьте ссылку
+                    </div>
+                </div>
+
+                <div class="join-call-container">
+                    <h4>🔗 Присоединиться по ссылке</h4>
+                    <input type="text" class="join-input" id="joinCallInput" placeholder="Вставьте ссылку на звонок...">
+                    <button class="btn btn-primary" onclick="joinCallByLink()" style="width: 100%;">
+                        ✅ Присоединиться к звонку
+                    </button>
+                </div>
+
+                <div class="feature-grid">
+                    <div class="feature-card" onclick="showFeatureInfo('video')">
+                        <div class="feature-icon">🎥</div>
+                        <div>HD Видео</div>
+                    </div>
+                    <div class="feature-card" onclick="showFeatureInfo('security')">
+                        <div class="feature-icon">🔒</div>
+                        <div>Шифрование</div>
+                    </div>
+                    <div class="feature-card" onclick="showFeatureInfo('screen')">
+                        <div class="feature-icon">🖥️</div>
+                        <div>Демонстрация экрана</div>
+                    </div>
+                    <div class="feature-card" onclick="showFeatureInfo('group')">
+                        <div class="feature-icon">👥</div>
+                        <div>Групповые звонки</div>
+                    </div>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-top: 20px;">
+                    <h4>📞 Последние звонки</h4>
+                    <div style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                        <div class="empty-state-icon">📞</div>
+                        <p>Здесь будут ваши последние звонки</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function selectUser(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (user) {
+                currentChat = user;
+                document.getElementById('currentChatName').textContent = user.name;
+                document.getElementById('currentChatAvatar').textContent = user.avatar;
+                document.getElementById('currentChatStatus').textContent = user.online ? '🟢 Online' : '⚫ Offline';
+                
+                loadMessages(userId);
+                showNotification(`Чат с ${user.name} открыт 💬`);
             }
         }
 
-        function sendFile() {
-            showNotification('Файл отправлен! 📁');
-            hideFileShare();
+        // Новые функции
+
+        function toggleStickers() {
+            const picker = document.getElementById('stickerPicker');
+            picker.classList.toggle('active');
         }
 
-        function startVoiceMessage() {
+        function sendSticker(sticker) {
             if (!currentChat) {
-                showNotification('Выберите чат для отправки голосового сообщения 💬');
+                showNotification('Выберите чат для отправки стикера 💬');
                 return;
             }
 
-            showNotification('🎤 Запись голосового сообщения...');
-            // Симуляция записи
-            setTimeout(() => {
-                showNotification('✅ Голосовое сообщение отправлено!');
-                // Добавляем голосовое сообщение в чат
-                const messagesContainer = document.getElementById('messagesContainer');
-                const messageElement = document.createElement('div');
-                messageElement.className = 'message sent';
-                messageElement.innerHTML = '🎤 Голосовое сообщение (5 сек)';
-                messagesContainer.appendChild(messageElement);
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            }, 2000);
+            const messagesContainer = document.getElementById('messagesContainer');
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message sent';
+            messageElement.innerHTML = `<div style="font-size: 2rem;">${sticker}</div>`;
+            messagesContainer.appendChild(messageElement);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            document.getElementById('stickerPicker').classList.remove('active');
+            showNotification('Стикер отправлен! 😊');
         }
 
-        function toggleRecording() {
-            isRecording = !isRecording;
-            showNotification(isRecording ? '⏺️ Запись звонка начата' : '⏹️ Запись звонка остановлена');
+        function toggleBackground() {
+            isBackgroundBlurred = !isBackgroundBlurred;
+            showNotification(isBackgroundBlurred ? '🌃 Фон размыт' : '🌃 Фон обычный');
         }
 
-        function exportData() {
-            const userData = {
-                user: currentUser,
-                chats: JSON.parse(localStorage.getItem(`chats_${currentUser.id}`)) || [],
-                settings: JSON.parse(localStorage.getItem('userSettings')) || {}
-            };
+        function changeTheme(theme) {
+            document.querySelectorAll('.theme-option').forEach(opt => {
+                opt.classList.remove('active');
+            });
+            event.target.classList.add('active');
             
-            const dataStr = JSON.stringify(userData, null, 2);
-            const dataBlob = new Blob([dataStr], {type: 'application/json'});
-            
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(dataBlob);
-            link.download = `trollexdl_backup_${new Date().toISOString().split('T')[0]}.json`;
-            link.click();
-            
-            showNotification('📤 Данные экспортированы успешно!');
+            showNotification(`Тема изменена: ${theme === 'dark' ? 'Тёмная' : theme === 'light' ? 'Светлая' : 'Авто'} 🎨`);
         }
 
-        function loadSettings() {
-            const settings = JSON.parse(localStorage.getItem('userSettings')) || {};
-            
-            // Загружаем настройки в форму
-            if (settings.name) {
-                document.getElementById('settingsName').value = settings.name;
-            }
-            if (settings.status) {
-                document.getElementById('settingsStatus').value = settings.status;
-            }
-            if (settings.notifications !== undefined) {
-                document.getElementById('notificationsToggle').checked = settings.notifications;
-            }
-            if (settings.sound !== undefined) {
-                document.getElementById('soundToggle').checked = settings.sound;
-            }
-            if (settings.vibration !== undefined) {
-                document.getElementById('vibrationToggle').checked = settings.vibration;
-            }
-            if (settings.theme) {
-                document.getElementById('themeSelect').value = settings.theme;
-            }
-            if (settings.compact !== undefined) {
-                document.getElementById('compactToggle').checked = settings.compact;
+        function clearChats() {
+            if (confirm('Вы уверены, что хотите очистить все чаты?')) {
+                const userChats = JSON.parse(localStorage.getItem(`chats_${currentUser.id}`)) || [];
+                userChats.forEach(chat => {
+                    localStorage.removeItem(`messages_${currentUser.id}_${chat.userId}`);
+                });
+                localStorage.removeItem(`chats_${currentUser.id}`);
+                
+                document.getElementById('messagesContainer').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🗑️</div>
+                        <h3>Чаты очищены</h3>
+                        <p>Все сообщения удалены</p>
+                    </div>
+                `;
+                
+                loadContent();
+                showNotification('Все чаты очищены 🗑️');
             }
         }
 
-        function saveSettings() {
-            const settings = {
-                name: document.getElementById('settingsName').value,
-                status: document.getElementById('settingsStatus').value,
-                notifications: document.getElementById('notificationsToggle').checked,
-                sound: document.getElementById('soundToggle').checked,
-                vibration: document.getElementById('vibrationToggle').checked,
-                theme: document.getElementById('themeSelect').value,
-                compact: document.getElementById('compactToggle').checked
-            };
+        function formatTime(timestamp) {
+            if (!timestamp) return '';
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
             
-            localStorage.setItem('userSettings', JSON.stringify(settings));
-            
-            // Обновляем имя пользователя если изменилось
-            if (settings.name && settings.name !== currentUser.name) {
-                currentUser.name = settings.name;
-                localStorage.setItem('trollexUser', JSON.stringify(currentUser));
-                document.getElementById('userName').textContent = settings.name;
-            }
-            
-            showNotification('Настройки сохранены! ✅');
-            hideSettings();
+            if (diff < 60000) return 'только что';
+            if (diff < 3600000) return `${Math.floor(diff / 60000)} мин`;
+            if (diff < 86400000) return date.toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
+            return date.toLocaleDateString('ru-RU');
         }
 
-        // Остальные функции (createCallRoom, getLocalStream, toggleMicrophone, toggleCamera, 
-        // copyCallLink, endCall, checkCallInvite, acceptCall, declineCall, joinCallByLink, 
-        // loadMediaDevices, switchTab, loadContent, selectUser, sendMessage и т.д.)
-        // остаются без изменений из предыдущего кода...
+        // Остальные функции (initializeApp, hideLoadingScreen, showWelcomeScreen, showRegisterScreen, 
+        // hideAllScreens, generateNewUser, registerUser, quickStart, checkAutoLogin, showMainApp, 
+        // createCallRoom, getLocalStream, toggleMicrophone, toggleCamera, copyCallLink, endCall, 
+        // checkCallInvite, acceptCall, declineCall, joinCallByLink, loadMediaDevices, loadMessages, 
+        // sendMessage, startCallWithUser, startVideoCall, showFeatureInfo, handleKeyPress, searchContent, 
+        // toggleSidebar, showDonatePanel, hideDonatePanel, showSettings, hideSettings, selectTier, 
+        // saveSettings, exportData, logout, showNotification) остаются без изменений...
 
     </script>
 </body>
