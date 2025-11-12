@@ -4,7 +4,11 @@ import datetime
 import random
 import os
 import uuid
-import hashlib
+import logging
+
+# Настройка логирования
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'trollexdl-premium-2024')
@@ -66,6 +70,7 @@ HTML_TEMPLATE = '''
             background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
             color: var(--text);
             min-height: 100vh;
+            overflow-x: hidden;
         }
 
         .screen {
@@ -94,6 +99,7 @@ HTML_TEMPLATE = '''
             width: 100%;
             max-width: 400px;
             text-align: center;
+            backdrop-filter: blur(10px);
         }
 
         .logo {
@@ -103,6 +109,7 @@ HTML_TEMPLATE = '''
             background: linear-gradient(45deg, var(--neon), var(--accent));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(107, 43, 217, 0.5);
         }
 
         .btn {
@@ -133,12 +140,17 @@ HTML_TEMPLATE = '''
             border: 2px solid var(--accent);
         }
 
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
         .user-card {
             background: rgba(255, 255, 255, 0.1);
             padding: 20px;
             border-radius: 15px;
             margin: 15px 0;
             border: 1px solid var(--accent);
+            backdrop-filter: blur(5px);
         }
 
         .user-avatar {
@@ -151,6 +163,7 @@ HTML_TEMPLATE = '''
             justify-content: center;
             font-size: 1.5rem;
             margin: 0 auto 10px;
+            box-shadow: 0 4px 15px rgba(107, 43, 217, 0.3);
         }
 
         .app {
@@ -165,6 +178,7 @@ HTML_TEMPLATE = '''
             border-right: 2px solid var(--accent);
             display: flex;
             flex-direction: column;
+            backdrop-filter: blur(10px);
         }
 
         .user-header {
@@ -188,10 +202,15 @@ HTML_TEMPLATE = '''
             cursor: pointer;
             border-radius: 8px;
             transition: all 0.3s ease;
+            font-size: 0.9rem;
         }
 
         .nav-tab.active {
             background: var(--accent);
+        }
+
+        .nav-tab:hover {
+            background: rgba(107, 43, 217, 0.3);
         }
 
         .search-box {
@@ -205,6 +224,13 @@ HTML_TEMPLATE = '''
             border: 2px solid var(--accent);
             border-radius: 10px;
             color: var(--text);
+            font-size: 0.9rem;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--neon);
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
         }
 
         .content-list {
@@ -222,10 +248,12 @@ HTML_TEMPLATE = '''
             border-radius: 10px;
             cursor: pointer;
             transition: all 0.3s ease;
+            border: 1px solid transparent;
         }
 
         .chat-item:hover {
             background: rgba(107, 43, 217, 0.3);
+            border-color: var(--accent);
         }
 
         .item-avatar {
@@ -237,6 +265,7 @@ HTML_TEMPLATE = '''
             align-items: center;
             justify-content: center;
             margin-right: 10px;
+            flex-shrink: 0;
         }
 
         .chat-area {
@@ -244,6 +273,7 @@ HTML_TEMPLATE = '''
             display: flex;
             flex-direction: column;
             background: var(--primary);
+            position: relative;
         }
 
         .chat-header {
@@ -253,6 +283,7 @@ HTML_TEMPLATE = '''
             display: flex;
             align-items: center;
             gap: 10px;
+            backdrop-filter: blur(10px);
         }
 
         .messages-container {
@@ -269,17 +300,20 @@ HTML_TEMPLATE = '''
             padding: 10px 15px;
             border-radius: 15px;
             position: relative;
+            word-wrap: break-word;
         }
 
         .message.received {
             background: rgba(107, 43, 217, 0.3);
             align-self: flex-start;
+            border-bottom-left-radius: 5px;
         }
 
         .message.sent {
             background: linear-gradient(135deg, var(--accent), var(--accent-glow));
             align-self: flex-end;
             color: white;
+            border-bottom-right-radius: 5px;
         }
 
         .message-input-container {
@@ -288,6 +322,7 @@ HTML_TEMPLATE = '''
             border-top: 2px solid var(--accent);
             display: flex;
             gap: 10px;
+            backdrop-filter: blur(10px);
         }
 
         .message-input {
@@ -297,6 +332,12 @@ HTML_TEMPLATE = '''
             border: 2px solid var(--accent);
             border-radius: 20px;
             color: var(--text);
+            font-size: 0.9rem;
+        }
+
+        .message-input:focus {
+            outline: none;
+            border-color: var(--neon);
         }
 
         .send-btn {
@@ -306,6 +347,12 @@ HTML_TEMPLATE = '''
             border: none;
             border-radius: 15px;
             cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(107, 43, 217, 0.4);
         }
 
         /* Стили для видеозвонков */
@@ -339,6 +386,7 @@ HTML_TEMPLATE = '''
             border-radius: 15px;
             overflow: hidden;
             border: 2px solid var(--accent);
+            min-height: 200px;
         }
 
         .video-container.remote {
@@ -353,6 +401,7 @@ HTML_TEMPLATE = '''
             width: 100%;
             height: 100%;
             object-fit: cover;
+            background: var(--secondary);
         }
 
         .video-label {
@@ -363,6 +412,7 @@ HTML_TEMPLATE = '''
             padding: 5px 10px;
             border-radius: 10px;
             font-size: 0.9rem;
+            backdrop-filter: blur(5px);
         }
 
         .call-controls {
@@ -372,6 +422,7 @@ HTML_TEMPLATE = '''
             justify-content: center;
             gap: 15px;
             border-top: 2px solid var(--accent);
+            backdrop-filter: blur(10px);
         }
 
         .control-btn {
@@ -385,6 +436,11 @@ HTML_TEMPLATE = '''
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .control-btn:hover {
+            transform: scale(1.1);
         }
 
         .control-btn.call-end {
@@ -420,12 +476,18 @@ HTML_TEMPLATE = '''
             display: flex;
             align-items: center;
             gap: 10px;
+            backdrop-filter: blur(5px);
+            z-index: 10;
         }
 
         .call-link {
             color: var(--neon);
             font-family: monospace;
             font-size: 0.9rem;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .copy-link-btn {
@@ -436,6 +498,11 @@ HTML_TEMPLATE = '''
             border-radius: 5px;
             cursor: pointer;
             font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .copy-link-btn:hover {
+            background: var(--accent-glow);
         }
 
         .call-invite {
@@ -450,6 +517,8 @@ HTML_TEMPLATE = '''
             z-index: 3000;
             text-align: center;
             display: none;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
         .call-invite.active {
@@ -468,6 +537,7 @@ HTML_TEMPLATE = '''
             transition: right 0.3s ease;
             padding: 20px;
             overflow-y: auto;
+            backdrop-filter: blur(10px);
         }
 
         .settings-panel.active {
@@ -486,6 +556,7 @@ HTML_TEMPLATE = '''
             transition: left 0.3s ease;
             padding: 20px;
             overflow-y: auto;
+            backdrop-filter: blur(10px);
         }
 
         .donate-panel.active {
@@ -501,6 +572,20 @@ HTML_TEMPLATE = '''
             padding: 12px 20px;
             border-radius: 10px;
             z-index: 4000;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
 
         .mobile-menu-btn {
@@ -510,6 +595,48 @@ HTML_TEMPLATE = '''
             color: var(--text);
             font-size: 1.2rem;
             cursor: pointer;
+            padding: 5px;
+            border-radius: 5px;
+        }
+
+        .mobile-menu-btn:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            opacity: 0.7;
+        }
+
+        .error-message {
+            background: rgba(255,68,68,0.2);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            padding: 10px;
+            border-radius: 10px;
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: var(--neon);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
         @media (max-width: 768px) {
@@ -519,6 +646,7 @@ HTML_TEMPLATE = '''
                 transform: translateX(-100%);
                 transition: transform 0.3s ease;
                 z-index: 200;
+                width: 280px;
             }
             
             .sidebar.active {
@@ -532,6 +660,11 @@ HTML_TEMPLATE = '''
             .video-grid {
                 grid-template-columns: 1fr;
                 padding: 10px;
+                gap: 5px;
+            }
+
+            .video-container {
+                min-height: 150px;
             }
 
             .control-btn {
@@ -543,7 +676,45 @@ HTML_TEMPLATE = '''
             .call-link-container {
                 top: 10px;
                 left: 10px;
+                right: 10px;
                 padding: 8px 12px;
+            }
+
+            .call-link {
+                max-width: 150px;
+                font-size: 0.8rem;
+            }
+
+            .settings-panel,
+            .donate-panel {
+                width: 100%;
+                max-width: 320px;
+            }
+
+            .message {
+                max-width: 85%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .cosmic-card {
+                padding: 20px;
+                margin: 10px;
+            }
+
+            .logo {
+                font-size: 2rem;
+            }
+
+            .call-controls {
+                padding: 15px;
+                gap: 10px;
+            }
+
+            .control-btn {
+                width: 45px;
+                height: 45px;
+                font-size: 1rem;
             }
         }
     </style>
@@ -554,7 +725,7 @@ HTML_TEMPLATE = '''
         <div class="cosmic-card">
             <div class="logo">TrollexDL</div>
             <div style="margin: 20px 0; font-size: 1.2rem;">Установка квантовой связи...</div>
-            <div style="font-size: 2rem;">🌌</div>
+            <div class="loading" style="margin: 0 auto;"></div>
         </div>
     </div>
 
@@ -637,12 +808,12 @@ HTML_TEMPLATE = '''
                     <h3 id="currentChatName">TrollexDL</h3>
                     <p style="color: var(--text-secondary);" id="currentChatStatus">Выберите чат для начала общения</p>
                 </div>
-                <button class="control-btn" onclick="startVideoCall()" style="background: var(--success);">📞</button>
+                <button class="control-btn" onclick="startVideoCall()" style="background: var(--success); width: 40px; height: 40px; font-size: 1rem;">📞</button>
             </div>
 
             <div class="messages-container" id="messagesContainer">
-                <div style="text-align: center; padding: 40px 20px; color: var(--text-secondary);">
-                    <div style="font-size: 3rem; margin-bottom: 15px;">🌌</div>
+                <div class="empty-state">
+                    <div class="empty-state-icon">🌌</div>
                     <h3>Добро пожаловать в TrollexDL!</h3>
                     <p>Начните общение с квантовым шифрованием</p>
                     <button class="btn btn-primary" onclick="createCallRoom()" style="margin-top: 20px;">
@@ -667,11 +838,11 @@ HTML_TEMPLATE = '''
         
         <div class="video-grid" id="videoGrid">
             <div class="video-container local">
-                <video id="localVideo" autoplay muted class="video-element"></video>
+                <video id="localVideo" autoplay muted playsinline class="video-element"></video>
                 <div class="video-label">Вы (🔴 Live)</div>
             </div>
             <div class="video-container remote">
-                <video id="remoteVideo" autoplay class="video-element"></video>
+                <video id="remoteVideo" autoplay playsinline class="video-element"></video>
                 <div class="video-label">Участник</div>
             </div>
         </div>
@@ -976,7 +1147,23 @@ HTML_TEMPLATE = '''
                 return localStream;
             } catch (error) {
                 console.error('Ошибка доступа к медиаустройствам:', error);
-                throw error;
+                // Пробуем без видео
+                try {
+                    const audioConstraints = {
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true
+                        }
+                    };
+                    localStream = await navigator.mediaDevices.getUserMedia(audioConstraints);
+                    document.getElementById('localVideo').srcObject = localStream;
+                    showNotification('Камера недоступна, используется только аудио 🎤');
+                    return localStream;
+                } catch (audioError) {
+                    showNotification('Не удалось получить доступ к медиаустройствам ❌');
+                    throw audioError;
+                }
             }
         }
 
@@ -1016,6 +1203,15 @@ HTML_TEMPLATE = '''
             const callLink = document.getElementById('callLink').textContent;
             navigator.clipboard.writeText(callLink).then(() => {
                 showNotification('Ссылка скопирована в буфер! 📋');
+            }).catch(() => {
+                // Fallback для старых браузеров
+                const textArea = document.createElement('textarea');
+                textArea.value = callLink;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showNotification('Ссылка скопирована! 📋');
             });
         }
 
@@ -1126,7 +1322,6 @@ HTML_TEMPLATE = '''
             }
         }
 
-        // Остальные функции (switchTab, loadContent, и т.д.) остаются без изменений
         function switchTab(tabName) {
             currentTab = tabName;
             
@@ -1135,9 +1330,18 @@ HTML_TEMPLATE = '''
                 tab.classList.remove('active');
             });
             
-            // Находим активную вкладку по индексу
+            // Находим активную вкладку
             const tabs = document.querySelectorAll('.nav-tab');
-            const tabIndex = ['chats', 'users', 'calls', 'donate', 'settings'].indexOf(tabName);
+            let tabIndex = -1;
+            
+            switch(tabName) {
+                case 'chats': tabIndex = 0; break;
+                case 'users': tabIndex = 1; break;
+                case 'calls': tabIndex = 2; break;
+                case 'donate': tabIndex = 3; break;
+                case 'settings': tabIndex = 4; break;
+            }
+            
             if (tabIndex !== -1 && tabs[tabIndex]) {
                 tabs[tabIndex].classList.add('active');
             }
@@ -1151,15 +1355,20 @@ HTML_TEMPLATE = '''
             
             let contentHTML = '';
             
-            if (currentTab === 'chats') {
-                contentHTML = getChatsContent(searchTerm);
-            } else if (currentTab === 'users') {
-                contentHTML = getUsersContent(searchTerm);
-            } else if (currentTab === 'calls') {
-                contentHTML = getCallsContent(searchTerm);
+            try {
+                if (currentTab === 'chats') {
+                    contentHTML = getChatsContent(searchTerm);
+                } else if (currentTab === 'users') {
+                    contentHTML = getUsersContent(searchTerm);
+                } else if (currentTab === 'calls') {
+                    contentHTML = getCallsContent(searchTerm);
+                }
+                
+                contentList.innerHTML = contentHTML;
+            } catch (error) {
+                console.error('Ошибка загрузки контента:', error);
+                contentList.innerHTML = '<div class="error-message">Ошибка загрузки</div>';
             }
-            
-            contentList.innerHTML = contentHTML;
         }
 
         function getCallsContent(searchTerm) {
@@ -1185,7 +1394,6 @@ HTML_TEMPLATE = '''
             createCallRoom();
         }
 
-        // Остальные функции остаются без изменений...
         function searchContent() {
             loadContent();
         }
@@ -1201,7 +1409,7 @@ HTML_TEMPLATE = '''
             );
             
             if (filteredChats.length === 0) {
-                return '<div style="text-align: center; padding: 20px; color: var(--text-secondary);">Чаты не найдены</div>';
+                return '<div class="empty-state">Чаты не найдены</div>';
             }
             
             return filteredChats.map(chat => `
@@ -1222,7 +1430,7 @@ HTML_TEMPLATE = '''
             );
             
             if (filteredUsers.length === 0) {
-                return '<div style="text-align: center; padding: 20px; color: var(--text-secondary);">Пользователи не найдены</div>';
+                return '<div class="empty-state">Пользователи не найдены</div>';
             }
             
             return filteredUsers.map(user => `
@@ -1304,8 +1512,8 @@ HTML_TEMPLATE = '''
             
             if (chatMessages.length === 0) {
                 messagesContainer.innerHTML = `
-                    <div style="text-align: center; padding: 40px 20px; color: var(--text-secondary);">
-                        <div style="font-size: 3rem; margin-bottom: 15px;">💬</div>
+                    <div class="empty-state">
+                        <div class="empty-state-icon">💬</div>
                         <h3>${currentChat.name}</h3>
                         <p>Начните общение</p>
                         <button class="btn btn-primary" onclick="createCallRoom()" style="margin-top: 20px;">
@@ -1453,6 +1661,7 @@ HTML_TEMPLATE = '''
             }
             
             localStorage.removeItem('trollexUser');
+            localStorage.removeItem('allUsers');
             showWelcomeScreen();
             showNotification('До скорой встречи! 👋');
         }
@@ -1466,7 +1675,9 @@ HTML_TEMPLATE = '''
             
             // Удаляем через 3 секунды
             setTimeout(() => {
-                notification.remove();
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
             }, 3000);
         }
 
@@ -1481,6 +1692,7 @@ HTML_TEMPLATE = '''
         document.addEventListener('click', function(event) {
             const donatePanel = document.getElementById('donatePanel');
             const settingsPanel = document.getElementById('settingsPanel');
+            const sidebar = document.getElementById('sidebar');
             
             if (donatePanel.classList.contains('active') && 
                 !donatePanel.contains(event.target) && 
@@ -1493,6 +1705,21 @@ HTML_TEMPLATE = '''
                 !event.target.closest('.nav-tab')) {
                 hideSettings();
             }
+            
+            // Закрытие сайдбара на мобильных
+            if (window.innerWidth <= 768 && 
+                sidebar.classList.contains('active') &&
+                !sidebar.contains(event.target) &&
+                !event.target.closest('.mobile-menu-btn')) {
+                toggleSidebar();
+            }
+        });
+
+        // Адаптация к изменению размера окна
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 768) {
+                document.getElementById('sidebar').classList.remove('active');
+            }
         });
     </script>
 </body>
@@ -1501,29 +1728,40 @@ HTML_TEMPLATE = '''
 
 @app.route('/')
 def index():
+    logger.info("Главная страница запрошена")
     return render_template_string(HTML_TEMPLATE)
 
 @app.route('/api/create_call', methods=['POST'])
 def api_create_call():
-    data = request.json
-    call_id = generate_call_id()
-    active_calls[call_id] = {
-        'creator': data.get('user_id'),
-        'participants': [],
-        'created_at': datetime.datetime.now().isoformat()
-    }
-    return jsonify({'success': True, 'call_id': call_id, 'call_link': f'{request.host_url}?call={call_id}'})
+    try:
+        data = request.json
+        call_id = generate_call_id()
+        active_calls[call_id] = {
+            'creator': data.get('user_id'),
+            'participants': [],
+            'created_at': datetime.datetime.now().isoformat()
+        }
+        logger.info(f"Создан звонок: {call_id}")
+        return jsonify({'success': True, 'call_id': call_id, 'call_link': f'{request.host_url}?call={call_id}'})
+    except Exception as e:
+        logger.error(f"Ошибка создания звонка: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/join_call', methods=['POST'])
 def api_join_call():
-    data = request.json
-    call_id = data.get('call_id')
-    
-    if call_id in active_calls:
-        active_calls[call_id]['participants'].append(data.get('user_id'))
-        return jsonify({'success': True, 'call_data': active_calls[call_id]})
-    else:
-        return jsonify({'success': False, 'error': 'Call not found'}), 404
+    try:
+        data = request.json
+        call_id = data.get('call_id')
+        
+        if call_id in active_calls:
+            active_calls[call_id]['participants'].append(data.get('user_id'))
+            logger.info(f"Пользователь присоединился к звонку: {call_id}")
+            return jsonify({'success': True, 'call_data': active_calls[call_id]})
+        else:
+            return jsonify({'success': False, 'error': 'Call not found'}), 404
+    except Exception as e:
+        logger.error(f"Ошибка присоединения к звонку: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/send_message', methods=['POST'])
 def api_send_message():
@@ -1535,12 +1773,26 @@ def health_check():
     return jsonify({
         'status': 'running', 
         'service': 'TrollexDL',
+        'version': '2.0.0',
         'active_calls': len(active_calls),
+        'timestamp': datetime.datetime.now().isoformat(),
         'days_until_new_year': get_days_until_new_year()
     })
 
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({'error': 'Not found'}), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    return jsonify({'error': 'Internal server error'}), 500
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    print(f"🚀 TrollexDL запущен на порту {port}")
-    print(f"🌐 Откройте: http://localhost:{port}")
-    app.run(host='0.0.0.0', port=port, debug=False)
+    debug = os.environ.get('DEBUG', 'False').lower() == 'true'
+    
+    logger.info(f"🚀 TrollexDL запущен на порту {port}")
+    logger.info(f"🌐 Откройте: http://localhost:{port}")
+    logger.info(f"🔧 Режим отладки: {debug}")
+    
+    app.run(host='0.0.0.0', port=port, debug=debug)
