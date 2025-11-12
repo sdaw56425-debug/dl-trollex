@@ -602,6 +602,140 @@ HTML_TEMPLATE = '''
             border: 1px solid var(--accent);
         }
 
+        /* Контейнер видеозвонка */
+        .call-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--primary);
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+        }
+
+        .call-container.active {
+            display: flex;
+        }
+
+        .video-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 10px;
+            padding: 20px;
+        }
+
+        .video-container {
+            position: relative;
+            background: var(--secondary);
+            border-radius: 15px;
+            overflow: hidden;
+            border: 2px solid var(--accent);
+            min-height: 200px;
+        }
+
+        .video-element {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: var(--secondary);
+        }
+
+        .video-label {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            padding: 5px 10px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+        }
+
+        .call-controls {
+            padding: 20px;
+            background: rgba(26, 26, 74, 0.9);
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            border-top: 2px solid var(--accent);
+            flex-wrap: wrap;
+        }
+
+        .call-control-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .call-control-btn:active {
+            transform: scale(0.9);
+        }
+
+        .call-control-btn.call-end {
+            background: var(--danger);
+            color: white;
+        }
+
+        .call-control-btn.mic-toggle {
+            background: var(--success);
+            color: white;
+        }
+
+        .call-control-btn.mic-toggle.muted {
+            background: var(--danger);
+        }
+
+        .call-control-btn.cam-toggle {
+            background: var(--accent);
+            color: white;
+        }
+
+        .call-control-btn.cam-toggle.off {
+            background: var(--warning);
+        }
+
+        .call-control-btn.screen-share {
+            background: var(--warning);
+            color: white;
+        }
+
+        .call-control-btn.screen-share.active {
+            background: var(--neon);
+            color: var(--primary);
+        }
+
+        .call-link-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.8);
+            padding: 10px 15px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .copy-link-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
         /* Стили для настроек */
         .settings-section {
             margin-bottom: 20px;
@@ -685,6 +819,61 @@ HTML_TEMPLATE = '''
 
             .panel {
                 width: 85%;
+            }
+
+            .video-grid {
+                grid-template-columns: 1fr;
+                padding: 10px;
+            }
+
+            .video-container {
+                min-height: 150px;
+            }
+
+            .call-control-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 1.2rem;
+            }
+
+            .call-link-container {
+                top: 10px;
+                left: 10px;
+                right: 10px;
+            }
+
+            /* Мобильная оптимизация звонков */
+            .mobile-call-layout .video-container.local {
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                width: 120px;
+                height: 160px;
+                z-index: 10;
+                border: 2px solid var(--neon);
+            }
+
+            .mobile-call-layout .video-container.remote {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                z-index: 1;
+            }
+
+            .mobile-call-layout .call-controls {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                z-index: 20;
+            }
+
+            .mobile-call-layout .call-link-container {
+                top: 180px;
+                left: 10px;
+                right: 10px;
             }
         }
     </style>
@@ -804,7 +993,7 @@ HTML_TEMPLATE = '''
                     <h3 id="currentChatName">TrollexDL</h3>
                     <p style="color: var(--text-secondary);" id="currentChatStatus">Выберите чат для начала общения</p>
                 </div>
-                <button class="control-btn" onclick="startVideoCall()" style="background: var(--success);">📞</button>
+                <button class="control-btn" onclick="startVideoCallWithUser()" style="background: var(--success);">📞</button>
                 <button class="control-btn" onclick="showFileShare()" style="background: var(--warning);">📎</button>
             </div>
 
@@ -823,6 +1012,43 @@ HTML_TEMPLATE = '''
                 <input type="text" class="message-input" placeholder="Введите сообщение..." id="messageInput" onkeypress="handleKeyPress(event)">
                 <button class="send-btn" onclick="sendMessage()">🚀</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Контейнер видеозвонка -->
+    <div id="callContainer" class="call-container">
+        <div class="call-link-container">
+            <span class="call-link" id="currentCallLink">Загрузка...</span>
+            <button class="copy-link-btn" onclick="copyCallLink()">📋</button>
+            <button class="copy-link-btn" onclick="shareCallLink()" style="background: var(--success);">📤</button>
+        </div>
+        
+        <div class="video-grid" id="videoGrid">
+            <div class="video-container local" id="localVideoContainer">
+                <video id="localVideo" autoplay muted playsinline class="video-element"></video>
+                <div class="video-label">Вы (🔴 Live)</div>
+            </div>
+            <div class="video-container remote" id="remoteVideoContainer">
+                <div id="remoteVideoPlaceholder" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--secondary);color:var(--text-secondary);">
+                    <div style="text-align:center;">
+                        <div style="font-size:3rem;">👤</div>
+                        <div>Ожидание участника...</div>
+                        <div style="font-size:0.8rem; margin-top:10px; color:var(--text-secondary);" id="callStatus">
+                            Отправьте ссылку другу для подключения
+                        </div>
+                    </div>
+                </div>
+                <div class="video-label">Участник</div>
+            </div>
+        </div>
+        
+        <div class="call-controls">
+            <button class="call-control-btn mic-toggle" id="micToggle" onclick="toggleMicrophone()">🎤</button>
+            <button class="call-control-btn cam-toggle" id="camToggle" onclick="toggleCamera()">📹</button>
+            <button class="call-control-btn screen-share" id="screenShareToggle" onclick="toggleScreenShare()">🖥️</button>
+            <button class="call-control-btn" onclick="toggleRecording()" style="background: var(--cyber);">⏺️</button>
+            <button class="call-control-btn" onclick="toggleBackground()" style="background: var(--accent-glow);">🌃</button>
+            <button class="call-control-btn call-end" onclick="endCall()">📞</button>
         </div>
     </div>
 
@@ -970,6 +1196,16 @@ HTML_TEMPLATE = '''
         let friends = [];
         let friendRequests = [];
         let currentCallLink = '';
+        
+        // Переменные для видеозвонков
+        let localStream = null;
+        let currentCallId = null;
+        let isInCall = false;
+        let isMicMuted = false;
+        let isCamOff = false;
+        let isScreenSharing = false;
+        let isRecording = false;
+        let isBackgroundBlurred = false;
 
         document.addEventListener('DOMContentLoaded', function() {
             initializeApp();
@@ -1003,6 +1239,244 @@ HTML_TEMPLATE = '''
             typeNextText();
         }
 
+        // Функции для видеозвонков
+        function startVideoCallWithUser() {
+            if (!currentChat) {
+                showNotification('Выберите чат для звонка 📞');
+                return;
+            }
+            createCallRoom();
+        }
+
+        async function createCallRoom() {
+            try {
+                showNotification('Создание комнаты для звонка... 🎥');
+                
+                const response = await fetch('/api/create_call', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        user_id: currentUser.id,
+                        session_token: sessionToken
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentCallId = data.call_id;
+                    currentCallLink = data.call_link;
+                    
+                    // Показываем ссылку в панели
+                    document.getElementById('callLink').textContent = currentCallLink;
+                    document.getElementById('callLinkContainer').style.display = 'block';
+                    
+                    // Запускаем звонок
+                    await startCall();
+                    showNotification('Звонок создан! Пригласите друзей по ссылке 🎉');
+                } else {
+                    showNotification('Ошибка создания комнаты ❌');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Ошибка сети ❌');
+            }
+        }
+
+        async function startCall() {
+            try {
+                // Запрашиваем доступ к камере и микрофону
+                localStream = await navigator.mediaDevices.getUserMedia({
+                    video: true,
+                    audio: true
+                });
+                
+                // Показываем контейнер звонка
+                document.getElementById('callContainer').classList.add('active');
+                document.getElementById('mainApp').classList.add('hidden');
+                
+                // Отображаем локальное видео
+                const localVideo = document.getElementById('localVideo');
+                localVideo.srcObject = localStream;
+                
+                // Обновляем ссылку в интерфейсе звонка
+                document.getElementById('currentCallLink').textContent = currentCallLink;
+                
+                isInCall = true;
+                
+                // Активируем мобильный режим если нужно
+                if (window.innerWidth <= 768) {
+                    document.getElementById('videoGrid').classList.add('mobile-call-layout');
+                }
+                
+                showNotification('Звонок начался! 🎥');
+                
+            } catch (error) {
+                console.error('Error accessing media devices:', error);
+                showNotification('Ошибка доступа к камере/микрофону ❌');
+                
+                // Запускаем звонок без видео/аудио
+                document.getElementById('callContainer').classList.add('active');
+                document.getElementById('mainApp').classList.add('hidden');
+                isInCall = true;
+            }
+        }
+
+        function toggleMicrophone() {
+            if (!localStream) return;
+            
+            const audioTracks = localStream.getAudioTracks();
+            if (audioTracks.length > 0) {
+                isMicMuted = !isMicMuted;
+                audioTracks[0].enabled = !isMicMuted;
+                
+                const micToggle = document.getElementById('micToggle');
+                if (isMicMuted) {
+                    micToggle.classList.add('muted');
+                    micToggle.innerHTML = '🎤❌';
+                    showNotification('Микрофон отключен 🔇');
+                } else {
+                    micToggle.classList.remove('muted');
+                    micToggle.innerHTML = '🎤';
+                    showNotification('Микрофон включен 🔊');
+                }
+            }
+        }
+
+        function toggleCamera() {
+            if (!localStream) return;
+            
+            const videoTracks = localStream.getVideoTracks();
+            if (videoTracks.length > 0) {
+                isCamOff = !isCamOff;
+                videoTracks[0].enabled = !isCamOff;
+                
+                const camToggle = document.getElementById('camToggle');
+                const localVideo = document.getElementById('localVideo');
+                
+                if (isCamOff) {
+                    camToggle.classList.add('off');
+                    camToggle.innerHTML = '📹❌';
+                    localVideo.style.display = 'none';
+                    showNotification('Камера отключена 📷');
+                } else {
+                    camToggle.classList.remove('off');
+                    camToggle.innerHTML = '📹';
+                    localVideo.style.display = 'block';
+                    showNotification('Камера включена 📸');
+                }
+            }
+        }
+
+        async function toggleScreenShare() {
+            try {
+                if (!isScreenSharing) {
+                    // Начинаем демонстрацию экрана
+                    const screenStream = await navigator.mediaDevices.getDisplayMedia({
+                        video: true,
+                        audio: true
+                    });
+                    
+                    // Заменяем видеотрек в основном потоке
+                    const videoTrack = screenStream.getVideoTracks()[0];
+                    const localVideo = document.getElementById('localVideo');
+                    
+                    if (localStream) {
+                        const oldVideoTrack = localStream.getVideoTracks()[0];
+                        localStream.removeTrack(oldVideoTrack);
+                        localStream.addTrack(videoTrack);
+                        localVideo.srcObject = localStream;
+                    }
+                    
+                    isScreenSharing = true;
+                    document.getElementById('screenShareToggle').classList.add('active');
+                    document.getElementById('screenShareToggle').innerHTML = '🖥️🔴';
+                    showNotification('Демонстрация экрана начата 🖥️');
+                    
+                    // Обработка остановки демонстрации экрана
+                    videoTrack.onended = () => {
+                        toggleScreenShare();
+                    };
+                    
+                } else {
+                    // Останавливаем демонстрацию экрана и возвращаем камеру
+                    if (localStream) {
+                        const screenTrack = localStream.getVideoTracks()[0];
+                        if (screenTrack) {
+                            screenTrack.stop();
+                            localStream.removeTrack(screenTrack);
+                        }
+                        
+                        // Восстанавливаем камеру
+                        const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                        const cameraTrack = cameraStream.getVideoTracks()[0];
+                        localStream.addTrack(cameraTrack);
+                        
+                        const localVideo = document.getElementById('localVideo');
+                        localVideo.srcObject = localStream;
+                    }
+                    
+                    isScreenSharing = false;
+                    document.getElementById('screenShareToggle').classList.remove('active');
+                    document.getElementById('screenShareToggle').innerHTML = '🖥️';
+                    showNotification('Демонстрация экрана остановлена 🖥️');
+                }
+            } catch (error) {
+                console.error('Error sharing screen:', error);
+                showNotification('Ошибка демонстрации экрана ❌');
+            }
+        }
+
+        function toggleRecording() {
+            isRecording = !isRecording;
+            if (isRecording) {
+                showNotification('Запись начата ⏺️');
+                // Здесь будет логика начала записи
+            } else {
+                showNotification('Запись остановлена ⏹️');
+                // Здесь будет логика остановки записи
+            }
+        }
+
+        function toggleBackground() {
+            isBackgroundBlurred = !isBackgroundBlurred;
+            showNotification(isBackgroundBlurred ? 'Фон размыт 🌃' : 'Фон обычный 🌆');
+            // Здесь будет логика размытия фона
+        }
+
+        function endCall() {
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            
+            document.getElementById('callContainer').classList.remove('active');
+            document.getElementById('mainApp').classList.remove('hidden');
+            isInCall = false;
+            
+            // Сбрасываем состояния
+            isMicMuted = false;
+            isCamOff = false;
+            isScreenSharing = false;
+            isRecording = false;
+            
+            showNotification('Звонок завершен 📞');
+        }
+
+        function joinCallByLink() {
+            const callLink = document.getElementById('joinCallInput').value.trim();
+            if (callLink) {
+                showNotification('Присоединение к звонку... 📞');
+                // Здесь будет логика WebRTC для присоединения к существующему звонку
+                startCall(); // Временно запускаем обычный звонок
+            } else {
+                showNotification('Введите ссылку на звонок ❌');
+            }
+        }
+
+        // Остальные функции остаются без изменений...
         function showWelcomeScreen() {
             hideAllScreens();
             document.getElementById('welcomeScreen').classList.remove('hidden');
@@ -1470,35 +1944,6 @@ HTML_TEMPLATE = '''
             hideSettings();
         }
 
-        // Функции для звонков
-        function createCallRoom() {
-            fetch('/api/create_call', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    user_id: currentUser.id,
-                    session_token: sessionToken
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    currentCallLink = data.call_link;
-                    document.getElementById('callLink').textContent = currentCallLink;
-                    document.getElementById('callLinkContainer').style.display = 'block';
-                    showNotification('Комната для звонка создана! 🎥');
-                } else {
-                    showNotification('Ошибка создания комнаты ❌');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showNotification('Ошибка сети ❌');
-            });
-        }
-
         function copyCallLink() {
             copyToClipboard(currentCallLink);
             showNotification('Ссылка скопирована! 📋');
@@ -1516,17 +1961,6 @@ HTML_TEMPLATE = '''
             }
         }
 
-        function joinCallByLink() {
-            const callLink = document.getElementById('joinCallInput').value.trim();
-            if (callLink) {
-                showNotification('Присоединение к звонку... 📞');
-                // Здесь будет логика присоединения к звонку
-            } else {
-                showNotification('Введите ссылку на звонок ❌');
-            }
-        }
-
-        // Функции для друзей
         function showAddFriendByLink() {
             const friendCode = prompt('Введите Friend Code пользователя (формат: TRLX-XXXX-XXXX):');
             if (friendCode) {
@@ -1690,14 +2124,6 @@ HTML_TEMPLATE = '''
 
         function searchContent() {
             loadContent();
-        }
-
-        function startVideoCall() {
-            if (!currentChat) {
-                showNotification('Выберите чат для звонка 📞');
-                return;
-            }
-            showNotification(`Звонок пользователю ${currentChat.name}... 📞`);
         }
 
         function showFileShare() {
@@ -1991,8 +2417,11 @@ def call_room(call_id):
                 </div>
                 <script>
                     function joinCall() {{
-                        alert('Присоединение к звонку... (функция в разработке)');
-                        // Здесь будет WebRTC логика
+                        window.opener.postMessage({{
+                            type: 'join_call',
+                            call_id: '{call_id}'
+                        }}, '*');
+                        window.close();
                     }}
                 </script>
             </body>
