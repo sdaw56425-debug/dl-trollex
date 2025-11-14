@@ -1,4 +1,4 @@
-# app.py - ИСПРАВЛЕННАЯ ВЕРСИЯ
+# app.py - ПОЛНЫЙ ИСПРАВЛЕННЫЙ КОД
 from flask import Flask, render_template_string, request, jsonify, send_from_directory
 import datetime
 import random
@@ -10,7 +10,7 @@ import time
 import json
 import re
 import html
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set, Tuple
 import threading
 
 # Настройка логирования
@@ -59,20 +59,38 @@ class ThreadSafeDict:
         with self._lock:
             return list(self._data.keys())
     
+    def values(self):
+        with self._lock:
+            return list(self._data.values())
+    
     def __contains__(self, key):
         with self._lock:
             return key in self._data
+    
+    def __len__(self):
+        with self._lock:
+            return len(self._data)
+    
+    def clear(self):
+        with self._lock:
+            self._data.clear()
 
 # Инициализация хранилищ
 active_calls = ThreadSafeDict()
 user_sessions = ThreadSafeDict()
 user_messages = ThreadSafeDict()
-all_users = []
+all_users = ThreadSafeDict()
 friendships = ThreadSafeDict()
 friend_requests = ThreadSafeDict()
 user_profiles = ThreadSafeDict()
 rate_limits = ThreadSafeDict()
 user_activity = ThreadSafeDict()
+groups = ThreadSafeDict()
+donate_packages = ThreadSafeDict()
+user_subscriptions = ThreadSafeDict()
+user_achievements = ThreadSafeDict()
+stickers = ThreadSafeDict()
+themes = ThreadSafeDict()
 
 def cleanup_old_data():
     """Очистка старых данных"""
@@ -81,20 +99,29 @@ def cleanup_old_data():
         
         # Очистка старых звонков
         for call_id, call_data in list(active_calls.items()):
-            created_time = datetime.datetime.fromisoformat(call_data['created_at']).timestamp()
-            if current_time - created_time > CALL_TIMEOUT:
-                active_calls.delete(call_id)
-                logger.info(f"Удален устаревший звонок: {call_id}")
+            if 'created_at' in call_data:
+                try:
+                    created_time = datetime.datetime.fromisoformat(call_data['created_at']).timestamp()
+                    if current_time - created_time > CALL_TIMEOUT:
+                        active_calls.delete(call_id)
+                        logger.info(f"Удален устаревший звонок: {call_id}")
+                except (ValueError, KeyError):
+                    active_calls.delete(call_id)
         
         # Очистка старых rate limits
         for key in list(rate_limits.keys()):
-            if current_time - rate_limits.get(key, {}).get('timestamp', 0) > RATE_LIMIT_WINDOW:
+            record = rate_limits.get(key)
+            if record and current_time - record.get('timestamp', 0) > RATE_LIMIT_WINDOW:
                 rate_limits.delete(key)
         
         # Очистка неактивных пользователей
         for user_id, last_active in list(user_activity.items()):
             if current_time - last_active > 3600:  # 1 hour
                 user_activity.delete(user_id)
+                user = all_users.get(user_id)
+                if user:
+                    user['online'] = False
+                    user['last_seen'] = 'давно'
                 
     except Exception as e:
         logger.error(f"Error in cleanup: {e}")
@@ -113,6 +140,10 @@ def update_user_activity(user_id: str):
     """Обновление активности пользователя"""
     if user_id:
         user_activity.set(user_id, time.time())
+        user = all_users.get(user_id)
+        if user:
+            user['online'] = True
+            user['last_seen'] = 'только что'
 
 def check_rate_limit(user_id: str, action: str) -> bool:
     """Проверка rate limit с улучшенной логикой"""
@@ -167,7 +198,7 @@ def validate_username(username: str) -> bool:
     pattern = r'^[a-zA-Z0-9_]+$'
     return bool(re.match(pattern, username))
 
-def validate_message(text: str) -> tuple[bool, str]:
+def validate_message(text: str) -> Tuple[bool, str]:
     """Валидация сообщения"""
     if not text or not text.strip():
         return False, "Сообщение не может быть пустым"
@@ -200,7 +231,12 @@ def generate_call_id() -> str:
     return f"call_{uuid.uuid4().hex[:12]}"
 
 def generate_friend_code() -> str:
-    return f"TRLX-{uuid.uuid4().hex[:4].upper()}-{uuid.uuid4().hex[:4].upper()}"
+    """Генерация уникального friend code"""
+    while True:
+        code = f"TRLX-{uuid.uuid4().hex[:4].upper()}-{uuid.uuid4().hex[:4].upper()}"
+        # Проверяем уникальность
+        if not any(profile.get('friend_code') == code for profile in user_profiles.values()):
+            return code
 
 def generate_session_token() -> str:
     return hashlib.sha256(f"{uuid.uuid4()}{time.time()}".encode()).hexdigest()
@@ -210,28 +246,75 @@ def verify_session(user_id: str, session_token: str) -> bool:
     if not user_id or not session_token:
         return False
     
-    valid = user_id in user_sessions.keys() and session_token == user_sessions.get(user_id)
+    # Проверяем существование пользователя
+    if user_id not in all_users:
+        return False
+    
+    stored_token = user_sessions.get(user_id)
+    if not stored_token:
+        return False
+    
+    valid = stored_token == session_token
     if valid:
         update_user_activity(user_id)
     return valid
 
+def get_user_by_id(user_id: str) -> Optional[dict]:
+    """Найти пользователя по ID"""
+    return all_users.get(user_id)
+
+def get_user_by_friend_code(friend_code: str) -> Optional[str]:
+    """Найти пользователя по friend code"""
+    for user_id, profile in user_profiles.items():
+        if profile and profile.get('friend_code') == friend_code:
+            return user_id
+    return None
+
+def ensure_user_chat(user_id: str, target_user_id: str) -> bool:
+    """Создание структуры чата с проверками"""
+    if not user_id or not target_user_id:
+        return False
+    
+    # Проверяем существование пользователей
+    user_exists = user_id in all_users
+    target_exists = target_user_id in all_users
+    
+    if not user_exists or not target_exists:
+        return False
+    
+    # Инициализируем чат если нужно
+    if user_id not in user_messages:
+        user_messages.set(user_id, {})
+    
+    user_msgs = user_messages.get(user_id)
+    if user_msgs is None:
+        user_messages.set(user_id, {})
+        user_msgs = user_messages.get(user_id)
+    
+    if target_user_id not in user_msgs:
+        user_msgs[target_user_id] = []
+    
+    return True
+
 def initialize_sample_data():
     """Инициализация тестовых данных"""
-    global all_users
-    
-    if all_users:
-        return
+    # Очищаем все данные
+    for storage in [all_users, user_profiles, user_sessions, user_messages, 
+                   friend_requests, friendships, groups]:
+        storage.clear()
     
     sample_users = [
         {'id': 'user1', 'name': 'Alex_Quantum', 'avatar': '👨‍💻', 'online': True, 'last_seen': 'только что', 'status': 'Разрабатываю квантовый мессенджер'},
         {'id': 'user2', 'name': 'Sarah_Cyber', 'avatar': '👩‍🎨', 'online': True, 'last_seen': '2 мин назад', 'status': 'Создаю цифровое искусство'},
         {'id': 'user3', 'name': 'Mike_Neon', 'avatar': '👨‍🚀', 'online': False, 'last_seen': '1 час назад', 'status': 'Исследую космос'},
         {'id': 'user4', 'name': 'Emma_Digital', 'avatar': '👩‍💼', 'online': True, 'last_seen': 'только что', 'status': 'Работаю над AI проектами'},
+        {'id': 'user5', 'name': 'Tech_Support', 'avatar': '🤖', 'online': True, 'last_seen': 'только что', 'status': 'Помогаю пользователям'},
     ]
     
-    all_users = sample_users
-    
+    # Добавляем пользователей
     for user in sample_users:
+        all_users.set(user['id'], user)
+        
         user_profiles.set(user['id'], {
             'friend_code': generate_friend_code(),
             'friends': [],
@@ -242,70 +325,168 @@ def initialize_sample_data():
             },
             'created_at': datetime.datetime.now().isoformat()
         })
+        
         user_sessions.set(user['id'], generate_session_token())
         update_user_activity(user['id'])
-    
-    # Инициализация чатов
-    for user in sample_users:
+        
+        # Инициализируем чаты
         user_messages.set(user['id'], {})
+    
+    # Создаем тестовые чаты и дружеские связи
+    for user in sample_users:
         for other_user in sample_users:
             if user['id'] != other_user['id']:
+                ensure_user_chat(user['id'], other_user['id'])
+                
+                # Добавляем тестовые сообщения для некоторых пар
                 user_msgs = user_messages.get(user['id'], {})
-                user_msgs[other_user['id']] = [
-                    {
+                if other_user['id'] in user_msgs and len(user_msgs[other_user['id']]) == 0:
+                    welcome_msg = {
                         'id': str(uuid.uuid4()),
                         'sender': other_user['id'],
                         'text': sanitize_input('Привет! 👋 Рад познакомиться!'),
                         'timestamp': datetime.datetime.now().isoformat(),
                         'type': 'text'
                     }
-                ]
-                user_messages.set(user['id'], user_msgs)
+                    user_msgs[other_user['id']].append(welcome_msg)
+        
+        # Создаем несколько дружеских связей
+        if user['id'] == 'user1':
+            user_profiles.get('user1')['friends'] = ['user2', 'user3']
+            user_profiles.get('user2')['friends'] = ['user1']
+            user_profiles.get('user3')['friends'] = ['user1']
+    
+    # Создаем тестовую группу
+    groups.set('group1', {
+        'id': 'group1',
+        'name': 'TrollexDL Community',
+        'avatar': '👥',
+        'members': ['user1', 'user2', 'user3'],
+        'created_by': 'user1',
+        'created_at': datetime.datetime.now().isoformat(),
+        'messages': []
+    })
+    
+    # Инициализируем донат пакеты
+    initialize_donate_packages()
+    initialize_stickers()
+    initialize_themes()
+    
+    logger.info("Инициализированы тестовые данные")
 
-def ensure_user_chat(user_id: str, target_user_id: str) -> bool:
-    """Создание структуры чата с проверками"""
-    if not user_id or not target_user_id:
-        return False
+def initialize_donate_packages():
+    """Инициализация расширенных донат пакетов"""
+    packages = {
+        'basic': {
+            'id': 'basic',
+            'name': 'Basic',
+            'price': 149,
+            'original_price': 299,
+            'period': 'месяц',
+            'color': '#00ff88',
+            'popular': False,
+            'features': [
+                '🎨 5 кастомных тем интерфейса',
+                '🔔 Расширенные уведомления',
+                '💾 Увеличенное хранилище (1GB)',
+                '👥 До 5 участников в группе',
+                '📱 10 базовых анимированных стикеров',
+                '⚡ Ускоренная отправка сообщений',
+                '🎯 Приоритет в очереди сообщений',
+                '🔒 Базовая защита от спама'
+            ]
+        },
+        'vip': {
+            'id': 'vip',
+            'name': 'VIP',
+            'price': 299,
+            'original_price': 599,
+            'period': 'месяц',
+            'color': '#8b5cf6',
+            'popular': True,
+            'features': [
+                '⭐ Все функции Basic',
+                '🎭 15 анимированных аватаров',
+                '🔒 Приватные зашифрованные чаты',
+                '👥 До 15 участников в группе',
+                '🎵 Голосовые сообщения до 5 минут',
+                '💾 Хранилище 5GB',
+                '🚀 Приоритетная поддержка',
+                '📊 Статистика активности',
+                '🎨 10 премиум тем',
+                '📱 30 эксклюзивных стикеров'
+            ]
+        },
+        'premium': {
+            'id': 'premium',
+            'name': 'Premium',
+            'price': 599,
+            'original_price': 1199,
+            'period': 'месяц',
+            'color': '#ff6b6b',
+            'popular': False,
+            'features': [
+                '⭐ Все функции VIP',
+                '🎬 Видео сообщения до 10 минут',
+                '👥 До 50 участников в группах',
+                '🎮 5 игровых мини-приложений',
+                '🤖 AI-помощник в чатах',
+                '💾 Хранилище 20GB',
+                '🌐 Собственный домен',
+                '⚡ Максимальная скорость',
+                '🎨 20 эксклюзивных тем',
+                '📱 100 премиум стикеров',
+                '🔔 Кастомные звуки уведомлений',
+                '📈 Расширенная аналитика'
+            ]
+        }
+    }
     
-    # Проверяем существование пользователей
-    user_exists = any(user['id'] == user_id for user in all_users)
-    target_exists = any(user['id'] == target_user_id for user in all_users)
-    
-    if not user_exists or not target_exists:
-        return False
-    
-    if user_id not in user_messages.keys():
-        user_messages.set(user_id, {})
-    
-    user_msgs = user_messages.get(user_id, {})
-    if target_user_id not in user_msgs:
-        user_msgs[target_user_id] = []
-        user_messages.set(user_id, user_msgs)
-    
-    return True
+    for package_id, package in packages.items():
+        donate_packages.set(package_id, package)
 
-def get_user_by_friend_code(friend_code: str) -> Optional[str]:
-    """Найти пользователя по friend code"""
-    for user_id in user_profiles.keys():
-        profile = user_profiles.get(user_id)
-        if profile and profile.get('friend_code') == friend_code:
-            return user_id
-    return None
+def initialize_stickers():
+    """Инициализация стикеров"""
+    sticker_packs = {
+        'basic': [
+            {'id': 's1', 'emoji': '😊', 'text': 'Привет!'},
+            {'id': 's2', 'emoji': '👍', 'text': 'OK'},
+            {'id': 's3', 'emoji': '❤️', 'text': 'Любовь'},
+            {'id': 's4', 'emoji': '🎉', 'text': 'Поздравляю!'},
+            {'id': 's5', 'emoji': '😂', 'text': 'Смех'},
+            {'id': 's6', 'emoji': '😢', 'text': 'Грусть'},
+            {'id': 's7', 'emoji': '🎯', 'text': 'Цель'},
+            {'id': 's8', 'emoji': '🚀', 'text': 'Запуск!'}
+        ],
+        'premium': [
+            {'id': 'p1', 'emoji': '⭐', 'text': 'Звезда'},
+            {'id': 'p2', 'emoji': '🎨', 'text': 'Креатив'},
+            {'id': 'p3', 'emoji': '⚡', 'text': 'Энергия'},
+            {'id': 'p4', 'emoji': '🔮', 'text': 'Магия'},
+            {'id': 'p5', 'emoji': '🌙', 'text': 'Луна'},
+            {'id': 'p6', 'emoji': '🔥', 'text': 'Огонь'}
+        ]
+    }
+    stickers.set('default', sticker_packs)
 
-def get_user_by_id(user_id: str) -> Optional[dict]:
-    """Найти пользователя по ID"""
-    for user in all_users:
-        if user['id'] == user_id:
-            return user
-    return None
+def initialize_themes():
+    """Инициализация тем"""
+    theme_packs = {
+        'dark': {'primary': '#0a0a2a', 'accent': '#6c2bd9', 'text': '#ffffff'},
+        'light': {'primary': '#ffffff', 'accent': '#007acc', 'text': '#333333'},
+        'cyber': {'primary': '#001122', 'accent': '#00ff88', 'text': '#00ffff'},
+        'neon': {'primary': '#1a0033', 'accent': '#ff00ff', 'text': '#ffff00'},
+        'ocean': {'primary': '#002233', 'accent': '#00aaff', 'text': '#88ddff'}
+    }
+    themes.set('default', theme_packs)
 
 # Создаем статические директории
 os.makedirs('static/css', exist_ok=True)
 os.makedirs('static/js', exist_ok=True)
 
-# CSS файл (оставляем оригинальный)
+# CSS файл с исправленными стилями
 CSS_CONTENT = '''
-/* static/css/style.css */
+/* static/css/style.css - ИСПРАВЛЕННАЯ ВЕРСИЯ */
 :root {
     --primary: #0a0a2a;
     --secondary: #1a1a4a;
@@ -353,6 +534,31 @@ body {
     50% { opacity: 0.7; }
 }
 
+@keyframes glow {
+    0%, 100% { box-shadow: 0 0 5px currentColor; }
+    50% { box-shadow: 0 0 20px currentColor; }
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes bounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+@keyframes shine {
+    0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+    100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+}
+
 /* Основные компоненты */
 .screen {
     position: fixed;
@@ -373,19 +579,6 @@ body {
     display: none !important;
 }
 
-.visually-hidden {
-    position: absolute !important;
-    width: 1px !important;
-    height: 1px !important;
-    padding: 0 !important;
-    margin: -1px !important;
-    overflow: hidden !important;
-    clip: rect(0, 0, 0, 0) !important;
-    white-space: nowrap !important;
-    border: 0 !important;
-}
-
-/* Космическая карточка */
 .cosmic-card {
     background: rgba(26, 26, 74, 0.95);
     border: 2px solid var(--accent);
@@ -397,6 +590,8 @@ body {
     backdrop-filter: blur(20px);
     box-shadow: var(--shadow);
     animation: fadeIn 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    position: relative;
+    overflow: hidden;
 }
 
 .logo {
@@ -436,11 +631,6 @@ body {
     transform: none !important;
 }
 
-.btn:focus-visible {
-    outline: 3px solid var(--neon);
-    outline-offset: 2px;
-}
-
 .btn-primary {
     background: linear-gradient(135deg, var(--accent), var(--accent-glow));
     color: white;
@@ -450,10 +640,6 @@ body {
 .btn-primary:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(107, 43, 217, 0.6);
-}
-
-.btn-primary:active:not(:disabled) {
-    transform: translateY(0);
 }
 
 .btn-secondary {
@@ -490,7 +676,7 @@ body {
     font-size: 2rem;
     margin: 0 auto 16px;
     box-shadow: 0 8px 25px rgba(107, 43, 217, 0.4);
-    transition: transform 0.3s ease;
+    transition: all 0.3s ease;
 }
 
 .user-avatar:hover {
@@ -595,11 +781,6 @@ body {
     transform: translateY(-1px);
 }
 
-.nav-tab:focus-visible {
-    outline: 2px solid var(--neon);
-    outline-offset: 2px;
-}
-
 /* Поиск */
 .search-box {
     padding: 16px;
@@ -625,10 +806,6 @@ body {
     transform: translateY(-1px);
 }
 
-.search-input::placeholder {
-    color: var(--text-secondary);
-}
-
 /* Список контента */
 .content-list {
     flex: 1;
@@ -651,10 +828,6 @@ body {
     border-radius: 3px;
 }
 
-.content-list::-webkit-scrollbar-thumb:hover {
-    background: var(--accent-glow);
-}
-
 /* Элементы чата */
 .chat-item {
     display: flex;
@@ -674,15 +847,6 @@ body {
     background: rgba(107, 43, 217, 0.2);
     border-color: var(--accent);
     transform: translateX(4px);
-}
-
-.chat-item:active {
-    transform: scale(0.98);
-}
-
-.chat-item:focus-visible {
-    outline: 2px solid var(--neon);
-    outline-offset: 2px;
 }
 
 .item-avatar {
@@ -770,11 +934,6 @@ body {
     text-align: right;
 }
 
-.message-status {
-    font-size: 0.7rem;
-    margin-left: 6px;
-}
-
 /* Ввод сообщения */
 .message-input-container {
     padding: 20px;
@@ -807,10 +966,6 @@ body {
     box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.2);
 }
 
-.message-input::placeholder {
-    color: var(--text-secondary);
-}
-
 .send-btn {
     padding: 16px 20px;
     background: linear-gradient(135deg, var(--accent), var(--accent-glow));
@@ -828,10 +983,6 @@ body {
 .send-btn:hover:not(:disabled) {
     transform: translateY(-2px) scale(1.05);
     box-shadow: 0 6px 20px rgba(107, 43, 217, 0.6);
-}
-
-.send-btn:active:not(:disabled) {
-    transform: translateY(0) scale(1);
 }
 
 .send-btn:disabled {
@@ -852,16 +1003,6 @@ body {
     font-size: 4rem;
     margin-bottom: 20px;
     opacity: 0.7;
-}
-
-.empty-state h3 {
-    margin-bottom: 12px;
-    font-weight: 600;
-}
-
-.empty-state p {
-    margin-bottom: 24px;
-    opacity: 0.8;
 }
 
 /* Уведомления */
@@ -916,21 +1057,6 @@ body {
     transform: scale(1.05);
 }
 
-.control-btn:active:not(:disabled) {
-    transform: scale(0.95);
-}
-
-.control-btn:focus-visible {
-    outline: 2px solid var(--neon);
-    outline-offset: 2px;
-}
-
-.control-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-}
-
 /* Мобильное меню */
 .mobile-menu-btn {
     display: none;
@@ -954,10 +1080,6 @@ body {
     background: rgba(255, 255, 255, 0.1);
 }
 
-.mobile-menu-btn:active {
-    transform: translateY(-50%) scale(0.9);
-}
-
 /* Панели */
 .panel {
     position: fixed;
@@ -975,27 +1097,11 @@ body {
     box-shadow: -8px 0 40px rgba(0,0,0,0.5);
 }
 
-.settings-panel {
-    right: -100%;
-}
-
-.settings-panel.active {
-    right: 0;
-}
-
 .donate-panel {
     left: -100%;
 }
 
 .donate-panel.active {
-    left: 0;
-}
-
-.call-panel {
-    left: -100%;
-}
-
-.call-panel.active {
     left: 0;
 }
 
@@ -1016,243 +1122,196 @@ body {
     animation: fadeIn 0.3s ease-out;
 }
 
-/* Видеозвонки */
-.call-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: var(--primary);
-    z-index: 3000;
-    display: none;
-    flex-direction: column;
-}
-
-.call-container.active {
-    display: flex;
-    animation: fadeIn 0.4s ease-out;
-}
-
-.video-grid {
-    flex: 1;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 16px;
-    padding: 24px;
-}
-
-.video-container {
-    position: relative;
-    background: var(--secondary);
+/* Стили для донат пакетов */
+.donate-package {
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid;
     border-radius: 20px;
-    overflow: hidden;
-    border: 2px solid var(--accent);
-    min-height: 240px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-    transition: all 0.3s ease;
-}
-
-.video-container:hover {
-    border-color: var(--neon);
-    transform: translateY(-2px);
-}
-
-.video-element {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    background: var(--secondary);
-}
-
-.video-label {
-    position: absolute;
-    bottom: 16px;
-    left: 16px;
-    background: rgba(0,0,0,0.8);
-    padding: 10px 16px;
-    border-radius: 12px;
-    font-size: 0.95rem;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.1);
-}
-
-/* Элементы управления звонком */
-.call-controls {
     padding: 24px;
-    background: rgba(26, 26, 74, 0.95);
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    border-top: 2px solid var(--accent);
-    flex-wrap: wrap;
-    backdrop-filter: blur(20px);
-}
-
-.call-control-btn {
-    width: 68px;
-    height: 68px;
-    border-radius: 50%;
-    border: none;
-    font-size: 1.4rem;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 68px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-}
-
-.call-control-btn:hover:not(:disabled) {
-    transform: translateY(-3px) scale(1.1);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.4);
-}
-
-.call-control-btn:active:not(:disabled) {
-    transform: translateY(-1px) scale(1.05);
-}
-
-.call-control-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-}
-
-.call-control-btn.call-end {
-    background: var(--danger);
-    color: white;
-}
-
-.call-control-btn.call-end:hover:not(:disabled) {
-    background: #ff6b6b;
-    transform: translateY(-3px) scale(1.15);
-}
-
-.call-control-btn.mic-toggle {
-    background: var(--success);
-    color: white;
-}
-
-.call-control-btn.mic-toggle.muted {
-    background: var(--danger);
-}
-
-.call-control-btn.cam-toggle {
-    background: var(--accent);
-    color: white;
-}
-
-.call-control-btn.cam-toggle.off {
-    background: var(--warning);
-}
-
-.call-control-btn.screen-share {
-    background: var(--warning);
-    color: white;
-}
-
-.call-control-btn.screen-share.active {
-    background: var(--neon);
-    color: var(--primary);
-}
-
-/* Контейнер ссылки звонка */
-.call-link-container-call {
-    position: absolute;
-    top: 24px;
-    left: 24px;
-    background: rgba(0,0,0,0.85);
-    padding: 14px 20px;
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    z-index: 10;
-    max-width: calc(100% - 48px);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255,255,255,0.1);
-}
-
-.call-link {
-    font-family: 'JetBrains Mono', 'Fira Code', monospace;
-    color: var(--neon);
-    word-break: break-all;
-    margin: 0;
-    font-size: 0.9rem;
-    text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
-}
-
-.copy-link-btn {
-    background: var(--accent);
-    color: white;
-    border: none;
-    padding: 10px 14px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 0.85rem;
-    min-height: 40px;
+    margin: 16px 0;
+    position: relative;
     transition: all 0.3s ease;
-    flex-shrink: 0;
-}
-
-.copy-link-btn:hover {
-    background: var(--accent-glow);
-    transform: translateY(-1px);
-}
-
-.copy-link-btn:active {
-    transform: translateY(0);
-}
-
-/* Индикаторы загрузки */
-.loading {
-    display: inline-block;
-    width: 22px;
-    height: 22px;
-    border: 3px solid rgba(255,255,255,.2);
-    border-radius: 50%;
-    border-top-color: var(--neon);
-    animation: spin 1s ease-in-out infinite;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-
-.loading-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.8);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 5000;
     backdrop-filter: blur(10px);
 }
 
-.loading-overlay.active {
+.donate-package:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.donate-package.popular {
+    border-width: 3px;
+    animation: glow 2s infinite;
+}
+
+.donate-package.popular::before {
+    content: '🔥 ПОПУЛЯРНЫЙ';
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #ff6b6b, #ffd93d);
+    color: var(--primary);
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    z-index: 1;
+}
+
+.package-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.package-name {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.package-price {
+    font-size: 2rem;
+    font-weight: 900;
+    margin-bottom: 4px;
+}
+
+.package-period {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.package-original-price {
+    text-decoration: line-through;
+    opacity: 0.6;
+    font-size: 1rem;
+    margin-left: 8px;
+}
+
+.package-features {
+    list-style: none;
+    padding: 0;
+    margin: 20px 0;
+}
+
+.package-features li {
+    padding: 8px 0;
     display: flex;
-    animation: fadeIn 0.3s ease-out;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+}
+
+.package-features li::before {
+    content: '✓';
+    color: var(--neon);
+    font-weight: bold;
+}
+
+.donate-btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 16px;
+}
+
+.telegram-contact {
+    background: linear-gradient(135deg, #0088cc, #00acee);
+    color: white;
+    padding: 16px;
+    border-radius: 16px;
+    text-align: center;
+    margin: 20px 0;
+    border: 2px solid #00acee;
+}
+
+.telegram-contact h4 {
+    margin-bottom: 8px;
+    color: white;
+}
+
+.telegram-link {
+    display: inline-block;
+    background: white;
+    color: #0088cc;
+    padding: 10px 20px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: bold;
+    margin-top: 8px;
+    transition: all 0.3s ease;
+}
+
+.telegram-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Анимации */
+.floating-element {
+    animation: float 3s ease-in-out infinite;
+}
+
+.bounce-animation {
+    animation: bounce 0.5s ease infinite;
+}
+
+.spin-animation {
+    animation: spin 2s linear infinite;
 }
 
 .loading-spinner {
-    width: 60px;
-    height: 60px;
-    border: 4px solid rgba(255,255,255,.1);
+    width: 24px;
+    height: 24px;
+    border: 3px solid rgba(255,255,255,0.3);
+    border-top: 3px solid var(--neon);
     border-radius: 50%;
-    border-top-color: var(--neon);
-    animation: spin 1s ease-in-out infinite;
+    animation: spin 1s linear infinite;
 }
 
-.loading-text {
-    color: var(--text);
-    margin-top: 20px;
-    font-size: 1.1rem;
-    text-align: center;
+/* Статусы */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    margin-left: 8px;
+}
+
+.status-online {
+    background: var(--success);
+    color: var(--primary);
+}
+
+.status-offline {
+    background: var(--text-secondary);
+    color: var(--primary);
+}
+
+.online-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--neon);
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 8px;
+}
+
+.offline-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--text-secondary);
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 8px;
 }
 
 /* Адаптивность */
@@ -1289,30 +1348,17 @@ body {
         max-width: none;
     }
 
-    .video-grid {
-        grid-template-columns: 1fr;
-        padding: 16px;
-        gap: 12px;
+    .donate-package {
+        padding: 20px;
+        margin: 12px 0;
     }
 
-    .video-container {
-        min-height: 200px;
+    .package-name {
+        font-size: 1.3rem;
     }
 
-    .call-control-btn {
-        width: 56px;
-        height: 56px;
-        font-size: 1.2rem;
-    }
-
-    .call-link-container-call {
-        top: 16px;
-        left: 16px;
-        right: 16px;
-        max-width: none;
-        flex-direction: column;
-        gap: 8px;
-        text-align: center;
+    .package-price {
+        font-size: 1.7rem;
     }
 
     .message {
@@ -1337,7 +1383,6 @@ body {
     }
 }
 
-/* Улучшения для очень маленьких экранов */
 @media (max-width: 480px) {
     .cosmic-card {
         padding: 20px;
@@ -1355,15 +1400,8 @@ body {
         min-height: 52px;
     }
     
-    .call-controls {
-        gap: 8px;
-        padding: 16px 12px;
-    }
-    
-    .call-control-btn {
-        width: 50px;
-        height: 50px;
-        font-size: 1.1rem;
+    .donate-package {
+        padding: 16px;
     }
 
     .user-header {
@@ -1389,7 +1427,7 @@ body {
 }
 '''
 
-# JavaScript с исправлениями
+# JavaScript с исправленными функциями
 JS_CONTENT = '''
 // static/js/app.js - ИСПРАВЛЕННАЯ ВЕРСИЯ
 "use strict";
@@ -1401,6 +1439,12 @@ class TrollexApp {
         this.currentChat = null;
         this.sessionToken = null;
         this.allUsers = [];
+        this.friends = [];
+        this.friendRequests = [];
+        this.groups = [];
+        this.donatePackages = [];
+        this.stickers = [];
+        this.themes = [];
         this.isLoading = false;
         
         this.init();
@@ -1414,6 +1458,7 @@ class TrollexApp {
     setupEventListeners() {
         window.addEventListener('online', () => this.handleOnline());
         window.addEventListener('offline', () => this.handleOffline());
+        window.addEventListener('resize', () => this.handleResize());
     }
 
     async checkAutoLogin() {
@@ -1424,7 +1469,7 @@ class TrollexApp {
             if (savedUser && savedToken) {
                 this.currentUser = JSON.parse(savedUser);
                 this.sessionToken = savedToken;
-                await this.loadUsers();
+                await this.loadInitialData();
                 this.showMainApp();
                 this.showNotification('С возвращением! 🚀', 'success');
             } else {
@@ -1436,25 +1481,133 @@ class TrollexApp {
         }
     }
 
+    async loadInitialData() {
+        try {
+            await Promise.all([
+                this.loadUsers(),
+                this.loadFriends(),
+                this.loadFriendRequests(),
+                this.loadGroups(),
+                this.loadDonatePackages(),
+                this.loadStickers(),
+                this.loadThemes()
+            ]);
+        } catch (error) {
+            console.error('Failed to load initial data:', error);
+            this.showNotification('Ошибка загрузки данных', 'error');
+        }
+    }
+
     async loadUsers() {
         try {
             const response = await fetch('/api/get_users');
+            if (!response.ok) throw new Error('Network error');
             const data = await response.json();
             
             if (data.success) {
                 this.allUsers = data.users;
-                this.renderUserList();
+            } else {
+                throw new Error(data.error || 'Failed to load users');
             }
         } catch (error) {
             console.error('Failed to load users:', error);
-            // Используем тестовых пользователей если API недоступно
-            this.allUsers = [
-                {'id': 'user1', 'name': 'Alex_Quantum', 'avatar': '👨‍💻', 'online': true, 'last_seen': 'только что', 'status': 'Разрабатываю квантовый мессенджер'},
-                {'id': 'user2', 'name': 'Sarah_Cyber', 'avatar': '👩‍🎨', 'online': true, 'last_seen': '2 мин назад', 'status': 'Создаю цифровое искусство'},
-                {'id': 'user3', 'name': 'Mike_Neon', 'avatar': '👨‍🚀', 'online': false, 'last_seen': '1 час назад', 'status': 'Исследую космос'},
-                {'id': 'user4', 'name': 'Emma_Digital', 'avatar': '👩‍💼', 'online': true, 'last_seen': 'только что', 'status': 'Работаю над AI проектами'},
-            ];
-            this.renderUserList();
+            throw error;
+        }
+    }
+
+    async loadFriends() {
+        try {
+            if (!this.currentUser) return;
+            
+            const response = await fetch('/api/get_friends?user_id=' + this.currentUser.id);
+            if (!response.ok) throw new Error('Network error');
+            const data = await response.json();
+            
+            if (data.success) {
+                this.friends = data.friends || [];
+            }
+        } catch (error) {
+            console.error('Failed to load friends:', error);
+            this.friends = [];
+        }
+    }
+
+    async loadFriendRequests() {
+        try {
+            if (!this.currentUser) return;
+            
+            const response = await fetch('/api/get_friend_requests?user_id=' + this.currentUser.id);
+            if (!response.ok) throw new Error('Network error');
+            const data = await response.json();
+            
+            if (data.success) {
+                this.friendRequests = data.requests || [];
+            }
+        } catch (error) {
+            console.error('Failed to load friend requests:', error);
+            this.friendRequests = [];
+        }
+    }
+
+    async loadGroups() {
+        try {
+            if (!this.currentUser) return;
+            
+            const response = await fetch('/api/get_groups?user_id=' + this.currentUser.id);
+            if (!response.ok) throw new Error('Network error');
+            const data = await response.json();
+            
+            if (data.success) {
+                this.groups = data.groups || [];
+            }
+        } catch (error) {
+            console.error('Failed to load groups:', error);
+            this.groups = [];
+        }
+    }
+
+    async loadDonatePackages() {
+        try {
+            const response = await fetch('/api/get_donate_packages');
+            if (!response.ok) throw new Error('Network error');
+            const data = await response.json();
+            
+            if (data.success) {
+                this.donatePackages = data.packages || [];
+            }
+        } catch (error) {
+            console.error('Failed to load donate packages:', error);
+            this.donatePackages = [];
+        }
+    }
+
+    async loadStickers() {
+        try {
+            const response = await fetch('/api/get_stickers');
+            if (!response.ok) throw new Error('Network error');
+            const data = await response.json();
+            
+            if (data.success) {
+                this.stickers = data.stickers || [];
+            }
+        } catch (error) {
+            console.error('Failed to load stickers:', error);
+            this.stickers = [];
+        }
+    }
+
+    async loadThemes() {
+        try {
+            const response = await fetch('/api/get_themes');
+            if (!response.ok) throw new Error('Network error');
+            const data = await response.json();
+            
+            if (data.success) {
+                this.themes = data.themes || [];
+            }
+        } catch (error) {
+            console.error('Failed to load themes:', error);
+            this.themes = [];
         }
     }
 
@@ -1472,13 +1625,15 @@ class TrollexApp {
     showMainApp() {
         this.hideAllScreens();
         document.getElementById('mainApp').classList.remove('hidden');
-        this.renderUserList();
         this.updateUserInfo();
+        this.renderCurrentTab();
     }
 
     hideAllScreens() {
-        document.querySelectorAll('.screen, .app').forEach(el => {
-            el.classList.add('hidden');
+        const screens = ['welcomeScreen', 'registerScreen', 'mainApp', 'loadingScreen'];
+        screens.forEach(screenId => {
+            const element = document.getElementById(screenId);
+            if (element) element.classList.add('hidden');
         });
     }
 
@@ -1507,7 +1662,7 @@ class TrollexApp {
         const originalText = registerBtn.innerHTML;
         
         try {
-            registerBtn.innerHTML = '<div class="loading"></div>';
+            registerBtn.innerHTML = '<div class="loading-spinner"></div>';
             registerBtn.disabled = true;
 
             const userData = {
@@ -1525,6 +1680,8 @@ class TrollexApp {
                 body: JSON.stringify(userData)
             });
 
+            if (!response.ok) throw new Error('Network error');
+
             const data = await response.json();
 
             if (data.success) {
@@ -1534,10 +1691,11 @@ class TrollexApp {
                 localStorage.setItem('trollexUser', JSON.stringify(userData));
                 localStorage.setItem('sessionToken', data.session_token);
                 
+                await this.loadInitialData();
                 this.showMainApp();
                 this.showNotification('Профиль создан успешно! 🎉', 'success');
             } else {
-                throw new Error(data.error);
+                throw new Error(data.error || 'Registration failed');
             }
         } catch (error) {
             console.error('Registration failed:', error);
@@ -1562,46 +1720,366 @@ class TrollexApp {
         document.getElementById('userFriendCode').textContent = this.currentUser.friend_code;
     }
 
-    renderUserList() {
+    switchTab(tabName, event) {
+        this.currentTab = tabName;
+        
+        // Обновляем активные табы
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        if (event && event.currentTarget) {
+            event.currentTarget.classList.add('active');
+        }
+        
+        this.renderCurrentTab();
+    }
+
+    renderCurrentTab() {
         const contentList = document.getElementById('contentList');
         if (!contentList) return;
+        
+        switch (this.currentTab) {
+            case 'chats':
+                this.renderChatsList();
+                break;
+            case 'friends':
+                this.renderFriendsList();
+                break;
+            case 'discover':
+                this.renderDiscoverList();
+                break;
+            case 'calls':
+                this.renderCallsList();
+                break;
+            case 'stickers':
+                this.renderStickersList();
+                break;
+            default:
+                this.renderChatsList();
+        }
+    }
 
-        if (!this.allUsers || this.allUsers.length === 0) {
+    renderChatsList() {
+        const contentList = document.getElementById('contentList');
+        if (!contentList) return;
+        
+        const chatItems = [];
+        
+        // Личные чаты
+        this.allUsers
+            .filter(user => user.id !== this.currentUser.id)
+            .forEach(user => {
+                const statusClass = user.online ? 'status-online' : 'status-offline';
+                const statusText = user.online ? 'В сети' : user.last_seen;
+                
+                chatItems.push(`
+                    <div class="chat-item" onclick="app.selectChat('${user.id}')" 
+                         data-user-id="${user.id}" role="button" tabindex="0">
+                        <div class="item-avatar">${user.avatar}</div>
+                        <div style="flex: 1;">
+                            <h4>${user.name} 
+                                <span class="status-badge ${statusClass}">${statusText}</span>
+                            </h4>
+                            <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                                ${user.status}
+                            </p>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="control-btn" onclick="event.stopPropagation(); app.startVideoCall('${user.id}')" 
+                                    style="background: var(--success);">📞</button>
+                            <button class="control-btn" onclick="event.stopPropagation(); app.showUserProfile('${user.id}')" 
+                                    style="background: var(--accent);">👤</button>
+                        </div>
+                    </div>
+                `);
+            });
+        
+        // Групповые чаты
+        this.groups.forEach(group => {
+            chatItems.push(`
+                <div class="chat-item" onclick="app.selectGroup('${group.id}')">
+                    <div class="item-avatar">${group.avatar}</div>
+                    <div style="flex: 1;">
+                        <h4>${group.name}</h4>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                            ${group.members ? group.members.length : 0} участников
+                        </p>
+                    </div>
+                </div>
+            `);
+        });
+        
+        if (chatItems.length === 0) {
+            contentList.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">💬</div>
+                    <h3>Нет чатов</h3>
+                    <p>Начните общение с другими пользователями</p>
+                    <button class="btn btn-primary" onclick="app.switchTab('discover')" style="margin-top: 20px;">
+                        👥 Найти друзей
+                    </button>
+                </div>
+            `;
+        } else {
+            contentList.innerHTML = chatItems.join('');
+        }
+    }
+
+    renderFriendsList() {
+        const contentList = document.getElementById('contentList');
+        if (!contentList) return;
+        
+        if (this.friends.length === 0) {
             contentList.innerHTML = `
                 <div class="empty-state">
                     <div class="empty-state-icon">👥</div>
-                    <h3>Пользователи не найдены</h3>
-                    <p>Будьте первым, кто присоединится к сети!</p>
+                    <h3>Нет друзей</h3>
+                    <p>Добавьте друзей чтобы начать общение</p>
+                    <button class="btn btn-primary" onclick="app.switchTab('discover')" style="margin-top: 20px;">
+                        🔍 Найти друзей
+                    </button>
                 </div>
             `;
             return;
         }
-
-        const filteredUsers = this.allUsers.filter(user => 
-            user.id !== this.currentUser?.id
-        );
-
-        contentList.innerHTML = filteredUsers.map(user => `
-            <div class="chat-item" onclick="app.selectChat('${user.id}')" 
-                 data-user-id="${user.id}" role="button" tabindex="0">
-                <div class="item-avatar">${user.avatar}</div>
-                <div style="flex: 1;">
-                    <h4>${user.name}</h4>
-                    <p style="color: var(--text-secondary); font-size: 0.9rem;">
-                        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${user.online ? 'var(--neon)' : 'var(--text-secondary)'}; margin-right: 5px;"></span>
-                        ${user.online ? 'В сети' : user.last_seen}
-                    </p>
-                    <p style="color: var(--text-secondary); font-size: 0.8rem;">
-                        ${user.status}
-                    </p>
+        
+        const friendsHtml = this.friends.map(friendId => {
+            const friend = this.allUsers.find(u => u.id === friendId);
+            if (!friend) return '';
+            
+            const statusClass = friend.online ? 'status-online' : 'status-offline';
+            const statusText = friend.online ? 'В сети' : friend.last_seen;
+            
+            return `
+                <div class="chat-item" onclick="app.selectChat('${friend.id}')">
+                    <div class="item-avatar">${friend.avatar}</div>
+                    <div style="flex: 1;">
+                        <h4>${friend.name} 
+                            <span class="status-badge ${statusClass}">${statusText}</span>
+                        </h4>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                            ${friend.status}
+                        </p>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="control-btn" onclick="event.stopPropagation(); app.startVideoCall('${friend.id}')" 
+                                style="background: var(--success);">📞</button>
+                        <button class="control-btn" onclick="event.stopPropagation(); app.removeFriend('${friend.id}')" 
+                                style="background: var(--danger);">🗑️</button>
+                    </div>
                 </div>
-                <button class="control-btn" onclick="event.stopPropagation(); app.startVideoCall('${user.id}')" 
-                        style="background: var(--success);">📞</button>
-            </div>
-        `).join('');
+            `;
+        }).join('');
+        
+        contentList.innerHTML = friendsHtml;
     }
 
-    selectChat(userId) {
+    renderDiscoverList() {
+        const contentList = document.getElementById('contentList');
+        if (!contentList) return;
+        
+        const nonFriends = this.allUsers.filter(user => 
+            user.id !== this.currentUser.id && 
+            !this.friends.includes(user.id)
+        );
+        
+        let discoverHtml = `
+            <div style="margin-bottom: 20px;">
+                <h4 style="margin-bottom: 16px;">Добавить по Friend Code</h4>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" class="search-input" id="friendCodeInput" 
+                           placeholder="TRLX-XXXX-XXXX" style="flex: 1;">
+                    <button class="btn btn-primary" onclick="app.addFriendByCode()">Добавить</button>
+                </div>
+            </div>
+        `;
+        
+        if (nonFriends.length === 0) {
+            discoverHtml += `
+                <div class="empty-state" style="padding: 20px;">
+                    <div class="empty-state-icon">🌐</div>
+                    <h3>Нет пользователей</h3>
+                    <p>Все пользователи уже в вашем списке друзей</p>
+                </div>
+            `;
+        } else {
+            discoverHtml += `
+                <h4 style="margin-bottom: 16px;">Рекомендуемые пользователи</h4>
+                ${nonFriends.map(user => {
+                    const statusClass = user.online ? 'status-online' : 'status-offline';
+                    const statusText = user.online ? 'В сети' : user.last_seen;
+                    
+                    return `
+                    <div class="chat-item">
+                        <div class="item-avatar">${user.avatar}</div>
+                        <div style="flex: 1;">
+                            <h4>${user.name} 
+                                <span class="status-badge ${statusClass}">${statusText}</span>
+                            </h4>
+                            <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                                ${user.status}
+                            </p>
+                        </div>
+                        <button class="control-btn" onclick="app.sendFriendRequest('${user.id}')" 
+                                style="background: var(--success);">➕</button>
+                    </div>
+                `}).join('')}
+            `;
+        }
+        
+        contentList.innerHTML = discoverHtml;
+    }
+
+    renderCallsList() {
+        const contentList = document.getElementById('contentList');
+        if (!contentList) return;
+        
+        contentList.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">📞</div>
+                <h3>История звонков</h3>
+                <p>Здесь будет отображаться история ваших звонков</p>
+                <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="app.startVideoCall()">
+                        🎥 Видеозвонок
+                    </button>
+                    <button class="btn btn-secondary" onclick="app.startVoiceCall()">
+                        🔊 Аудиозвонок
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    renderStickersList() {
+        const contentList = document.getElementById('contentList');
+        if (!contentList) return;
+        
+        if (this.stickers.length === 0) {
+            contentList.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">😊</div>
+                    <h3>Стикеры</h3>
+                    <p>Здесь будут ваши стикерпаки</p>
+                </div>
+            `;
+            return;
+        }
+        
+        contentList.innerHTML = `
+            <div style="padding: 16px;">
+                <h4 style="margin-bottom: 16px;">Мои стикеры</h4>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+                    ${this.stickers.map(sticker => `
+                        <div class="sticker-item" onclick="app.sendSticker('${sticker.id}')" 
+                             style="background: rgba(255,255,255,0.1); padding: 12px; border-radius: 12px; text-align: center; cursor: pointer; transition: all 0.3s ease;">
+                            <div style="font-size: 2rem;">${sticker.emoji}</div>
+                            <div style="font-size: 0.8rem; margin-top: 8px;">${sticker.text}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    // Донат функции
+    showDonatePanel() {
+        const overlay = document.getElementById('overlay');
+        const donatePanel = document.createElement('div');
+        
+        donatePanel.className = 'panel donate-panel active';
+        donatePanel.innerHTML = this.getDonatePanelHTML();
+        
+        document.body.appendChild(donatePanel);
+        overlay.classList.add('active');
+        
+        overlay.onclick = () => this.hideDonatePanel();
+        donatePanel.querySelector('.close-btn').onclick = () => this.hideDonatePanel();
+    }
+
+    hideDonatePanel() {
+        const donatePanel = document.querySelector('.donate-panel');
+        const overlay = document.getElementById('overlay');
+        
+        if (donatePanel) {
+            donatePanel.remove();
+        }
+        overlay.classList.remove('active');
+    }
+
+    getDonatePanelHTML() {
+        return `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h2 style="margin: 0;">💎 TrollexDL Premium</h2>
+                <button class="control-btn close-btn" style="background: var(--danger);">✕</button>
+            </div>
+            
+            <div class="telegram-contact">
+                <h4>📞 Для покупки подписки</h4>
+                <p>Обратитесь в наш Telegram канал</p>
+                <a href="https://t.me/Trollex_official" target="_blank" class="telegram-link">
+                    @Trollex_official
+                </a>
+            </div>
+
+            <div style="margin: 20px 0;">
+                <h4 style="text-align: center; margin-bottom: 16px;">🚀 Выберите тарифный план</h4>
+                <div style="max-height: 60vh; overflow-y: auto; padding-right: 8px;">
+                    ${this.donatePackages.map(pkg => `
+                        <div class="donate-package ${pkg.popular ? 'popular' : ''}" 
+                             style="border-color: ${pkg.color}">
+                            <div class="package-header">
+                                <div class="package-name">${pkg.name}</div>
+                                <div class="package-price" style="color: ${pkg.color}">
+                                    ${pkg.price} руб
+                                    ${pkg.original_price ? `<span class="package-original-price">${pkg.original_price} руб</span>` : ''}
+                                </div>
+                                <div class="package-period">за ${pkg.period}</div>
+                            </div>
+                            <ul class="package-features">
+                                ${pkg.features.map(feature => `<li>${feature}</li>`).join('')}
+                            </ul>
+                            <button class="donate-btn" onclick="app.selectPackage('${pkg.id}')" 
+                                    style="background: ${pkg.color}; color: white;">
+                                🛒 Выбрать ${pkg.name}
+                            </button>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 20px; padding: 16px; background: rgba(255,255,255,0.05); border-radius: 12px;">
+                <h4>🎁 Что вы получаете?</h4>
+                <p style="margin: 8px 0; font-size: 0.9rem;">• Эксклюзивные функции</p>
+                <p style="margin: 8px 0; font-size: 0.9rem;">• Приоритетная поддержка</p>
+                <p style="margin: 8px 0; font-size: 0.9rem;">• Улучшенная безопасность</p>
+                <p style="margin: 8px 0; font-size: 0.9rem;">• Расширенные возможности</p>
+            </div>
+        `;
+    }
+
+    selectPackage(packageId) {
+        const pkg = this.donatePackages.find(p => p.id === packageId);
+        if (!pkg) return;
+
+        this.showNotification(`Выбран тариф ${pkg.name}! Для покупки обратитесь в @Trollex_official`, 'success');
+        window.open(`https://t.me/Trollex_official?start=subscribe_${packageId}`, '_blank');
+        this.hideDonatePanel();
+    }
+
+    showSettings() {
+        this.showNotification('Панель настроек в разработке 🚧', 'info');
+    }
+
+    showUserProfile(userId) {
+        const user = this.allUsers.find(u => u.id === userId);
+        if (user) {
+            this.showNotification(`👤 Профиль ${user.name} - ${user.status}`, 'info');
+        }
+    }
+
+    async selectChat(userId) {
         this.currentChat = userId;
         const user = this.allUsers.find(u => u.id === userId);
         
@@ -1611,20 +2089,28 @@ class TrollexApp {
             document.getElementById('currentChatStatus').textContent = 
                 user.online ? 'В сети' : `Был(а) ${user.last_seen}`;
             
-            this.loadChatMessages(userId);
+            await this.loadChatMessages(userId);
             
-            // На мобильных устройствах закрываем sidebar после выбора чата
             if (window.innerWidth <= 768) {
                 this.toggleSidebar();
             }
         }
     }
 
+    selectGroup(groupId) {
+        const group = this.groups.find(g => g.id === groupId);
+        if (group) {
+            this.showNotification(`Выбрана группа: ${group.name}`, 'info');
+        }
+    }
+
     async loadChatMessages(userId) {
         const messagesContainer = document.getElementById('messagesContainer');
+        if (!messagesContainer) return;
         
         try {
             const response = await fetch(`/api/get_messages?user_id=${this.currentUser.id}&target_id=${userId}`);
+            if (!response.ok) throw new Error('Network error');
             const data = await response.json();
             
             if (data.success) {
@@ -1640,6 +2126,7 @@ class TrollexApp {
 
     displayMessages(messages) {
         const messagesContainer = document.getElementById('messagesContainer');
+        if (!messagesContainer) return;
         
         if (!messages || messages.length === 0) {
             messagesContainer.innerHTML = `
@@ -1652,24 +2139,31 @@ class TrollexApp {
             return;
         }
 
-        messagesContainer.innerHTML = messages.map(msg => `
-            <div class="message ${msg.sender === this.currentUser.id ? 'sent' : 'received'}">
-                <div class="message-text">${this.escapeHtml(msg.text)}</div>
-                <div class="message-time">
-                    ${new Date(msg.timestamp).toLocaleTimeString('ru-RU', {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    })}
+        messagesContainer.innerHTML = messages.map(msg => {
+            const isSent = msg.sender === this.currentUser.id;
+            const sender = this.allUsers.find(u => u.id === msg.sender);
+            const senderName = sender ? sender.name : 'Неизвестный';
+            
+            return `
+                <div class="message ${isSent ? 'sent' : 'received'}">
+                    ${!isSent ? `<div style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 4px;">${senderName}</div>` : ''}
+                    <div class="message-text">${this.escapeHtml(msg.text)}</div>
+                    <div class="message-time">
+                        ${new Date(msg.timestamp).toLocaleTimeString('ru-RU', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        })}
+                    </div>
                 </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
 
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
     async sendMessage() {
         const messageInput = document.getElementById('messageInput');
-        const message = messageInput.value.trim();
+        const message = messageInput ? messageInput.value.trim() : '';
         
         if (!message || !this.currentChat) {
             this.showNotification('Введите сообщение', 'warning');
@@ -1677,7 +2171,12 @@ class TrollexApp {
         }
 
         const sendBtn = document.getElementById('sendBtn');
-        sendBtn.disabled = true;
+        const originalHTML = sendBtn ? sendBtn.innerHTML : '🚀';
+        
+        if (sendBtn) {
+            sendBtn.innerHTML = '<div class="loading-spinner"></div>';
+            sendBtn.disabled = true;
+        }
         
         try {
             const response = await fetch('/api/send_message', {
@@ -1693,10 +2192,11 @@ class TrollexApp {
                 })
             });
 
+            if (!response.ok) throw new Error('Network error');
+
             const data = await response.json();
 
             if (data.success) {
-                // Добавляем сообщение в чат
                 this.addMessageToChat({
                     id: data.message_id,
                     sender: this.currentUser.id,
@@ -1705,21 +2205,41 @@ class TrollexApp {
                     type: 'text'
                 });
                 
-                messageInput.value = '';
-                this.adjustTextareaHeight(messageInput);
+                if (messageInput) {
+                    messageInput.value = '';
+                    this.adjustTextareaHeight(messageInput);
+                }
             } else {
-                throw new Error(data.error);
+                throw new Error(data.error || 'Failed to send message');
             }
         } catch (error) {
             console.error('Failed to send message:', error);
             this.showNotification('Ошибка отправки сообщения: ' + error.message, 'error');
         } finally {
-            sendBtn.disabled = false;
+            if (sendBtn) {
+                sendBtn.innerHTML = originalHTML;
+                sendBtn.disabled = false;
+            }
+        }
+    }
+
+    sendSticker(stickerId) {
+        const sticker = this.stickers.find(s => s.id === stickerId);
+        if (sticker && this.currentChat) {
+            this.addMessageToChat({
+                id: 'sticker_' + Date.now(),
+                sender: this.currentUser.id,
+                text: sticker.emoji + ' ' + sticker.text,
+                timestamp: new Date().toISOString(),
+                type: 'sticker'
+            });
         }
     }
 
     addMessageToChat(message) {
         const messagesContainer = document.getElementById('messagesContainer');
+        if (!messagesContainer) return;
+        
         const isEmpty = messagesContainer.querySelector('.empty-state');
         
         if (isEmpty) {
@@ -1730,7 +2250,13 @@ class TrollexApp {
         messageElement.className = `message ${
             message.sender === this.currentUser.id ? 'sent' : 'received'
         }`;
+        
+        const sender = this.allUsers.find(u => u.id === message.sender);
+        const senderName = sender ? sender.name : 'Неизвестный';
+        
         messageElement.innerHTML = `
+            ${message.sender !== this.currentUser.id ? 
+                `<div style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 4px;">${senderName}</div>` : ''}
             <div class="message-text">${this.escapeHtml(message.text)}</div>
             <div class="message-time">
                 ${new Date(message.timestamp).toLocaleTimeString('ru-RU', {
@@ -1744,44 +2270,128 @@ class TrollexApp {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
-    switchTab(tabName) {
-        this.currentTab = tabName;
-        
-        // Обновляем активные табы
-        document.querySelectorAll('.nav-tab').forEach(tab => {
-            tab.classList.remove('active');
-        });
-        
-        event.currentTarget.classList.add('active');
-        
-        this.renderUserList();
+    // Функции друзей
+    async sendFriendRequest(userId) {
+        try {
+            const response = await fetch('/api/send_friend_request', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_id: this.currentUser.id,
+                    target_id: userId,
+                    session_token: this.sessionToken
+                })
+            });
+
+            if (!response.ok) throw new Error('Network error');
+
+            const data = await response.json();
+
+            if (data.success) {
+                this.showNotification('Запрос в друзья отправлен!', 'success');
+                this.renderDiscoverList();
+            } else {
+                throw new Error(data.error || 'Failed to send friend request');
+            }
+        } catch (error) {
+            console.error('Failed to send friend request:', error);
+            this.showNotification('Ошибка отправки запроса: ' + error.message, 'error');
+        }
     }
 
+    async addFriendByCode() {
+        const friendCodeInput = document.getElementById('friendCodeInput');
+        const friendCode = friendCodeInput ? friendCodeInput.value.trim() : '';
+        
+        if (!friendCode) {
+            this.showNotification('Введите Friend Code', 'warning');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/add_friend_by_code', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_id: this.currentUser.id,
+                    friend_code: friendCode,
+                    session_token: this.sessionToken
+                })
+            });
+
+            if (!response.ok) throw new Error('Network error');
+
+            const data = await response.json();
+
+            if (data.success) {
+                this.showNotification('Друг добавлен!', 'success');
+                if (friendCodeInput) friendCodeInput.value = '';
+                await this.loadFriends();
+                this.renderDiscoverList();
+            } else {
+                throw new Error(data.error || 'Failed to add friend');
+            }
+        } catch (error) {
+            console.error('Failed to add friend by code:', error);
+            this.showNotification('Ошибка добавления друга: ' + error.message, 'error');
+        }
+    }
+
+    async removeFriend(friendId) {
+        if (!confirm('Удалить пользователя из друзей?')) return;
+
+        try {
+            const response = await fetch('/api/remove_friend', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_id: this.currentUser.id,
+                    friend_id: friendId,
+                    session_token: this.sessionToken
+                })
+            });
+
+            if (!response.ok) throw new Error('Network error');
+
+            const data = await response.json();
+
+            if (data.success) {
+                this.showNotification('Друг удален', 'success');
+                await this.loadFriends();
+                this.renderFriendsList();
+            } else {
+                throw new Error(data.error || 'Failed to remove friend');
+            }
+        } catch (error) {
+            console.error('Failed to remove friend:', error);
+            this.showNotification('Ошибка удаления друга: ' + error.message, 'error');
+        }
+    }
+
+    // Звонки
+    startVideoCall(userId = null) {
+        this.showNotification('Функция видеозвонков в разработке 🚧', 'info');
+    }
+
+    startVoiceCall() {
+        this.showNotification('Функция аудиозвонков в разработке 🚧', 'info');
+    }
+
+    // Утилиты
     toggleSidebar() {
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('overlay');
         
-        sidebar.classList.toggle('active');
-        overlay.classList.toggle('active');
+        if (sidebar) sidebar.classList.toggle('active');
+        if (overlay) overlay.classList.toggle('active');
     }
 
-    startVideoCall(userId) {
-        this.showNotification('Функция видеозвонков в разработке 🚧', 'info');
-    }
-
-    showCallPanel() {
-        this.showNotification('Создание видеозвонка...', 'info');
-    }
-
-    showSettings() {
-        this.showNotification('Настройки в разработке 🚧', 'info');
-    }
-
-    showDonatePanel() {
-        this.showNotification('Премиум функции в разработке 🚧', 'info');
-    }
-
-    // Утилиты
     escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
@@ -1790,6 +2400,8 @@ class TrollexApp {
 
     showNotification(message, type = 'info') {
         const notification = document.getElementById('notification');
+        if (!notification) return;
+        
         notification.textContent = message;
         notification.className = `notification ${type}`;
         notification.classList.remove('hidden');
@@ -1807,13 +2419,21 @@ class TrollexApp {
         this.showNotification('Отсутствует интернет-соединение 📶', 'warning');
     }
 
+    handleResize() {
+        if (window.innerWidth > 768) {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) sidebar.classList.remove('active');
+        }
+    }
+
     adjustTextareaHeight(textarea) {
+        if (!textarea) return;
         textarea.style.height = 'auto';
         textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
     }
 
     debouncedSearch = this.debounce(() => {
-        this.renderUserList();
+        this.renderCurrentTab();
     }, 300);
 
     debounce(func, wait) {
@@ -1833,42 +2453,65 @@ class TrollexApp {
 function handleKeyPress(event) {
     if (event.key === 'Enter' && !event.shiftKey) {
         event.preventDefault();
-        app.sendMessage();
+        if (window.app) {
+            window.app.sendMessage();
+        }
     }
 }
 
 function handleTyping() {
     const textarea = document.getElementById('messageInput');
-    app.adjustTextareaHeight(textarea);
+    if (window.app && textarea) {
+        window.app.adjustTextareaHeight(textarea);
+    }
 }
 
 function toggleSidebar() {
-    app.toggleSidebar();
+    if (window.app) {
+        window.app.toggleSidebar();
+    }
 }
 
-function switchTab(tabName) {
-    app.switchTab(tabName);
+function switchTab(tabName, event) {
+    if (window.app) {
+        window.app.switchTab(tabName, event);
+    }
 }
 
 function showRegisterScreen() {
-    app.showRegisterScreen();
+    if (window.app) {
+        window.app.showRegisterScreen();
+    }
 }
 
 function quickStart() {
-    app.quickStart();
+    if (window.app) {
+        window.app.quickStart();
+    }
 }
 
 function generateNewUser() {
-    app.generateNewUser();
+    if (window.app) {
+        window.app.generateNewUser();
+    }
 }
 
 function registerUser() {
-    app.registerUser();
+    if (window.app) {
+        window.app.registerUser();
+    }
 }
 
 function hideAllPanels() {
-    document.getElementById('sidebar').classList.remove('active');
-    document.getElementById('overlay').classList.remove('active');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+    const donatePanel = document.querySelector('.donate-panel');
+    
+    if (sidebar) sidebar.classList.remove('active');
+    if (overlay) overlay.classList.remove('active');
+    if (donatePanel) {
+        donatePanel.remove();
+    }
 }
 
 // Инициализация приложения
@@ -1876,6 +2519,15 @@ let app;
 
 document.addEventListener('DOMContentLoaded', function() {
     app = new TrollexApp();
+    window.app = app;
+    
+    // Скрываем экран загрузки
+    setTimeout(() => {
+        const loadingScreen = document.getElementById('loadingScreen');
+        if (loadingScreen) {
+            loadingScreen.classList.add('hidden');
+        }
+    }, 1000);
 });
 '''
 
@@ -1886,7 +2538,7 @@ with open('static/css/style.css', 'w', encoding='utf-8') as f:
 with open('static/js/app.js', 'w', encoding='utf-8') as f:
     f.write(JS_CONTENT)
 
-# HTML шаблон (оставляем оригинальный)
+# HTML шаблон
 HTML_TEMPLATE = '''
 <!DOCTYPE html>
 <html lang="ru">
@@ -1906,7 +2558,7 @@ HTML_TEMPLATE = '''
         <div class="cosmic-card">
             <div class="logo">TrollexDL</div>
             <div style="margin: 20px 0; font-size: 1.2rem; min-height: 60px; display: flex; align-items: center; justify-content: center;">
-                <div id="typingText">Инициализация защищённого канала...</div>
+                <div class="loading-spinner"></div>
             </div>
             <div style="color: var(--neon); margin: 10px 0; display: flex; align-items: center; justify-content: center; gap: 8px;">
                 <span>🔒</span>
@@ -1924,7 +2576,7 @@ HTML_TEMPLATE = '''
             </div>
             
             <div style="display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: rgba(0,255,136,0.1); border: 1px solid var(--neon); border-radius: 12px; margin: 16px 0;">
-                <div style="width: 10px; height: 10px; border-radius: 50%; background: var(--neon);"></div>
+                <div style="width: 10px; height: 10px; border-radius: 50%; background: var(--neon);" class="bounce-animation"></div>
                 <span>Защищённое соединение установлено</span>
             </div>
             
@@ -1987,29 +2639,29 @@ HTML_TEMPLATE = '''
             </div>
 
             <div class="nav-tabs">
-                <div class="nav-tab active" onclick="switchTab('chats')" role="button" tabindex="0" aria-label="Чаты">
+                <div class="nav-tab active" onclick="switchTab('chats', event)" role="button" tabindex="0" aria-label="Чаты">
                     <span>💬</span>
                     <span>Чаты</span>
                 </div>
-                <div class="nav-tab" onclick="switchTab('friends')" role="button" tabindex="0" aria-label="Друзья">
+                <div class="nav-tab" onclick="switchTab('friends', event)" role="button" tabindex="0" aria-label="Друзья">
                     <span>👥</span>
                     <span>Друзья</span>
                 </div>
-                <div class="nav-tab" onclick="switchTab('discover')" role="button" tabindex="0" aria-label="Найти друзей">
+                <div class="nav-tab" onclick="switchTab('discover', event)" role="button" tabindex="0" aria-label="Найти друзей">
                     <span>🌐</span>
                     <span>Найти</span>
                 </div>
-                <div class="nav-tab" onclick="switchTab('calls')" role="button" tabindex="0" aria-label="Звонки">
+                <div class="nav-tab" onclick="switchTab('calls', event)" role="button" tabindex="0" aria-label="Звонки">
                     <span>📞</span>
                     <span>Звонки</span>
                 </div>
-                <div class="nav-tab" onclick="showDonatePanel()" role="button" tabindex="0" aria-label="Премиум функции">
-                    <span>💎</span>
-                    <span>Донат</span>
+                <div class="nav-tab" onclick="switchTab('stickers', event)" role="button" tabindex="0" aria-label="Стикеры">
+                    <span>😊</span>
+                    <span>Стикеры</span>
                 </div>
-                <div class="nav-tab" onclick="showSettings()" role="button" tabindex="0" aria-label="Настройки">
-                    <span>⚙️</span>
-                    <span>Настройки</span>
+                <div class="nav-tab" onclick="app.showDonatePanel()" role="button" tabindex="0" aria-label="Премиум функции">
+                    <span>💎</span>
+                    <span>Премиум</span>
                 </div>
             </div>
 
@@ -2035,8 +2687,12 @@ HTML_TEMPLATE = '''
                     <h3 id="currentChatName">TrollexDL</h3>
                     <p style="color: var(--text-secondary);" id="currentChatStatus">Выберите чат для начала общения</p>
                 </div>
-                <button class="control-btn" onclick="app.startVideoCall(app.currentChat)" style="background: var(--success);" 
-                        aria-label="Начать видеозвонок" id="callBtn">📞</button>
+                <div style="display: flex; gap: 8px;">
+                    <button class="control-btn" onclick="app.startVideoCall(app.currentChat)" style="background: var(--success);" 
+                            aria-label="Начать видеозвонок" id="callBtn">📞</button>
+                    <button class="control-btn" onclick="app.showDonatePanel()" style="background: var(--accent);" 
+                            aria-label="Премиум функции">💎</button>
+                </div>
             </div>
 
             <div class="messages-container" id="messagesContainer">
@@ -2044,9 +2700,14 @@ HTML_TEMPLATE = '''
                     <div class="empty-state-icon">🌌</div>
                     <h3>Добро пожаловать в TrollexDL!</h3>
                     <p>Начните общение с квантовым шифрованием</p>
-                    <button class="btn btn-primary" onclick="app.showCallPanel()" style="margin-top: 20px;">
-                        🎥 Создать видеозвонок
-                    </button>
+                    <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+                        <button class="btn btn-primary" onclick="app.startVideoCall()">
+                            🎥 Видеозвонок
+                        </button>
+                        <button class="btn btn-secondary" onclick="app.showDonatePanel()">
+                            💎 Премиум
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -2078,7 +2739,12 @@ def send_static(path):
 # API endpoints
 @app.route('/api/get_users')
 def api_get_users():
-    return jsonify({'success': True, 'users': all_users})
+    try:
+        users = list(all_users.values())
+        return jsonify({'success': True, 'users': users})
+    except Exception as e:
+        logger.error(f"Error getting users: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/register_user', methods=['POST'])
 def api_register_user():
@@ -2090,7 +2756,7 @@ def api_register_user():
             return jsonify({'success': False, 'error': 'Invalid user data'}), 400
         
         # Проверяем существование пользователя
-        if any(user['id'] == user_id for user in all_users):
+        if user_id in all_users:
             return jsonify({'success': False, 'error': 'User already exists'}), 409
         
         # Создаем нового пользователя
@@ -2102,7 +2768,7 @@ def api_register_user():
             'last_seen': 'только что',
             'status': 'Новый пользователь TrollexDL'
         }
-        all_users.append(new_user)
+        all_users.set(user_id, new_user)
         
         # Создаем профиль
         user_profiles.set(user_id, {
@@ -2123,19 +2789,9 @@ def api_register_user():
         
         # Инициализируем чаты для нового пользователя
         user_messages.set(user_id, {})
-        for other_user in all_users:
-            if other_user['id'] != user_id:
-                user_msgs = user_messages.get(user_id, {})
-                user_msgs[other_user['id']] = [
-                    {
-                        'id': str(uuid.uuid4()),
-                        'sender': other_user['id'],
-                        'text': sanitize_input('Привет! 👋 Рад познакомиться!'),
-                        'timestamp': datetime.datetime.now().isoformat(),
-                        'type': 'text'
-                    }
-                ]
-                user_messages.set(user_id, user_msgs)
+        for other_user_id in all_users.keys():
+            if other_user_id != user_id:
+                ensure_user_chat(user_id, other_user_id)
         
         logger.info(f"Зарегистрирован новый пользователь: {user_id}")
         return jsonify({
@@ -2191,14 +2847,12 @@ def api_send_message():
         if target_user_id not in user_msgs:
             user_msgs[target_user_id] = []
         user_msgs[target_user_id].append(message)
-        user_messages.set(user_id, user_msgs)
         
         # Сохраняем сообщение для получателя
         target_msgs = user_messages.get(target_user_id, {})
         if user_id not in target_msgs:
             target_msgs[user_id] = []
         target_msgs[user_id].append(message)
-        user_messages.set(target_user_id, target_msgs)
         
         # Ограничение количества сообщений
         if len(user_msgs[target_user_id]) > MAX_MESSAGES_PER_CHAT:
@@ -2229,6 +2883,191 @@ def api_get_messages():
         
     except Exception as e:
         logger.error(f"Ошибка получения сообщений: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/get_friends')
+def api_get_friends():
+    try:
+        user_id = request.args.get('user_id')
+        
+        if not user_id:
+            return jsonify({'success': False, 'error': 'Missing user_id'}), 400
+        
+        profile = user_profiles.get(user_id, {})
+        friends = profile.get('friends', [])
+        
+        return jsonify({'success': True, 'friends': friends})
+        
+    except Exception as e:
+        logger.error(f"Ошибка получения друзей: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/get_friend_requests')
+def api_get_friend_requests():
+    try:
+        user_id = request.args.get('user_id')
+        
+        if not user_id:
+            return jsonify({'success': False, 'error': 'Missing user_id'}), 400
+        
+        requests = friend_requests.get(user_id, [])
+        
+        return jsonify({'success': True, 'requests': requests})
+        
+    except Exception as e:
+        logger.error(f"Ошибка получения запросов в друзья: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/get_groups')
+def api_get_groups():
+    try:
+        user_id = request.args.get('user_id')
+        
+        if not user_id:
+            return jsonify({'success': False, 'error': 'Missing user_id'}), 400
+        
+        user_groups = []
+        for group_id, group in groups.items():
+            if user_id in group.get('members', []):
+                user_groups.append(group)
+        
+        return jsonify({'success': True, 'groups': user_groups})
+        
+    except Exception as e:
+        logger.error(f"Ошибка получения групп: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/get_donate_packages')
+def api_get_donate_packages():
+    """Получить список донат пакетов"""
+    try:
+        packages = list(donate_packages.values())
+        return jsonify({'success': True, 'packages': packages})
+    except Exception as e:
+        logger.error(f"Error getting donate packages: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/get_stickers')
+def api_get_stickers():
+    """Получить список стикеров"""
+    try:
+        all_stickers = []
+        sticker_packs = stickers.get('default', {})
+        for pack in sticker_packs.values():
+            all_stickers.extend(pack)
+        return jsonify({'success': True, 'stickers': all_stickers})
+    except Exception as e:
+        logger.error(f"Error getting stickers: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/get_themes')
+def api_get_themes():
+    """Получить список тем"""
+    try:
+        theme_list = list(themes.get('default', {}).values())
+        return jsonify({'success': True, 'themes': theme_list})
+    except Exception as e:
+        logger.error(f"Error getting themes: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/send_friend_request', methods=['POST'])
+def api_send_friend_request():
+    try:
+        data = request.json
+        user_id = data.get('user_id')
+        target_id = data.get('target_id')
+        session_token = data.get('session_token')
+        
+        if not all([user_id, target_id, session_token]):
+            return jsonify({'success': False, 'error': 'Missing required fields'}), 400
+        
+        if not verify_session(user_id, session_token):
+            return jsonify({'success': False, 'error': 'Invalid session'}), 401
+        
+        # Добавляем запрос в друзья
+        target_requests = friend_requests.get(target_id, [])
+        if user_id not in target_requests:
+            target_requests.append(user_id)
+            friend_requests.set(target_id, target_requests)
+        
+        return jsonify({'success': True, 'message': 'Friend request sent'})
+        
+    except Exception as e:
+        logger.error(f"Ошибка отправки запроса в друзья: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/add_friend_by_code', methods=['POST'])
+def api_add_friend_by_code():
+    try:
+        data = request.json
+        user_id = data.get('user_id')
+        friend_code = data.get('friend_code')
+        session_token = data.get('session_token')
+        
+        if not all([user_id, friend_code, session_token]):
+            return jsonify({'success': False, 'error': 'Missing required fields'}), 400
+        
+        if not verify_session(user_id, session_token):
+            return jsonify({'success': False, 'error': 'Invalid session'}), 401
+        
+        # Находим пользователя по friend code
+        target_id = get_user_by_friend_code(friend_code)
+        if not target_id:
+            return jsonify({'success': False, 'error': 'User not found'}), 404
+        
+        if target_id == user_id:
+            return jsonify({'success': False, 'error': 'Cannot add yourself'}), 400
+        
+        # Добавляем в друзья
+        user_profile = user_profiles.get(user_id, {})
+        user_friends = user_profile.get('friends', [])
+        if target_id not in user_friends:
+            user_friends.append(target_id)
+            user_profile['friends'] = user_friends
+        
+        target_profile = user_profiles.get(target_id, {})
+        target_friends = target_profile.get('friends', [])
+        if user_id not in target_friends:
+            target_friends.append(user_id)
+            target_profile['friends'] = target_friends
+        
+        return jsonify({'success': True, 'message': 'Friend added successfully'})
+        
+    except Exception as e:
+        logger.error(f"Ошибка добавления друга по коду: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/remove_friend', methods=['POST'])
+def api_remove_friend():
+    try:
+        data = request.json
+        user_id = data.get('user_id')
+        friend_id = data.get('friend_id')
+        session_token = data.get('session_token')
+        
+        if not all([user_id, friend_id, session_token]):
+            return jsonify({'success': False, 'error': 'Missing required fields'}), 400
+        
+        if not verify_session(user_id, session_token):
+            return jsonify({'success': False, 'error': 'Invalid session'}), 401
+        
+        # Удаляем из друзей
+        user_profile = user_profiles.get(user_id, {})
+        user_friends = user_profile.get('friends', [])
+        if friend_id in user_friends:
+            user_friends.remove(friend_id)
+            user_profile['friends'] = user_friends
+        
+        friend_profile = user_profiles.get(friend_id, {})
+        friend_friends = friend_profile.get('friends', [])
+        if user_id in friend_friends:
+            friend_friends.remove(user_id)
+            friend_profile['friends'] = friend_friends
+        
+        return jsonify({'success': True, 'message': 'Friend removed successfully'})
+        
+    except Exception as e:
+        logger.error(f"Ошибка удаления друга: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
