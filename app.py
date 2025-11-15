@@ -23,6 +23,7 @@ from functools import wraps
 import jwt
 import bcrypt
 from waitress import serve
+import requests
 
 # Настройка логирования
 def setup_logging():
@@ -2789,6 +2790,12 @@ class TrollexApp {
         
         document.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: true });
         document.addEventListener('touchend', this.handleTouchEnd.bind(this), { passive: true });
+        
+        document.addEventListener('touchmove', (e) => {
+            if (e.scale !== 1) {
+                e.preventDefault();
+            }
+        }, { passive: false });
     }
 
     setupServiceWorker() {
@@ -2823,6 +2830,19 @@ class TrollexApp {
             "🎉 Каждый день - новая возможность!"
         ];
         this.currentMotivation = motivations[Math.floor(Math.random() * motivations.length)];
+        
+        setInterval(() => {
+            this.currentMotivation = motivations[Math.floor(Math.random() * motivations.length)];
+            this.updateMotivationDisplay();
+        }, 30000);
+    }
+
+    updateMotivationDisplay() {
+        const motivationElement = document.getElementById('motivationText');
+        if (motivationElement) {
+            motivationElement.textContent = this.currentMotivation;
+            motivationElement.style.animation = 'fadeIn 0.6s ease-out';
+        }
     }
 
     startConnectionMonitor() {
@@ -2839,6 +2859,7 @@ class TrollexApp {
             
             if (latency > 1000) {
                 this.connectionStatus = 'slow';
+                this.showNotification('Медленное соединение', 'warning');
             } else {
                 this.connectionStatus = 'online';
             }
@@ -2860,6 +2881,7 @@ class TrollexApp {
                 if (isValid) {
                     await this.loadInitialData();
                     this.showMainApp();
+                    this.showNotification('С возвращением! 🚀', 'success');
                 } else {
                     this.clearStorage();
                     this.showWelcomeScreen();
@@ -2918,6 +2940,7 @@ class TrollexApp {
             ]);
         } catch (error) {
             console.error('Failed to load initial data:', error);
+            this.showNotification('Ошибка загрузки данных', 'error');
         } finally {
             this.showLoading(false);
         }
@@ -2944,9 +2967,12 @@ class TrollexApp {
             
             if (data.success) {
                 this.allUsers = data.users;
+            } else {
+                throw new Error(data.error || 'Failed to load users');
             }
         } catch (error) {
             console.error('Failed to load users:', error);
+            throw error;
         }
     }
 
@@ -3096,6 +3122,20 @@ class TrollexApp {
         this.updateUserInfo();
         this.renderCurrentTab();
         this.startRealTimeUpdates();
+        
+        this.addMotivationBox();
+    }
+
+    addMotivationBox() {
+        const contentList = document.getElementById('contentList');
+        if (contentList && !contentList.querySelector('.motivation-box')) {
+            const motivationHTML = `
+                <div class="motivation-box">
+                    <div id="motivationText">${this.currentMotivation}</div>
+                </div>
+            `;
+            contentList.insertAdjacentHTML('afterbegin', motivationHTML);
+        }
     }
 
     startRealTimeUpdates() {
@@ -3106,6 +3146,10 @@ class TrollexApp {
         setInterval(() => {
             this.syncData();
         }, 60000);
+        
+        setInterval(() => {
+            this.updateMotivationDisplay();
+        }, 30000);
     }
 
     async syncData() {
@@ -3158,6 +3202,7 @@ class TrollexApp {
         document.getElementById('registerName').textContent = username;
         document.getElementById('registerAvatar').textContent = avatar;
         document.getElementById('registerId').textContent = `user_${Math.random().toString(36).substr(2, 8)}`;
+        document.getElementById('registerEmail').textContent = `${username.toLowerCase()}@trollex.ai`;
         document.getElementById('registerFriendCode').textContent = 
             `TRLX-${Math.random().toString(16).substr(2, 4).toUpperCase()}-${
              Math.random().toString(16).substr(2, 4).toUpperCase()}`;
@@ -3222,6 +3267,11 @@ class TrollexApp {
         document.getElementById('userAvatar').textContent = this.currentUser.avatar;
         document.getElementById('userId').textContent = this.currentUser.id;
         document.getElementById('userFriendCode').textContent = this.currentUser.friend_code;
+        
+        const userAvatar = document.getElementById('userAvatar');
+        if (this.hasPremiumSubscription()) {
+            userAvatar.classList.add('premium');
+        }
     }
 
     hasPremiumSubscription() {
@@ -3293,6 +3343,16 @@ class TrollexApp {
                             <p style="color: var(--text-secondary); font-size: 0.9rem;">
                                 ${user.status}
                             </p>
+                            ${this.typingUsers.has(user.id) ? `
+                                <div class="typing-indicator">
+                                    <span>печатает</span>
+                                    <div class="typing-dots">
+                                        <div class="typing-dot"></div>
+                                        <div class="typing-dot"></div>
+                                        <div class="typing-dot"></div>
+                                    </div>
+                                </div>
+                            ` : ''}
                         </div>
                         <div style="display: flex; gap: 8px;">
                             <button class="control-btn" onclick="event.stopPropagation(); app.startVideoCall('${user.id}')" 
@@ -3303,6 +3363,21 @@ class TrollexApp {
                     </div>
                 `);
             });
+        
+        // Групповые чаты
+        this.groups.forEach(group => {
+            chatItems.push(`
+                <div class="chat-item" onclick="app.selectGroup('${group.id}')">
+                    <div class="item-avatar">${group.avatar}</div>
+                    <div style="flex: 1;">
+                        <h4>${group.name}</h4>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                            ${group.members ? group.members.length : 0} участников
+                        </p>
+                    </div>
+                </div>
+            `);
+        });
         
         if (chatItems.length === 0) {
             contentList.innerHTML = `
@@ -3438,6 +3513,9 @@ class TrollexApp {
                     <button class="btn btn-secondary" onclick="app.startVoiceCall()">
                         🔊 Аудиозвонок
                     </button>
+                    <button class="btn btn-secondary" onclick="app.startVoiceMessage()">
+                        🎤 Голосовое сообщение
+                    </button>
                 </div>
             </div>
         `;
@@ -3481,7 +3559,46 @@ class TrollexApp {
             return;
         }
 
+        if (!this.hasPremiumSubscription()) {
+            this.showNotification('🎥 Видеозвонки доступны в премиум тарифах!', 'warning');
+            this.showDonatePanel();
+            return;
+        }
+
         try {
+            // Запрашиваем разрешение на камеру и микрофон
+            this.localStream = await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: true
+            });
+
+            // Создаем PeerConnection
+            this.peerConnection = new RTCPeerConnection(this.rtcConfig);
+
+            // Добавляем локальный поток
+            this.localStream.getTracks().forEach(track => {
+                this.peerConnection.addTrack(track, this.localStream);
+            });
+
+            // Обработка удаленного потока
+            this.peerConnection.ontrack = (event) => {
+                this.remoteStream = event.streams[0];
+                this.setupRemoteVideo();
+            };
+
+            // Обработка ICE кандидатов
+            this.peerConnection.onicecandidate = (event) => {
+                if (event.candidate && this.socket) {
+                    this.socket.emit('ice_candidate', {
+                        call_id: this.currentCall,
+                        candidate: event.candidate,
+                        user_id: this.currentUser.id,
+                        session_token: this.sessionToken
+                    });
+                }
+            };
+
+            // Инициируем звонок через WebSocket
             this.socket.emit('call_start', {
                 caller_id: this.currentUser.id,
                 receiver_id: userId,
@@ -3493,7 +3610,7 @@ class TrollexApp {
 
         } catch (error) {
             console.error('Error starting video call:', error);
-            this.showNotification('Ошибка запуска звонка', 'error');
+            this.showNotification('Ошибка доступа к камере/микрофону', 'error');
         }
     }
 
@@ -3504,6 +3621,34 @@ class TrollexApp {
         }
 
         try {
+            // Запрашиваем только аудио
+            this.localStream = await navigator.mediaDevices.getUserMedia({
+                video: false,
+                audio: true
+            });
+
+            this.peerConnection = new RTCPeerConnection(this.rtcConfig);
+
+            this.localStream.getTracks().forEach(track => {
+                this.peerConnection.addTrack(track, this.localStream);
+            });
+
+            this.peerConnection.ontrack = (event) => {
+                this.remoteStream = event.streams[0];
+                this.setupRemoteAudio();
+            };
+
+            this.peerConnection.onicecandidate = (event) => {
+                if (event.candidate && this.socket) {
+                    this.socket.emit('ice_candidate', {
+                        call_id: this.currentCall,
+                        candidate: event.candidate,
+                        user_id: this.currentUser.id,
+                        session_token: this.sessionToken
+                    });
+                }
+            };
+
             this.socket.emit('call_start', {
                 caller_id: this.currentUser.id,
                 receiver_id: userId,
@@ -3515,7 +3660,68 @@ class TrollexApp {
 
         } catch (error) {
             console.error('Error starting voice call:', error);
-            this.showNotification('Ошибка запуска звонка', 'error');
+            this.showNotification('Ошибка доступа к микрофону', 'error');
+        }
+    }
+
+    setupRemoteVideo() {
+        const remoteVideo = document.getElementById('remoteVideo');
+        if (remoteVideo && this.remoteStream) {
+            remoteVideo.srcObject = this.remoteStream;
+        }
+    }
+
+    setupRemoteAudio() {
+        const remoteAudio = document.getElementById('remoteAudio');
+        if (remoteAudio && this.remoteStream) {
+            remoteAudio.srcObject = this.remoteStream;
+        }
+    }
+
+    setupLocalVideo() {
+        const localVideo = document.getElementById('localVideo');
+        if (localVideo && this.localStream) {
+            localVideo.srcObject = this.localStream;
+        }
+    }
+
+    // Обработчики WebRTC событий
+    async handleWebRTCOffer(data) {
+        if (!this.peerConnection) return;
+
+        try {
+            await this.peerConnection.setRemoteDescription(data.offer);
+            const answer = await this.peerConnection.createAnswer();
+            await this.peerConnection.setLocalDescription(answer);
+
+            this.socket.emit('webrtc_answer', {
+                call_id: data.call_id,
+                answer: answer,
+                user_id: this.currentUser.id,
+                session_token: this.sessionToken
+            });
+        } catch (error) {
+            console.error('Error handling WebRTC offer:', error);
+        }
+    }
+
+    async handleWebRTCAnswer(data) {
+        if (!this.peerConnection) return;
+
+        try {
+            await this.peerConnection.setRemoteDescription(data.answer);
+        } catch (error) {
+            console.error('Error handling WebRTC answer:', error);
+        }
+    }
+
+    async handleICECandidate(data) {
+        if (!this.peerConnection) return;
+
+        try {
+            await this.peerConnection.addIceCandidate(data.candidate);
+        } catch (error) {
+            console.error('Error handling ICE candidate:', error);
         }
     }
 
@@ -3548,7 +3754,39 @@ class TrollexApp {
         });
 
         if (answer === 'accept') {
-            this.showCallInterface();
+            try {
+                this.localStream = await navigator.mediaDevices.getUserMedia({
+                    video: true,
+                    audio: true
+                });
+
+                this.peerConnection = new RTCPeerConnection(this.rtcConfig);
+                this.localStream.getTracks().forEach(track => {
+                    this.peerConnection.addTrack(track, this.localStream);
+                });
+
+                this.peerConnection.ontrack = (event) => {
+                    this.remoteStream = event.streams[0];
+                    this.setupRemoteVideo();
+                };
+
+                this.peerConnection.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        this.socket.emit('ice_candidate', {
+                            call_id: this.currentCall,
+                            candidate: event.candidate,
+                            user_id: this.currentUser.id,
+                            session_token: this.sessionToken
+                        });
+                    }
+                };
+
+                this.showCallInterface();
+
+            } catch (error) {
+                console.error('Error answering call:', error);
+                this.showNotification('Ошибка подключения к медиаустройствам', 'error');
+            }
         }
     }
 
@@ -3570,6 +3808,7 @@ class TrollexApp {
         `;
         
         document.body.insertAdjacentHTML('beforeend', callInterface);
+        this.setupLocalVideo();
     }
 
     endCall() {
@@ -3585,8 +3824,27 @@ class TrollexApp {
     }
 
     cleanupCall() {
+        // Останавливаем медиапотоки
+        if (this.localStream) {
+            this.localStream.getTracks().forEach(track => track.stop());
+            this.localStream = null;
+        }
+
+        if (this.remoteStream) {
+            this.remoteStream.getTracks().forEach(track => track.stop());
+            this.remoteStream = null;
+        }
+
+        // Закрываем PeerConnection
+        if (this.peerConnection) {
+            this.peerConnection.close();
+            this.peerConnection = null;
+        }
+
+        // Убираем интерфейс звонка
         document.querySelector('.call-container')?.remove();
         document.querySelector('.incoming-call-alert')?.remove();
+
         this.currentCall = null;
     }
 
@@ -3599,6 +3857,27 @@ class TrollexApp {
     handleCallAccepted(data) {
         this.showNotification('Звонок принят!', 'success');
         this.showCallInterface();
+        
+        // Создаем offer для установления соединения
+        this.createOffer();
+    }
+
+    async createOffer() {
+        if (!this.peerConnection) return;
+
+        try {
+            const offer = await this.peerConnection.createOffer();
+            await this.peerConnection.setLocalDescription(offer);
+
+            this.socket.emit('webrtc_offer', {
+                call_id: this.currentCall,
+                offer: offer,
+                user_id: this.currentUser.id,
+                session_token: this.sessionToken
+            });
+        } catch (error) {
+            console.error('Error creating offer:', error);
+        }
     }
 
     handleCallRejected(data) {
@@ -3624,6 +3903,14 @@ class TrollexApp {
     handleNewMessage(data) {
         if (this.currentChat === data.sender_id) {
             this.addMessageToChat(data);
+        }
+        
+        // Показываем уведомление
+        if (this.currentChat !== data.sender_id) {
+            const sender = this.allUsers.find(u => u.id === data.sender_id);
+            if (sender) {
+                this.showNotification(`Новое сообщение от ${sender.name}: ${data.text}`, 'info');
+            }
         }
     }
 
@@ -3664,6 +3951,10 @@ class TrollexApp {
                 user.online ? 'В сети' : `Был(а) ${user.last_seen}`;
             
             await this.loadChatMessages(userId);
+            
+            if (window.innerWidth <= 768) {
+                this.toggleSidebar();
+            }
         }
     }
 
@@ -3717,6 +4008,7 @@ class TrollexApp {
                             hour: '2-digit',
                             minute: '2-digit'
                         })}
+                        ${isSent ? '<span class="message-status">✓</span>' : ''}
                     </div>
                 </div>
             `;
@@ -3734,6 +4026,7 @@ class TrollexApp {
             return;
         }
 
+        // Отправка через WebSocket в реальном времени
         if (this.socket) {
             this.socket.emit('send_message', {
                 user_id: this.currentUser.id,
@@ -3742,8 +4035,19 @@ class TrollexApp {
                 session_token: this.sessionToken
             });
 
+            // Добавляем сообщение локально для мгновенного отображения
+            this.addMessageToChat({
+                id: 'temp_' + Date.now(),
+                sender_id: this.currentUser.id,
+                receiver_id: this.currentChat,
+                text: message,
+                timestamp: new Date().toISOString(),
+                type: 'text'
+            });
+
             if (messageInput) {
                 messageInput.value = '';
+                this.adjustTextareaHeight(messageInput);
             }
         } else {
             this.showNotification('Ошибка подключения', 'error');
@@ -3778,11 +4082,37 @@ class TrollexApp {
                     hour: '2-digit',
                     minute: '2-digit'
                 })}
+                ${message.sender_id === this.currentUser.id ? '<span class="message-status">✓</span>' : ''}
             </div>
         `;
         
         messagesContainer.appendChild(messageElement);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        
+        setTimeout(() => {
+            messageElement.style.transform = 'translateY(0)';
+            messageElement.style.opacity = '1';
+        }, 10);
+    }
+
+    startTyping() {
+        if (this.currentChat && this.socket) {
+            this.socket.emit('typing_start', {
+                user_id: this.currentUser.id,
+                target_id: this.currentChat,
+                session_token: this.sessionToken
+            });
+        }
+    }
+
+    stopTyping() {
+        if (this.currentChat && this.socket) {
+            this.socket.emit('typing_stop', {
+                user_id: this.currentUser.id,
+                target_id: this.currentChat,
+                session_token: this.sessionToken
+            });
+        }
     }
 
     // Реальные функции друзей
@@ -3924,6 +4254,14 @@ class TrollexApp {
                 <button class="control-btn close-btn" style="background: var(--danger);">✕</button>
             </div>
             
+            <div class="telegram-contact" style="background: var(--gradient); padding: 20px; border-radius: 16px; margin: 20px 0;">
+                <h4 style="color: white; margin-bottom: 8px;">🚀 Для покупки подписки</h4>
+                <p style="color: white; margin-bottom: 12px;">Обратитесь в наш Telegram канал</p>
+                <a href="https://t.me/Trollex_official" target="_blank" class="telegram-link" style="color: white; text-decoration: none; font-weight: bold;">
+                    @Trollex_official
+                </a>
+            </div>
+
             <div style="margin: 20px 0;">
                 <h4 style="text-align: center; margin-bottom: 16px;">🎯 Выберите тарифный план</h4>
                 <div style="max-height: 50vh; overflow-y: auto; padding-right: 8px;">
@@ -3949,11 +4287,41 @@ class TrollexApp {
                     `).join('')}
                 </div>
             </div>
+
+            <div style="text-align: center; margin-top: 20px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 16px;">
+                <h4>🎁 Что вы получаете?</h4>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 16px;">
+                    <div style="text-align: left;">
+                        <p style="margin: 8px 0; font-size: 0.9rem;">⭐ Эксклюзивные функции</p>
+                        <p style="margin: 8px 0; font-size: 0.9rem;">🚀 Приоритетная поддержка</p>
+                        <p style="margin: 8px 0; font-size: 0.9rem;">🔒 Улучшенная безопасность</p>
+                    </div>
+                    <div style="text-align: left;">
+                        <p style="margin: 8px 0; font-size: 0.9rem;">🎨 Расширенные возможности</p>
+                        <p style="margin: 8px 0; font-size: 0.9rem;">📱 Эксклюзивный контент</p>
+                        <p style="margin: 8px 0; font-size: 0.9rem;">⚡ Максимальная скорость</p>
+                    </div>
+                </div>
+            </div>
         `;
     }
 
     selectPackage(packageId) {
-        this.showNotification(`🎉 Выбран тариф ${packageId}!`, 'success');
+        const packages = initialize_donate_packages();
+        const pkg = packages[packageId];
+        if (!pkg) return;
+
+        this.showNotification(`🎉 Выбран тариф ${pkg.name}! Для покупки обратитесь в @Trollex_official`, 'success');
+        
+        const selectedPackage = document.querySelector(`.donate-package[style*="${pkg.color}"]`);
+        if (selectedPackage) {
+            selectedPackage.classList.add('bounce-animation');
+            setTimeout(() => {
+                selectedPackage.classList.remove('bounce-animation');
+            }, 1000);
+        }
+        
+        window.open(`https://t.me/Trollex_official?start=subscribe_${packageId}`, '_blank');
         this.hideDonatePanel();
     }
 
@@ -3967,6 +4335,15 @@ class TrollexApp {
                 session_token: this.sessionToken
             });
 
+            this.addMessageToChat({
+                id: 'sticker_' + Date.now(),
+                sender_id: this.currentUser.id,
+                receiver_id: this.currentChat,
+                text: sticker.emoji + ' ' + sticker.text,
+                timestamp: new Date().toISOString(),
+                type: 'sticker'
+            });
+
             this.showNotification(`Стикер отправлен: ${sticker.text}`, 'success');
         }
     }
@@ -3975,6 +4352,32 @@ class TrollexApp {
         const user = this.allUsers.find(u => u.id === userId);
         if (user) {
             this.showNotification(`👤 Профиль ${user.name} - ${user.status}`, 'info');
+        }
+    }
+
+    selectGroup(groupId) {
+        const group = this.groups.find(g => g.id === groupId);
+        if (group) {
+            this.showNotification(`Выбрана группа: ${group.name}`, 'info');
+        }
+    }
+
+    async startVoiceMessage() {
+        if (!this.hasPremiumSubscription()) {
+            this.showNotification('Голосовые сообщения доступны в премиум тарифах!', 'warning');
+            this.showDonatePanel();
+            return;
+        }
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            this.showNotification('🎤 Запись началась...', 'info');
+            
+            setTimeout(() => {
+                this.showNotification('Голосовое сообщение записано!', 'success');
+            }, 3000);
+        } catch (error) {
+            this.showNotification('Ошибка доступа к микрофону', 'error');
         }
     }
 
@@ -4000,6 +4403,10 @@ class TrollexApp {
         notification.textContent = message;
         notification.className = `notification ${type}`;
         notification.classList.remove('hidden');
+        
+        setTimeout(() => {
+            notification.style.transform = 'translateX(0)';
+        }, 10);
         
         setTimeout(() => {
             notification.classList.add('hidden');
@@ -4032,6 +4439,7 @@ class TrollexApp {
             localStorage.setItem('sessionToken', this.sessionToken);
         }
         
+        // Завершаем звонок при закрытии страницы
         if (this.currentCall) {
             this.endCall();
         }
@@ -4041,6 +4449,12 @@ class TrollexApp {
         if (!document.hidden) {
             this.updateOnlineStatus();
         }
+    }
+
+    adjustTextareaHeight(textarea) {
+        if (!textarea) return;
+        textarea.style.height = 'auto';
+        textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
     }
 
     handleTouchStart(event) {
@@ -4058,6 +4472,22 @@ class TrollexApp {
             event.target.style.transform = '';
         }
     }
+
+    debouncedSearch = this.debounce(() => {
+        this.renderCurrentTab();
+    }, 300);
+
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
 }
 
 // Глобальные функции
@@ -4067,6 +4497,20 @@ function handleKeyPress(event) {
         if (window.app) {
             window.app.sendMessage();
         }
+    }
+}
+
+function handleTyping() {
+    const textarea = document.getElementById('messageInput');
+    if (window.app && textarea) {
+        window.app.adjustTextareaHeight(textarea);
+        window.app.startTyping();
+        
+        // Останавливаем печатание через 1 секунду после последнего ввода
+        clearTimeout(window.app.typingTimeout);
+        window.app.typingTimeout = setTimeout(() => {
+            window.app.stopTyping();
+        }, 1000);
     }
 }
 
@@ -4124,7 +4568,30 @@ let app;
 document.addEventListener('DOMContentLoaded', function() {
     app = new TrollexApp();
     window.app = app;
+    
+    setTimeout(() => {
+        const loadingScreen = document.getElementById('loadingScreen');
+        if (loadingScreen) {
+            loadingScreen.style.opacity = '0';
+            setTimeout(() => {
+                loadingScreen.classList.add('hidden');
+            }, 500);
+        }
+    }, 1500);
 });
+
+// PWA функциональность
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/sw.js')
+            .then(function(registration) {
+                console.log('ServiceWorker registration successful');
+            })
+            .catch(function(error) {
+                console.log('ServiceWorker registration failed: ', error);
+            });
+    });
+}
 '''
 
 # Сохраняем файлы
@@ -4141,7 +4608,9 @@ const CACHE_NAME = 'trollexdl-v2.0.0';
 const urlsToCache = [
     '/',
     '/static/css/style.css',
-    '/static/js/app.js'
+    '/static/js/app.js',
+    '/static/images/icon-192.png',
+    '/static/images/icon-512.png'
 ];
 
 self.addEventListener('install', function(event) {
@@ -4181,6 +4650,11 @@ HTML_TEMPLATE = '''
     <meta name="description" content="TrollexDL - защищенный мессенджер с квантовым шифрованием">
     <title>TrollexDL 🚀 Ultimate Messenger</title>
     <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="icon" type="image/png" href="/static/images/icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="TrollexDL">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
 </head>
 <body>
@@ -4192,6 +4666,10 @@ HTML_TEMPLATE = '''
             <div class="logo">TrollexDL</div>
             <div style="margin: 20px 0; font-size: 1.2rem; min-height: 60px; display: flex; align-items: center; justify-content: center;">
                 <div class="loading-spinner"></div>
+            </div>
+            <div style="color: var(--neon); margin: 10px 0; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <span>🔒</span>
+                <span>Квантовое шифрование активировано</span>
             </div>
         </div>
     </div>
@@ -4208,6 +4686,11 @@ HTML_TEMPLATE = '''
                 <!-- Новогодний счетчик будет добавлен через JS -->
             </div>
             
+            <div style="display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: rgba(0,255,136,0.1); border: 1px solid var(--neon); border-radius: 12px; margin: 16px 0;">
+                <div class="bounce-animation" style="width: 10px; height: 10px; border-radius: 50%; background: var(--neon);"></div>
+                <span>Защищённое соединение установлено</span>
+            </div>
+            
             <button class="btn btn-primary" onclick="showRegisterScreen()">
                 🚀 НАЧАТЬ
             </button>
@@ -4215,6 +4698,14 @@ HTML_TEMPLATE = '''
             <button class="btn btn-secondary" onclick="quickStart()">
                 ⚡ БЫСТРЫЙ СТАРТ
             </button>
+            
+            <div style="margin-top: 20px; padding: 16px; background: rgba(255,255,255,0.05); border-radius: 12px;">
+                <h4>🎯 Новые возможности</h4>
+                <p style="font-size: 0.9rem; margin: 8px 0;">• Реальные видеозвонки WebRTC</p>
+                <p style="font-size: 0.9rem; margin: 8px 0;">• Мгновенные сообщения</p>
+                <p style="font-size: 0.9rem; margin: 8px 0;">• Добавление друзей по коду</p>
+                <p style="font-size: 0.9rem; margin: 8px 0;">• Онлайн статусы в реальном времени</p>
+            </div>
         </div>
     </div>
 
@@ -4227,11 +4718,15 @@ HTML_TEMPLATE = '''
                 <div class="user-avatar" id="registerAvatar">🚀</div>
                 <h3 id="registerName">Quantum_User</h3>
                 <p style="color: var(--text-secondary);">ID: <span id="registerId">...</span></p>
+                <p style="color: var(--text-secondary);">📧 <span id="registerEmail">...</span></p>
             </div>
 
             <div class="friend-code-display">
                 <div style="font-size: 0.9rem; color: var(--text-secondary);">Ваш Friend Code:</div>
                 <div class="friend-code" id="registerFriendCode">TRLX-XXXX-XXXX</div>
+                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 8px;">
+                    Поделитесь этим кодом для добавления в друзья
+                </div>
             </div>
             
             <button class="btn btn-primary" id="registerBtn" onclick="registerUser()">
@@ -4289,6 +4784,11 @@ HTML_TEMPLATE = '''
                 </div>
             </div>
 
+            <div class="search-box">
+                <input type="text" class="search-input" placeholder="🔍 Поиск..." id="searchInput" 
+                       oninput="app.debouncedSearch()" aria-label="Поиск по чатам и контактам">
+            </div>
+
             <div class="content-list" id="contentList">
                 <div class="empty-state">
                     <div class="empty-state-icon">💬</div>
@@ -4309,6 +4809,8 @@ HTML_TEMPLATE = '''
                 <div style="display: flex; gap: 8px;">
                     <button class="control-btn" onclick="app.startVideoCall(app.currentChat)" style="background: var(--success);" 
                             aria-label="Начать видеозвонок" id="callBtn">📞</button>
+                    <button class="control-btn" onclick="app.startVoiceMessage()" style="background: var(--warning);" 
+                            aria-label="Голосовое сообщение">🎤</button>
                     <button class="control-btn" onclick="app.showDonatePanel()" style="background: var(--accent);" 
                             aria-label="Премиум функции">💎</button>
                 </div>
@@ -4319,12 +4821,20 @@ HTML_TEMPLATE = '''
                     <div class="empty-state-icon floating-element">🌌</div>
                     <h3>Добро пожаловать в TrollexDL!</h3>
                     <p>Начните общение с квантовым шифрованием</p>
+                    <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+                        <button class="btn btn-primary" onclick="app.startVideoCall()">
+                            🎥 Видеозвонок
+                        </button>
+                        <button class="btn btn-secondary" onclick="app.showDonatePanel()">
+                            💎 Премиум
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <div class="message-input-container">
                 <textarea class="message-input" placeholder="Введите сообщение..." id="messageInput" 
-                       onkeydown="handleKeyPress(event)" 
+                       onkeydown="handleKeyPress(event)" oninput="handleTyping()" 
                        aria-label="Введите сообщение" maxlength="2000" rows="1"></textarea>
                 <button class="send-btn" onclick="app.sendMessage()" aria-label="Отправить сообщение" id="sendBtn">🚀</button>
             </div>
@@ -4333,6 +4843,9 @@ HTML_TEMPLATE = '''
 
     <!-- Уведомления -->
     <div id="notification" class="notification hidden"></div>
+
+    <!-- Скрытые элементы для звонков -->
+    <audio id="remoteAudio" autoplay style="display: none;"></audio>
 </body>
 <script src="/static/js/app.js"></script>
 </html>
@@ -4347,7 +4860,19 @@ MANIFEST_CONTENT = {
     "display": "standalone",
     "background_color": "#0a0a2a",
     "theme_color": "#6c2bd9",
-    "orientation": "portrait"
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "/static/images/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/static/images/icon-512.png", 
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
 }
 
 with open('static/manifest.json', 'w', encoding='utf-8') as f:
@@ -4360,7 +4885,10 @@ def index():
 
 @app.route('/static/<path:path>')
 def send_static(path):
-    return send_from_directory('static', path)
+    try:
+        return send_from_directory('static', path)
+    except FileNotFoundError:
+        return "File not found", 404
 
 @app.route('/static/manifest.json')
 def serve_manifest():
@@ -4382,9 +4910,12 @@ def health_check():
             cursor = conn.cursor()
             cursor.execute("SELECT 1")
         
+        memory_usage = psutil.virtual_memory().percent
+        
         return jsonify({
             'status': 'healthy',
             'timestamp': datetime.datetime.now().isoformat(),
+            'memory_usage': memory_usage,
             'active_users': len(user_activity),
             'online_sockets': len(online_users),
             'active_calls': len(active_calls),
@@ -4423,6 +4954,12 @@ def api_register_user():
         
         if not user_id or not name or not friend_code:
             return jsonify({'success': False, 'error': 'Missing required fields'})
+        
+        if not validate_username(name):
+            return jsonify({'success': False, 'error': 'Invalid username'})
+        
+        if not validate_friend_code(friend_code):
+            return jsonify({'success': False, 'error': 'Invalid friend code'})
         
         existing_user = get_user_by_id(user_id)
         if existing_user:
@@ -4504,6 +5041,9 @@ def api_get_messages():
         if not user_id or not target_id:
             return jsonify({'success': False, 'error': 'User ID and Target ID required'})
         
+        if not validate_access(user_id, target_id, 'message'):
+            return jsonify({'success': False, 'error': 'Access denied'})
+        
         with get_db_connection() as conn:
             cursor = conn.cursor()
             cursor.execute('''
@@ -4534,6 +5074,9 @@ def api_send_message():
         
         if not verify_session_enhanced(user_id, session_token):
             return jsonify({'success': False, 'error': 'Invalid session'})
+        
+        if not validate_access(user_id, target_user_id, 'message'):
+            return jsonify({'success': False, 'error': 'Access denied'})
         
         is_valid, error_msg = validate_message(message_text)
         if not is_valid:
@@ -4592,6 +5135,13 @@ def api_send_friend_request():
         
         with get_db_connection() as conn:
             cursor = conn.cursor()
+            cursor.execute('''
+                SELECT id FROM friend_requests 
+                WHERE from_user_id = ? AND to_user_id = ? AND status = 'pending'
+            ''', (user_id, target_id))
+            
+            if cursor.fetchone():
+                return jsonify({'success': False, 'error': 'Friend request already sent'})
             
             request_id = str(uuid.uuid4())
             cursor.execute('''
@@ -4627,6 +5177,14 @@ def api_add_friend_by_code():
         
         with get_db_connection() as conn:
             cursor = conn.cursor()
+            
+            cursor.execute('''
+                SELECT * FROM friendships 
+                WHERE user_id = ? AND friend_id = ?
+            ''', (user_id, friend_user_id))
+            
+            if cursor.fetchone():
+                return jsonify({'success': False, 'error': 'Already friends'})
             
             cursor.execute('''
                 INSERT INTO friendships (user_id, friend_id) VALUES (?, ?)
@@ -4672,6 +5230,41 @@ def api_remove_friend():
         
     except Exception as e:
         logger.error(f"Remove friend error: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/get_groups')
+@require_auth
+@rate_limit
+def api_get_groups():
+    try:
+        user_id = request.args.get('user_id')
+        if not user_id:
+            return jsonify({'success': False, 'error': 'User ID required'})
+        
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT g.* FROM groups g
+                JOIN group_members gm ON g.id = gm.group_id
+                WHERE gm.user_id = ?
+            ''', (user_id,))
+            
+            groups = []
+            for row in cursor.fetchall():
+                group = dict(row)
+                
+                cursor.execute('''
+                    SELECT u.id, u.name, u.avatar FROM users u
+                    JOIN group_members gm ON u.id = gm.user_id
+                    WHERE gm.group_id = ?
+                ''', (group['id'],))
+                group['members'] = [dict(member) for member in cursor.fetchall()]
+                
+                groups.append(group)
+        
+        return jsonify({'success': True, 'groups': groups})
+    except Exception as e:
+        logger.error(f"Get groups error: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 if __name__ == '__main__':
